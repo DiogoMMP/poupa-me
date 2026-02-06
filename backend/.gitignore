@@ -1,0 +1,58 @@
+# Node.js dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+lib/
+out/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+
+# Coverage
+coverage/
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Misc
+.cache/
+*.tgz
+
+# Ignore local dev certs or exported files
+*.pem
+*.key
+
+# Ignore generated plantuml diagrams (if present)
+*.png
+*.svg

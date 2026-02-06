@@ -1,0 +1,50 @@
+// tsconfig.json
+{
+  "compilerOptions": {
+    /* Modern JavaScript & Compatibility: */
+    "target": "ES2022", // Good baseline for modern Node.js
+    "lib": ["ES2022"], // ⚠️ CHANGED: Removed "DOM" (Node.js doesn't have browser APIs)
+
+    /* Module System Settings: */
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "src",
+    "outDir": "dist",
+
+    /* Strict Type-Checking: */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true,
+
+    /* File Consistency & Import Handling */
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true, // Keeps your imports strict (requires 'import type')
+    "allowImportingTsExtensions": false, // Correct: Must be false to emit to 'dist'
+
+    /* JS Handling */
+    "allowJs": false, // Changed to false for a clean TypeScript project
+    "checkJs": false,
+
+    // REQUIRED for TypeDI and Bulletproof Architecture
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    "sourceMap": true,
+    "declaration": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "node_modules/**",
+    "dist",
+    "dist/**",
+    "coverage",
+    "coverage/**",
+    "coverage/**/*",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
+}
