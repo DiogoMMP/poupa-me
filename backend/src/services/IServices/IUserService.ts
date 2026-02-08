@@ -51,14 +51,15 @@ export default interface IUserService {
     /**
      * Updates an existing User.
      * @param updateDTO - The User update data transfer object with updated data.
+     * @param email - The email used to locate the user in the DB (cannot be changed through update).
      * @returns Result containing the updated User DTO.
      */
-    updateUser(updateDTO: IUserUpdateDTO): Promise<Result<IUserDTO>>;
+    updateUser(updateDTO: IUserUpdateDTO, email: string): Promise<Result<IUserDTO>>;
 
     /**
-     * Deletes a User by domain ID.
-     * @param id - The User domain ID.
+     * Deletes a User by email.
+     * @param email - The User email.
      * @returns Result indicating success (true) or failure.
      */
-    deleteUserById(id: string): Promise<Result<boolean>>;
+    deleteUserByEmail(email: string): Promise<Result<boolean>>;
 }

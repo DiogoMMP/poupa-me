@@ -40,6 +40,11 @@ export default {
         user: {
             name: 'UserRepo',
             path: '../repos/UserRepo.js'
+        },
+
+        categoria: {
+            name: 'CategoriaRepo',
+            path: '../repos/CategoriaRepo.js'
         }
     },
 
@@ -47,6 +52,11 @@ export default {
         auth: {
             name: 'AuthService',
             path: '../services/AuthService.js'
+        },
+
+        categoria: {
+            name: 'CategoriaService',
+            path: '../services/CategoriaService.js'
         }
     },
 
@@ -54,6 +64,11 @@ export default {
         auth: {
             name: 'AuthController',
             path: '../controllers/AuthController.js'
+        },
+
+        categoria: {
+            name: 'CategoriaController',
+            path: '../controllers/CategoriaController.js'
         }
     },
 

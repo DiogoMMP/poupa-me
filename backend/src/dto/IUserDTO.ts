@@ -18,7 +18,6 @@ export interface IUserLoginDTO {
 }
 
 export interface IUserUpdateDTO {
-  email: string;
   name?: string;
   password?: string;
 }

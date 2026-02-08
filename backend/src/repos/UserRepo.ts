@@ -3,7 +3,7 @@ import type IUserRepo from './IRepos/IUserRepo.js';
 import { User } from '../domain/User/Entities/User.js';
 import { UserMap } from '../mappers/UserMap.js';
 import { UserEntity } from '../persistence/entities/UserEntity.js';
-import type { DataSource } from 'typeorm';
+import type { DataSource, Repository } from 'typeorm';
 
 /**
  * User Repository implementation using TypeORM. This class is responsible for handling all database operations related
@@ -18,7 +18,7 @@ import type { DataSource } from 'typeorm';
  */
 @Service()
 export default class UserRepo implements IUserRepo {
-    private repo: any;
+    private repo: Repository<UserEntity>;
 
     /**
      * Constructor for the UserRepo class. It initializes the repository by injecting a DataSource and a logger. The
@@ -61,44 +61,6 @@ export default class UserRepo implements IUserRepo {
     }
 
     /**
-     * Updates an existing User entity in the database. It maps the domain user to persistence format and performs a
-     * save operation which in TypeORM behaves as upsert when the primary key is present on the entity. After saving,
-     * it maps the persisted entity back to the domain model and returns it.
-     * @param user - The User domain entity with updated fields. Must include the domainId so the underlying entity
-     * can be matched.
-     */
-    public async update(user: User): Promise<User> {
-        try {
-            const raw = UserMap.toPersistence(user);
-
-            // Create or preload the entity and save. If domainId is unique column mapped to primary/unique constraint,
-            // this will update the existing record.
-            const entity = this.repo.create(raw);
-            const saved = await this.repo.save(entity);
-
-            const domain = await UserMap.toDomain(saved);
-            if (!domain) throw new Error('Failed to map updated user to domain');
-            return domain;
-        } catch (err) {
-            this.logger.error('UserRepo.update error: %o', err);
-            throw err;
-        }
-    }
-
-    /**
-     * Deletes a user by domainId. Uses the repository delete method which accepts a criteria object.
-     * @param domainId - The domain identifier of the user to remove.
-     */
-    public async delete(domainId: string): Promise<void> {
-        try {
-            await this.repo.delete({ domainId });
-        } catch (err) {
-            this.logger.error('UserRepo.delete error: %o', err);
-            throw err;
-        }
-    }
-
-    /**
      * Finds a User entity in the database by its email. It queries the database for a record matching the provided
      * email. If a record is found, it uses the UserMap to convert the persistence format back to the domain model and
      * returns it. If no record is found, it returns null.
@@ -108,10 +70,18 @@ export default class UserRepo implements IUserRepo {
      * exists. If there is an error during the database query, it logs the error and rethrows it.
      */
     public async findByEmail(email: string): Promise<User | null> {
-        const row = await this.repo.findOne({ where: { email } });
-        if (!row) return null;
-
-        return await UserMap.toDomain(row);
+        // Use case-insensitive match to be robust with email casing differences
+        try {
+            // Use case-insensitive search via LOWER comparison for portability
+            const row = await this.repo.createQueryBuilder('user')
+                .where('LOWER(user.email) = LOWER(:email)', { email })
+                .getOne();
+            if (!row) return null;
+            return await UserMap.toDomain(row);
+        } catch (err) {
+            this.logger.error('UserRepo.findByEmail error: %o', err);
+            throw err;
+        }
     }
 
     /**
@@ -145,5 +115,50 @@ export default class UserRepo implements IUserRepo {
             if (d) res.push(d);
         }
         return res;
+    }
+
+    public async deleteByEmail(email: string): Promise<void> {
+        try {
+            await this.repo.createQueryBuilder()
+                .delete()
+                .from(UserEntity)
+                .where('LOWER(email) = LOWER(:email)', { email })
+                .execute();
+        } catch (err) {
+            this.logger.error('UserRepo.deleteByEmail error: %o', err);
+            throw err;
+        }
+    }
+
+    public async updateByEmail(user: User, email: string): Promise<User> {
+        try {
+            const raw = UserMap.toPersistence(user);
+
+            // Update the row matched by email
+            await this.repo.createQueryBuilder()
+                .update(UserEntity)
+                .set({
+                    email: raw.email,
+                    name: raw.name,
+                    passwordHash: raw.passwordHash,
+                    role: raw.role
+                })
+                .where('LOWER(email) = LOWER(:email)', { email })
+                .execute();
+
+            // Reload the updated row
+            const saved = await this.repo.createQueryBuilder('user')
+                .where('LOWER(user.email) = LOWER(:email)', { email })
+                .getOne();
+
+            if (!saved) throw new Error('Failed to find updated user by email');
+
+            const domain = await UserMap.toDomain(saved);
+            if (!domain) throw new Error('Failed to map updated user to domain');
+            return domain;
+        } catch (err) {
+            this.logger.error('UserRepo.updateByEmail error: %o', err);
+            throw err;
+        }
     }
 }

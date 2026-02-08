@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 import config from '../config/index.js';
 import { UserEntity } from '../persistence/entities/UserEntity.js';
 import Logger from './logger.js';
+import {CategoriaEntity} from "../persistence/entities/CategoriaEntity.js";
 
 export default async function createTypeOrmDataSource(): Promise<DataSource> {
   if (!config.postgresURL) {
@@ -12,7 +13,7 @@ export default async function createTypeOrmDataSource(): Promise<DataSource> {
   const dataSource = new DataSource({
     type: 'postgres',
     url: config.postgresURL,
-    entities: [UserEntity],
+    entities: [UserEntity, CategoriaEntity],
     synchronize: true, // for dev only; change to migrations in prod
     logging: false
   });

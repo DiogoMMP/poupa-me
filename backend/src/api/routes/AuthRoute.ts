@@ -49,10 +49,7 @@ const route = Router();
  *           type: string
  *     UserUpdate:
  *       type: object
- *       required: [email]
  *       properties:
- *         email:
- *           type: string
  *         name:
  *           type: string
  *         password:
@@ -149,6 +146,34 @@ export default (app: Router) => {
 
   /**
    * @openapi
+   * /auth/by-email:
+   *   get:
+   *     tags:
+   *       - Auth
+   *     summary: Get user by email
+   *     description: Search user by email. Requires authentication.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: email
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Matching users
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/User'
+   */
+  route.get('/by-email', isAuth, (req, res, next) => ctrl.getUserByEmail(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
    * /auth/{id}:
    *   get:
    *     tags:
@@ -177,42 +202,20 @@ export default (app: Router) => {
 
   /**
    * @openapi
-   * /auth/by-email:
-   *   get:
-   *     tags:
-   *       - Auth
-   *     summary: Get user by email
-   *     description: Search user by email. Admin only.
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: query
-   *         name: email
-   *         required: true
-   *         schema:
-   *           type: string
-   *     responses:
-   *       200:
-   *         description: Matching users
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/User'
-   */
-  route.get('/by-email', isAuth, authorize([Role.Admin]), (req, res, next) => ctrl.getUserByEmail(req as AuthenticatedRequest, res, next));
-
-  /**
-   * @openapi
-   * /auth:
+   * /auth/{email}:
    *   put:
    *     tags:
    *       - Auth
    *     summary: Update a user
-   *     description: Update user fields (name, password). The email in the body is used to identify the user and cannot be changed.
+   *     description: Update user fields (name, password). The email path parameter identifies the user and cannot be changed.
    *     security:
    *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: email
+   *         required: true
+   *         schema:
+   *           type: string
    *     requestBody:
    *       required: true
    *       content:
@@ -229,21 +232,21 @@ export default (app: Router) => {
    *       400:
    *         description: Validation or update error
    */
-  route.put('/', isAuth, (req, res, next) => ctrl.updateUser(req as AuthenticatedRequest, res, next));
+  route.put('/:email', isAuth, (req, res, next) => ctrl.updateUser(req as AuthenticatedRequest, res, next));
 
   /**
    * @openapi
-   * /auth/{id}:
+   * /auth/{email}:
    *   delete:
    *     tags:
    *       - Auth
-   *     summary: Delete a user by ID
-   *     description: Removes a user identified by domain ID. Admin only.
+   *     summary: Delete a user by email
+   *     description: Removes a user identified by email. Admin only.
    *     security:
    *       - bearerAuth: []
    *     parameters:
    *       - in: path
-   *         name: id
+   *         name: email
    *         required: true
    *         schema:
    *           type: string
@@ -253,5 +256,5 @@ export default (app: Router) => {
    *       400:
    *         description: Deletion failed
    */
-  route.delete('/:id', isAuth, authorize([Role.Admin]), (req, res, next) => ctrl.deleteUserByDomainId(req as AuthenticatedRequest, res, next));
-};
+  route.delete('/:email', isAuth, authorize([Role.Admin]), (req, res, next) => ctrl.deleteUserByEmail(req as AuthenticatedRequest, res, next));
+ };

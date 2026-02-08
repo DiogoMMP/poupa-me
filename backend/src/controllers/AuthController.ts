@@ -75,7 +75,8 @@ export default class AuthController implements IUserController {
      */
     public async getUserByEmail(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const email = (req.query.email || req.params.email) as string;
+            let email = (req.query.email || req.params.email) as string;
+            if (email) email = decodeURIComponent(String(email)).trim();
             if (!email) return res.status(400).json({ error: 'Email is required' });
 
             const result = await this.authService.getUserByEmail(email);
@@ -110,8 +111,12 @@ export default class AuthController implements IUserController {
      */
     public async updateUser(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
+            let email = (req.params.email || req.query.email) as string;
+            if (email) email = decodeURIComponent(String(email)).trim();
             const inputDTO = req.body as IUserUpdateDTO;
-            const result = await this.authService.updateUser(inputDTO);
+            if (!email) return res.status(400).json({ error: 'Email is required to locate user' });
+
+            const result = await this.authService.updateUser(inputDTO, email);
             if (result.isFailure) return res.status(400).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {
@@ -120,17 +125,17 @@ export default class AuthController implements IUserController {
     }
 
     /**
-     * Deletes a user by their domain ID. Validates the ID parameter and returns appropriate HTTP responses based on success or failure.
-     * @param req - Express request object containing the user ID in the route parameters.
+     * Deletes a user based on their email address. Validates the email parameter and returns appropriate HTTP responses based on success or failure.
+     * @param req - Express request object containing the email in the query parameters or route parameters.
      * @param res - Express response object used to send back a success message or an error message.
      * @param next - Express next function for error handling. If an error occurs, it will be passed to the next middleware.
      */
-    public async deleteUserByDomainId(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+    public async deleteUserByEmail(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const id = req.params.id as string;
-            if (!id) return res.status(400).json({ error: 'ID is required' });
+            const email = (req.params.email || req.query.email) as string;
+            if (!email) return res.status(400).json({ error: 'Email is required' });
 
-            const result = await this.authService.deleteUserById(id);
+            const result = await this.authService.deleteUserByEmail(email);
             if (result.isFailure) return res.status(400).json({ error: result.error });
             return res.status(200).json({ success: result.getValue() });
         } catch (e) {

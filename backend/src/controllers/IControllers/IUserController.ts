@@ -54,10 +54,10 @@ export default interface IUserController {
     updateUser(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
     /**
-     * Deletes a user by their domain ID
+     * Deletes a user by their email
      * @param req - Express request object
      * @param res - Express response object
      * @param next - Express next function
      */
-    deleteUserByDomainId(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    deleteUserByEmail(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 }

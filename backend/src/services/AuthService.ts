@@ -15,7 +15,7 @@ import type * as jwt from 'jsonwebtoken';
 export default class AuthService {
     constructor(
         @Inject('UserRepo') private userRepo: IUserRepo,
-        @Inject('logger') private logger: any
+        @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {}
 
     /**
@@ -163,13 +163,12 @@ export default class AuthService {
      * Updates a user. The DTO must include the `email` which is used to find the user (email cannot be changed).
      * Validates input, merges updates into existing domain object, and persists changes.
      * @param updateDTO - The user update data transfer object containing updated fields (email required) and optional name/password.
+     * @param emailKey - The email used to locate the user in the DB (cannot be changed through update).
      * @returns Result containing the updated User DTO or an error message.
      */
-    public async updateUser(updateDTO: IUserUpdateDTO): Promise<Result<IUserDTO>> {
+    public async updateUser(updateDTO: IUserUpdateDTO, emailKey: string): Promise<Result<IUserDTO>> {
         try {
             if (!updateDTO) return Result.fail<IUserDTO>('No update data provided');
-
-            const emailKey = updateDTO.email;
             if (!emailKey) return Result.fail<IUserDTO>('Email is required to identify the user');
 
             const existing = await this.userRepo.findByEmail(emailKey);
@@ -195,7 +194,6 @@ export default class AuthService {
                     password: password.getValue(),
                     role: role.getValue()
                 },
-                // preserve the existing domain id
                 existing.id
             );
 
@@ -203,7 +201,8 @@ export default class AuthService {
 
             const userDomain = userOrError.getValue();
 
-            const updated = await this.userRepo.update(userDomain);
+            // Update by email to ensure we match the existing DB row (avoid duplicate key issues)
+            const updated = await this.userRepo.updateByEmail(userDomain, emailKey);
             const dto = UserMap.toDTO(updated) as IUserDTO;
             return Result.ok<IUserDTO>(dto);
         } catch (e) {
@@ -214,19 +213,18 @@ export default class AuthService {
     }
 
     /**
-     * Deletes a user by domain ID.
-     * @param id - The user domain ID.
-     * @returns Result containing true if deletion was successful or an error message.
+     * Deletes a user by email.
+     * @param email - Email of the user to delete
      */
-    public async deleteUserById(id: string): Promise<Result<boolean>> {
+    public async deleteUserByEmail(email: string): Promise<Result<boolean>> {
         try {
-            if (!id) return Result.fail<boolean>('ID is required');
-            const exists = await this.userRepo.findByDomainId(id);
-            if (!exists) return Result.fail<boolean>(`User not found with id=${id}`);
-            await this.userRepo.delete(id);
+            if (!email) return Result.fail<boolean>('Email is required');
+            const exists = await this.userRepo.findByEmail(email);
+            if (!exists) return Result.fail<boolean>(`User not found with email=${email}`);
+            await this.userRepo.deleteByEmail(email);
             return Result.ok<boolean>(true);
         } catch (e) {
-            this.logger.error('AuthService.deleteUserById error: %o', e);
+            this.logger.error('AuthService.deleteUserByEmail error: %o', e);
             const message = e instanceof Error ? e.message : 'Error deleting user';
             return Result.fail<boolean>(message);
         }

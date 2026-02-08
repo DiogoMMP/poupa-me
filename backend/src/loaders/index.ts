@@ -26,17 +26,35 @@ export default async ({expressApp}: { expressApp: Application }) => {
         path: config.services.auth.path
     };
 
+    const categoriaController = {
+        name: config.controllers.categoria.name,
+        path: config.controllers.categoria.path
+    };
+
+    const categoriaRepo = {
+        name: config.repos.categoria.name,
+        path: config.repos.categoria.path
+    };
+
+    const categoriaService = {
+        name: config.services.categoria.name,
+        path: config.services.categoria.path
+    };
+
     await dependencyInjectorLoader({
         dataSource: dataSource as any,
         schemas: [],
         controllers: [
-            authController
+            authController,
+            categoriaController
         ],
         repos: [
-            userRepo
+            userRepo,
+            categoriaRepo
         ],
         services: [
-            authService
+            authService,
+            categoriaService
         ]
     } as any);
     Logger.info('✌️ Entities, Controllers, Repositories, Services, etc. loaded');
