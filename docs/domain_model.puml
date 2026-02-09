@@ -28,9 +28,6 @@ package "Transacao " <<aggregate>> {
     class Data <<Value Object>> {
     }
 
-    class Dinheiro <<Value Object>> {
-    }
-
     class Reembolso <<Value Object>> {
     }
 
@@ -45,7 +42,6 @@ package "Transacao " <<aggregate>> {
 
     ' Semantic relations for Transaction
     Transacao "1" --> "1" Data: ocorrida em
-    Transacao "1" --> "1" Dinheiro: movimenta
     Transacao "1" --> "0..1" Reembolso: pode originar
     Transacao "1" --> "1" Tipo: é do tipo
     Transacao "1" --> "1" Status: encontra-se em
@@ -61,10 +57,7 @@ package "Shared " <<shared>> {
     class Nome <<Value Object>> {
     }
 
-    class Total <<Value Object>> {
-    }
-
-    class ValorInicial <<Value Object>> {
+    class Dinheiro <<Value Object>> {
     }
 
     class Icon <<Value Object>> {
@@ -76,30 +69,31 @@ package "Shared " <<shared>> {
 
 ' Conta connections
 Conta "1" --> "0..*" Transacao: regista
-Conta "1" --> "0..1" Icon: identificada por
-Conta "1" --> "1" ValorInicial: aberta com
-Conta "1" --> "1" Total: apresenta saldo
-Conta "1" --> "1" Nome: designada como
+Conta "1" ---> "0..1" Icon: identificada por
+Conta "1" ---> "1" Dinheiro: aberta com
+Conta "1" ---> "1" Dinheiro: apresenta saldo
+Conta "1" ---> "1" Nome: designada como
 
 ' CartaoCredito connections
-CartaoCredito "1" --> "0..1" Icon: utiliza
+CartaoCredito "1" ---> "0..1" Icon: utiliza
 CartaoCredito "1" --> "1" Conta: debita em
-CartaoCredito "1" --> "1" ValorInicial: inicia com
-CartaoCredito "1" --> "1" Total: acumula gasto
-CartaoCredito "1" --> "1" Nome: apelidado de
+CartaoCredito "1" ---> "1" Dinheiro: inicia com
+CartaoCredito "1" ---> "1" Dinheiro: acumula gasto
+CartaoCredito "1" ---> "1" Nome: apelidado de
 CartaoCredito "1" --> "0..*" Transacao: origina
 
 ' Categoria connections
-Categoria "1" --> "0..1" Icon: ilustrada por
-Categoria "1" --> "1" Nome: denominada
+Categoria "1" ---> "0..1" Icon: ilustrada por
+Categoria "1" ---> "1" Nome: denominada
 
 ' Banco connections
-Banco "1" --> "0..1" Icon: ostenta marca
+Banco "1" ---> "0..1" Icon: ostenta marca
 Banco "1" --> "1..*" Conta: custodia
-Banco "1" --> "1" Nome: chamado
-Banco "1" --> "1" Total: detém montante de
+Banco "1" ---> "1" Nome: chamado
+Banco "1" ---> "1" Dinheiro: detém montante de
 
 ' Transaction cross-reference
 Transacao "1" --> "1" Categoria: enquadra-se em
+Transacao "1" ---> "1" Dinheiro: movimenta
 
 @enduml

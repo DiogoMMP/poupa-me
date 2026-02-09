@@ -45,6 +45,11 @@ export default {
         categoria: {
             name: 'CategoriaRepo',
             path: '../repos/CategoriaRepo.js'
+        },
+
+        transacao: {
+            name: 'TransacaoRepo',
+            path: '../repos/TransacaoRepo.js'
         }
     },
 
@@ -57,6 +62,11 @@ export default {
         categoria: {
             name: 'CategoriaService',
             path: '../services/CategoriaService.js'
+        },
+
+        transacao: {
+            name: 'TransacaoService',
+            path: '../services/TransacaoService.js'
         }
     },
 
@@ -69,6 +79,11 @@ export default {
         categoria: {
             name: 'CategoriaController',
             path: '../controllers/CategoriaController.js'
+        },
+
+        transacao: {
+            name: 'TransacaoController',
+            path: '../controllers/TransacaoController.js'
         }
     },
 
