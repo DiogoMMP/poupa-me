@@ -9,6 +9,7 @@ import {Reembolso} from "../ValueObjects/Reembolso.js";
 import {UniqueEntityID} from "../../../core/domain/UniqueEntityID.js";
 import {Guard} from "../../../core/logic/Guard.js";
 import {Result} from "../../../core/logic/Result.js";
+import type {Conta} from '../../Conta/Entities/Conta.js';
 
 interface TransacaoProps {
     descricao: Descricao;
@@ -17,6 +18,7 @@ interface TransacaoProps {
     tipo: Tipo;
     categoria: Categoria;
     status: Status;
+    conta?: Conta;
     reembolso?: Reembolso;
 }
 
@@ -47,6 +49,10 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
 
     get reembolso(): Reembolso | undefined {
         return this.props.reembolso;
+    }
+
+    get conta(): Conta | undefined {
+        return this.props.conta;
     }
 
     private constructor(props: TransacaoProps, id?: UniqueEntityID) {

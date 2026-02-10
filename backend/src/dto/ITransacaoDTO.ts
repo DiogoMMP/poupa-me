@@ -20,6 +20,7 @@ export interface ITransacaoDTO {
     categoria: ICategoriaDTO;
     status: string;
     reembolso?: string;
+    contaId?: string;
     userId: string;
 }
 
@@ -28,6 +29,7 @@ export interface ITransacaoInputDTO {
     descricao: string;
     valor: IDinheiroProps;
     categoriaId: string;
+    contaId?: string;
     userId?: string; // will be set by controller from authenticated user
 }
 
@@ -37,6 +39,7 @@ export interface ITransacaoReembolsoDTO {
     valor: IDinheiroProps;
     categoriaId: string;
     reembolso: string;
+    contaId?: string;
     userId?: string;
 }
 
@@ -48,4 +51,5 @@ export interface ITransacaoUpdateDTO {
     categoriaId?: string;
     status?: string;
     reembolso?: string;
+    contaId?: string;
 }

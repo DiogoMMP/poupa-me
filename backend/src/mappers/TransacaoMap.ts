@@ -8,6 +8,7 @@ import { Tipo } from '../domain/Transacao/ValueObjects/Tipo.js';
 import { Status } from '../domain/Transacao/ValueObjects/Status.js';
 import { Reembolso } from '../domain/Transacao/ValueObjects/Reembolso.js';
 import { CategoriaMap } from './CategoriaMap.js';
+import { ContaMap } from './ContaMap.js';
 import { UniqueEntityID } from '../core/domain/UniqueEntityID.js';
 import type { ITransacaoDTO } from '../dto/ITransacaoDTO.js';
 
@@ -81,6 +82,15 @@ export class TransacaoMap extends Mapper<Transacao> {
             throw new Error('TransacaoMap.toDomain: missing categoria'); // category required
         }
 
+        // Conta (optional)
+        let contaDomain = null;
+        if (r['conta']) {
+            contaDomain = await ContaMap.toDomain(r['conta']);
+            if (!contaDomain) throw new Error('TransacaoMap.toDomain: failed to map nested conta');
+        } else if (r['contaId'] || r['conta_id']) {
+            contaDomain = (await ContaMap.toDomain({ id: r['contaId'] ?? r['conta_id'] })) || null;
+        }
+
         // Reembolso (optional)
         let reembolsoResult: Result<Reembolso> | null = null;
         const reembolsoRaw = r['originalTransactionId'] ?? r['original_transaction_id'] ?? r['original_transactionid'];
@@ -118,6 +128,7 @@ export class TransacaoMap extends Mapper<Transacao> {
                 tipo: tipoResult.getValue(),
                 categoria: categoriaDomain,
                 status: statusResult.getValue(),
+                ...(contaDomain ? { conta: contaDomain } : {}),
                 reembolso: reembolsoResult ? reembolsoResult.getValue() : undefined
             },
             new UniqueEntityID(String(r['domainId'] ?? r['id']))
@@ -133,6 +144,12 @@ export class TransacaoMap extends Mapper<Transacao> {
         // Preserve originalTransactionId on the returned domain object (non-domain prop) so DTO mapping can use it when necessary
         if (reembolsoRaw) {
             (domainObj as unknown as Record<string, unknown>)['originalTransactionId'] = String(reembolsoRaw);
+        }
+
+        if (contaDomain) {
+            (domainObj as unknown as Record<string, unknown>)['contaId'] = contaDomain.id.toString();
+        } else if (r['contaId'] || r['conta_id']) {
+            (domainObj as unknown as Record<string, unknown>)['contaId'] = String(r['contaId'] ?? r['conta_id']);
         }
 
         return domainObj;
@@ -157,6 +174,8 @@ export class TransacaoMap extends Mapper<Transacao> {
             },
             tipo: transacao.tipo.value,
             categoriaId: transacao.categoria.id.toString(),
+            // allow a non-domain attached property 'contaId' (string) so callers can set conta without constructing a Conta domain
+            contaId: transacao.conta ? transacao.conta.id.toString() : (transacao as unknown as Record<string, unknown>)['contaId'] ?? undefined,
             status: transacao.status.value,
             reembolso: transacao.reembolso ? transacao.reembolso.originalTransactionId.toString() : undefined,
             userDomainId: userDomainId ?? undefined
@@ -190,6 +209,7 @@ export class TransacaoMap extends Mapper<Transacao> {
             categoria: CategoriaMap.toDTO(transacao.categoria),
             status: transacao.status.value,
             reembolso: reembolsoValue,
+            contaId: (transacao as unknown as Record<string, unknown>)['contaId'] ?? undefined,
             userId: userDomainId
         } as ITransacaoDTO;
     }

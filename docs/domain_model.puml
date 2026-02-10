@@ -70,14 +70,12 @@ package "Shared " <<shared>> {
 ' Conta connections
 Conta "1" --> "0..*" Transacao: regista
 Conta "1" ---> "0..1" Icon: identificada por
-Conta "1" ---> "1" Dinheiro: aberta com
 Conta "1" ---> "1" Dinheiro: apresenta saldo
 Conta "1" ---> "1" Nome: designada como
 
 ' CartaoCredito connections
 CartaoCredito "1" ---> "0..1" Icon: utiliza
 CartaoCredito "1" --> "1" Conta: debita em
-CartaoCredito "1" ---> "1" Dinheiro: inicia com
 CartaoCredito "1" ---> "1" Dinheiro: acumula gasto
 CartaoCredito "1" ---> "1" Nome: apelidado de
 CartaoCredito "1" --> "0..*" Transacao: origina

@@ -60,23 +60,42 @@ export default async ({expressApp}: { expressApp: Application }) => {
         path: config.services.transacao.path
     };
 
+
+    const contaController = {
+        name: config.controllers.conta.name,
+        path: config.controllers.conta.path
+    };
+
+    const contaService = {
+        name: config.services.conta.name,
+        path: config.services.conta.path
+    }
+
+    const contaRepo = {
+        name: config.repos.conta.name,
+        path: config.repos.conta.path
+    }
+
     await dependencyInjectorLoader({
         dataSource: dataSource as any,
         schemas: [],
         controllers: [
             authController,
             categoriaController,
-            transacaoController
+            transacaoController,
+            contaController
         ],
         repos: [
             userRepo,
             categoriaRepo,
-            transacaoRepo
+            transacaoRepo,
+            contaRepo
         ],
         services: [
             authService,
             categoriaService,
-            transacaoService
+            transacaoService,
+            contaService
         ]
     } as any);
     Logger.info('✌️ Entities, Controllers, Repositories, Services, etc. loaded');

@@ -50,6 +50,11 @@ export default {
         transacao: {
             name: 'TransacaoRepo',
             path: '../repos/TransacaoRepo.js'
+        },
+
+        conta: {
+            name: 'ContaRepo',
+            path: '../repos/ContaRepo.js'
         }
     },
 
@@ -67,6 +72,11 @@ export default {
         transacao: {
             name: 'TransacaoService',
             path: '../services/TransacaoService.js'
+        },
+
+        conta: {
+            name: 'ContaService',
+            path: '../services/ContaService.js'
         }
     },
 
@@ -84,6 +94,11 @@ export default {
         transacao: {
             name: 'TransacaoController',
             path: '../controllers/TransacaoController.js'
+        },
+
+        conta: {
+            name: 'ContaController',
+            path: '../controllers/ContaController.js'
         }
     },
 

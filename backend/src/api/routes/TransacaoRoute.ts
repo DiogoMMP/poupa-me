@@ -48,6 +48,11 @@ const route = Router();
  *           enum: ["Pendente","Concluído"]
  *         categoria:
  *           $ref: '#/components/schemas/Categoria'
+ *         conta:
+ *           $ref: '#/components/schemas/Conta'
+ *         contaId:
+ *           type: string
+ *           description: Domain id of the associated account (when present)
  *         reembolso:
  *           type: string
  *           nullable: true
@@ -56,7 +61,7 @@ const route = Router();
  *           description: Domain id of the owning user
  *     TransacaoInput:
  *       type: object
- *       required: [data, descricao, valor, categoriaId]
+ *       required: [data, descricao, valor, categoriaId, contaId]
  *       properties:
  *         data:
  *           $ref: '#/components/schemas/IData'
@@ -66,10 +71,13 @@ const route = Router();
  *           $ref: '#/components/schemas/IDinheiroProps'
  *         categoriaId:
  *           type: string
+ *         contaId:
+ *           type: string
+ *           description: Domain id of the account where the transaction will be registered
  *      # userId will be set by the server from the authenticated user; clients SHOULD NOT provide it.
  *     TransacaoReembolsoInput:
  *       type: object
- *       required: [data, descricao, valor, categoriaId, reembolso]
+ *       required: [data, descricao, valor, categoriaId, reembolso, contaId]
  *       properties:
  *         data:
  *           $ref: '#/components/schemas/IData'
@@ -81,6 +89,9 @@ const route = Router();
  *           type: string
  *         reembolso:
  *           type: string
+ *         contaId:
+ *           type: string
+ *           description: Domain id of the account where the reembolso will be registered
  *     TransacaoUpdate:
  *       type: object
  *       properties:
@@ -94,6 +105,8 @@ const route = Router();
  *           type: string
  *           enum: ["Entrada","Saída","Crédito","Reembolso","Despesa Mensal"]
  *         categoriaId:
+ *           type: string
+ *         contaId:
  *           type: string
  *         status:
  *           type: string

@@ -8,6 +8,7 @@ import {
     JoinColumn
 } from 'typeorm';
 import { CategoriaEntity } from './CategoriaEntity.js';
+import { ContaEntity } from './ContaEntity.js';
 
 @Entity({ name: 'transacao' })
 export class TransacaoEntity {
@@ -47,6 +48,13 @@ export class TransacaoEntity {
 
     @Column({ name: 'categoria_id' })
     categoriaId!: number;
+
+    @ManyToOne(() => ContaEntity, { eager: false })
+    @JoinColumn({ name: 'conta_id' })
+    conta?: ContaEntity;
+
+    @Column({ name: 'conta_id', type: 'int', nullable: true })
+    contaId?: number;
 
     @Column({ name: 'original_transaction_id', type: 'varchar', length: 50, nullable: true })
     originalTransactionId?: string;

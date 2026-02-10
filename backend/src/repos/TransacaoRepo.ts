@@ -5,6 +5,7 @@ import { TransacaoMap } from '../mappers/TransacaoMap.js';
 import { TransacaoEntity } from '../persistence/entities/TransacaoEntity.js';
 import { Transacao } from '../domain/Transacao/Entities/Transacao.js';
 import { CategoriaEntity } from '../persistence/entities/CategoriaEntity.js';
+import { ContaEntity } from '../persistence/entities/ContaEntity.js';
 
 /**
  * Repository for managing Transacao entities in the database using TypeORM.
@@ -40,9 +41,10 @@ export default class TransacaoRepo implements ITransacaoRepo {
             const valor = (raw['valor'] ?? {}) as { valor?: number; moeda?: string };
             const originalTransactionId = raw['reembolso'] ? String(raw['reembolso']) : undefined;
             const userDomainId = raw['userDomainId'] ? String(raw['userDomainId']) : undefined;
+            const contaDomainId = raw['contaId'] ? String(raw['contaId']) : undefined;
 
-            // create entity and set relation
-            const entity = this.repo.create({
+            // Prepare entity object; we'll possibly fill userDomainId from contaRow if missing
+            const entityObj: Record<string, unknown> = {
                 domainId: raw['domainId'],
                 descricao: raw['descricao'],
                 dia: data.dia ?? 0,
@@ -54,22 +56,44 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 status: raw['status'],
                 categoria: categoriaRow,
                 categoriaId: categoriaRow.id,
-                originalTransactionId: originalTransactionId,
-                userDomainId: userDomainId
-            } as unknown as TransacaoEntity);
+                originalTransactionId: originalTransactionId
+            } as Record<string, unknown>;
+
+            // if contaId provided, resolve ContaEntity and attach
+            let contaRow: ContaEntity | null = null;
+            if (contaDomainId) {
+                const contaRepo = this.dataSource.getRepository(ContaEntity);
+                contaRow = await contaRepo.findOne({ where: { domainId: contaDomainId } });
+                if (!contaRow) throw new Error('Conta not found for transacao');
+                entityObj['conta'] = contaRow;
+                entityObj['contaId'] = contaRow.id;
+            }
+
+            // determine userDomainId: prefer explicit value from mapped raw, otherwise derive from contaRow.userDomainId if available
+            const userDomainIdVal = userDomainId ?? (contaRow ? contaRow.userDomainId : undefined) ?? (raw['user_domain_id'] ?? raw['userId'] ?? raw['userDomainId']);
+
+            if (!userDomainIdVal) {
+                this.logger.error('TransacaoRepo.save: missing userDomainId for transacao raw=%o, contaRow=%o', raw, contaRow);
+                throw new Error('Missing userDomainId: authenticated user id was not provided in request nor could be derived from target account');
+            }
+
+            entityObj['userDomainId'] = String(userDomainIdVal);
+
+            const entity = this.repo.create(entityObj as unknown as TransacaoEntity);
 
             const saved = await this.repo.save(entity);
             if (!saved) throw new Error('Failed to save transacao');
 
             // Re-fetch with relations to ensure categoria relation is present and DB types are accurate
-            const persisted = await this.repo.findOne({ where: { id: (saved as TransacaoEntity).id }, relations: ['categoria'] });
+            const persisted = await this.repo.findOne({ where: { id: (saved as TransacaoEntity).id }, relations: ['categoria', 'conta'] });
             if (!persisted) throw new Error('Failed to re-fetch saved transacao');
 
             // map persisted entity to domain; include userDomainId explicitly
             const savedRaw: Record<string, unknown> = {
                 ...(persisted as unknown as Record<string, unknown>),
                 userDomainId: (persisted as TransacaoEntity).userDomainId,
-                categoria: (persisted as TransacaoEntity).categoria ?? categoriaRow
+                categoria: (persisted as TransacaoEntity).categoria ?? categoriaRow,
+                conta: (persisted as TransacaoEntity).conta ?? undefined
             };
             const domain = await TransacaoMap.toDomain(savedRaw);
             if (!domain) {
@@ -101,8 +125,17 @@ export default class TransacaoRepo implements ITransacaoRepo {
             const valor = (raw['valor'] ?? {}) as { valor?: number; moeda?: string };
             const originalTransactionId = raw['reembolso'] ? String(raw['reembolso']) : undefined;
             const userDomainId = raw['userDomainId'] ? String(raw['userDomainId']) : undefined;
+            const contaDomainId = raw['contaId'] ? String(raw['contaId']) : undefined;
 
             if (raw['domainId']) {
+                // If a contaId was provided, resolve the ContaEntity first and ensure it exists
+                let contaRowForUpdate: ContaEntity | null = null;
+                if (raw['contaId']) {
+                    const contaRepo = this.dataSource.getRepository(ContaEntity);
+                    contaRowForUpdate = await contaRepo.findOne({ where: { domainId: String(raw['contaId']) } });
+                    if (!contaRowForUpdate) throw new Error('Conta not found for transacao');
+                }
+
                 await this.repo.createQueryBuilder()
                     .update(TransacaoEntity)
                     .set({
@@ -115,14 +148,15 @@ export default class TransacaoRepo implements ITransacaoRepo {
                         tipo: String(raw['tipo'] ?? ''),
                         status: String(raw['status'] ?? ''),
                         categoriaId: categoriaRow.id,
+                        contaId: contaRowForUpdate ? contaRowForUpdate.id : undefined,
                         originalTransactionId: originalTransactionId
                     })
                     .where('domain_id = :domainId', { domainId: raw['domainId'] })
                     .execute();
 
-                const saved = await this.repo.findOne({ where: { domainId: raw['domainId'] as string }, relations: ['categoria'] });
+                const saved = await this.repo.findOne({ where: { domainId: raw['domainId'] as string }, relations: ['categoria', 'conta'] });
                 if (!saved) throw new Error('Failed to find updated transacao by domainId');
-                const savedRaw: Record<string, unknown> = { ...(saved as unknown as Record<string, unknown>), userDomainId: (saved as TransacaoEntity).userDomainId, categoria: (saved as TransacaoEntity).categoria ?? categoriaRow };
+                const savedRaw: Record<string, unknown> = { ...(saved as unknown as Record<string, unknown>), userDomainId: (saved as TransacaoEntity).userDomainId, categoria: (saved as TransacaoEntity).categoria ?? categoriaRow, conta: (saved as TransacaoEntity).conta ?? undefined };
                 const domain = await TransacaoMap.toDomain(savedRaw);
                 if (!domain) {
                     this.logger.error('TransacaoRepo.update: failed to map savedRaw to domain. savedRaw=%o', savedRaw);
@@ -132,7 +166,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
             }
 
             // Fallback: save (may insert)
-            const entity = this.repo.create({
+            const entityObj2: Record<string, unknown> = {
                 domainId: raw['domainId'],
                 descricao: raw['descricao'],
                 dia: data.dia ?? 0,
@@ -146,11 +180,19 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 categoriaId: categoriaRow.id,
                 originalTransactionId: originalTransactionId,
                 userDomainId: userDomainId
-            } as unknown as TransacaoEntity);
+            } as Record<string, unknown>;
+            if (contaDomainId) {
+                const contaRepo = this.dataSource.getRepository(ContaEntity);
+                const contaRow = await contaRepo.findOne({ where: { domainId: contaDomainId } });
+                if (!contaRow) throw new Error('Conta not found for transacao');
+                entityObj2['conta'] = contaRow;
+                entityObj2['contaId'] = contaRow.id;
+            }
+            const entity = this.repo.create(entityObj2 as unknown as TransacaoEntity);
 
             const saved = await this.repo.save(entity);
             if (!saved) throw new Error('Failed to update transacao');
-            const savedRaw: Record<string, unknown> = { ...(saved as unknown as Record<string, unknown>), userDomainId: (saved as TransacaoEntity).userDomainId, categoria: (saved as TransacaoEntity).categoria ?? categoriaRow };
+            const savedRaw: Record<string, unknown> = { ...(saved as unknown as Record<string, unknown>), userDomainId: (saved as TransacaoEntity).userDomainId, categoria: (saved as TransacaoEntity).categoria ?? categoriaRow, conta: (saved as TransacaoEntity).conta ?? undefined };
             const domain = await TransacaoMap.toDomain(savedRaw);
             if (!domain) {
                 this.logger.error('TransacaoRepo.update (fallback save): failed to map savedRaw to domain. savedRaw=%o', savedRaw);
@@ -182,7 +224,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
      */
     public async findById(transacaoId: string): Promise<Transacao | null> {
         try {
-            const row = await this.repo.findOne({ where: { domainId: transacaoId }, relations: ['categoria'] });
+            const row = await this.repo.findOne({ where: { domainId: transacaoId }, relations: ['categoria', 'conta'] });
             if (!row) return null;
             // include user_domain_id in raw for mapping
             const rowEntity = row as TransacaoEntity;
@@ -203,11 +245,12 @@ export default class TransacaoRepo implements ITransacaoRepo {
             if (userId) {
                 rows = await this.repo.createQueryBuilder('t')
                     .leftJoinAndSelect('t.categoria', 'c')
+                    .leftJoinAndSelect('t.conta', 'co')
                     .where('t.user_domain_id = :userId', { userId })
                     .orderBy('t.id', 'ASC')
                     .getMany();
             } else {
-                rows = await this.repo.find({ order: { id: 'ASC' }, relations: ['categoria'] });
+                rows = await this.repo.find({ order: { id: 'ASC' }, relations: ['categoria', 'conta'] });
             }
             const res: Transacao[] = [];
             for (const r of rows) {
@@ -234,6 +277,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
              // Find transactions whose category has the given domainId
              const qb = this.repo.createQueryBuilder('t')
                  .leftJoinAndSelect('t.categoria', 'c')
+                 .leftJoinAndSelect('t.conta', 'co')
                  .where('c.domain_id = :domainId', { domainId: categoriaId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.id', 'ASC').getMany();
@@ -261,6 +305,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
         try {
             const qb = this.repo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.conta', 'co')
                 .where('t.tipo = :tipo', { tipo });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.id', 'ASC').getMany();
@@ -287,6 +332,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
         try {
             const qb = this.repo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.conta', 'co')
                 .where('t.status = :status', { status });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.id', 'ASC').getMany();
@@ -314,6 +360,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
         try {
              const qb = this.repo.createQueryBuilder('t')
                  .leftJoinAndSelect('t.categoria', 'c')
+                 .leftJoinAndSelect('t.conta', 'co')
                  .where('t.created_at BETWEEN :start AND :end', { start: startDate, end: endDate });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.id', 'ASC').getMany();
@@ -332,3 +379,4 @@ export default class TransacaoRepo implements ITransacaoRepo {
         }
     }
 }
+
