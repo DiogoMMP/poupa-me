@@ -6,6 +6,7 @@ import Logger from './logger.js';
 import {CategoriaEntity} from "../persistence/entities/CategoriaEntity.js";
 import {TransacaoEntity} from "../persistence/entities/TransacaoEntity.js";
 import {ContaEntity} from "../persistence/entities/ContaEntity.js";
+import {CartaoCreditoEntity} from "../persistence/entities/CartaoCreditoEntity.js";
 
 export default async function createTypeOrmDataSource(): Promise<DataSource> {
   if (!config.postgresURL) {
@@ -15,7 +16,7 @@ export default async function createTypeOrmDataSource(): Promise<DataSource> {
   const dataSource = new DataSource({
     type: 'postgres',
     url: config.postgresURL,
-    entities: [UserEntity, CategoriaEntity, TransacaoEntity, ContaEntity],
+    entities: [UserEntity, CategoriaEntity, TransacaoEntity, ContaEntity, CartaoCreditoEntity],
     synchronize: true, // for dev only; change to migrations in prod
     logging: false
   });

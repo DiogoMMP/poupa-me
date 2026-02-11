@@ -6,7 +6,6 @@ import { Icon } from '../domain/Shared/ValueObjects/Icon.js';
 import { Dinheiro } from '../domain/Shared/ValueObjects/Dinheiro.js';
 import { UniqueEntityID } from '../core/domain/UniqueEntityID.js';
 import type { IContaDTO } from '../dto/IContaDTO.js';
-import type { ITransacaoDTO } from '../dto/ITransacaoDTO.js';
 
 /**
  * Mapper for Conta aggregate: persistence <-> domain <-> DTO
@@ -16,7 +15,9 @@ export class ContaMap extends Mapper<Conta> {
         if (!raw) return null;
         const r = raw as Record<string, unknown>;
 
-        const userId = new UniqueEntityID(String(r['user_domain_id'] ?? r['userId'] ?? r['userId'] ?? ''));
+        // Read authenticated owner id from DB/raw object: prefer snake_case column but accept camelCase entity prop
+        const userIdRaw = String(r['user_domain_id'] ?? r['userDomainId'] ?? r['userId'] ?? '');
+        const userId = new UniqueEntityID(userIdRaw || '');
         const nomeResult = Nome.create(String(r['nome'] ?? r['name'] ?? ''));
         const iconResult = Icon.create(String(r['icon'] ?? ''));
         const saldoRaw = r['saldo'] as Record<string, unknown> | undefined;
@@ -27,13 +28,11 @@ export class ContaMap extends Mapper<Conta> {
         const combined = Result.combine([nomeResult, iconResult, dinheiroResult]);
         if (combined.isFailure) return null;
 
-        // Avoid mapping nested transactions here to prevent circular imports; pass empty array.
         const contaOrError = Conta.create({
             userId,
             nome: nomeResult.getValue(),
             icon: iconResult.getValue(),
-            saldo: dinheiroResult.getValue(),
-            transacoes: []
+            saldo: dinheiroResult.getValue()
         }, new UniqueEntityID(String(r['domainId'] ?? r['id'])));
 
         return contaOrError.isSuccess ? contaOrError.getValue() : null;
@@ -54,7 +53,7 @@ export class ContaMap extends Mapper<Conta> {
     }
 
     /**
-     * Maps a Conta domain entity to a DTO for API responses. This includes mapping nested transactions to their IDs to avoid circular references.
+     * Maps a Conta domain entity to a DTO for API responses.
      * @param conta The Conta domain entity to map
      */
     public static toDTO(conta: Conta): IContaDTO {
@@ -63,11 +62,7 @@ export class ContaMap extends Mapper<Conta> {
             userId: conta.userId.toString(),
             nome: conta.nome.value,
             icon: conta.icon.value,
-            saldo: { valor: conta.saldo.value, moeda: conta.saldo.moeda },
-            transacoes: conta.transacoes.map(t => {
-                const maybe = t as unknown as { id?: unknown };
-                return maybe.id !== undefined ? ({ id: String(maybe.id) } as unknown as ITransacaoDTO) : ({} as unknown as ITransacaoDTO);
-            })
+            saldo: { valor: conta.saldo.value, moeda: conta.saldo.moeda }
         } as IContaDTO;
     }
 }

@@ -203,11 +203,11 @@ export default (app: Router) => {
   /**
    * @openapi
    * /auth/{email}:
-   *   put:
+   *   patch:
    *     tags:
    *       - Auth
-   *     summary: Update a user
-   *     description: Update user fields (name, password). The email path parameter identifies the user and cannot be changed.
+   *     summary: Update a user (partial)
+   *     description: Partially update user fields (name, password). The email path parameter identifies the user and cannot be changed.
    *     security:
    *       - bearerAuth: []
    *     parameters:
@@ -232,7 +232,7 @@ export default (app: Router) => {
    *       400:
    *         description: Validation or update error
    */
-  route.put('/:email', isAuth, (req, res, next) => ctrl.updateUser(req as AuthenticatedRequest, res, next));
+  route.patch('/:email', isAuth, (req, res, next) => ctrl.updateUser(req as AuthenticatedRequest, res, next));
 
   /**
    * @openapi

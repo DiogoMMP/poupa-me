@@ -3,6 +3,7 @@ import authRoute from "./routes/AuthRoute.js";
 import categoriaRoute from "./routes/CategoriaRoute.js";
 import transacaoRoute from "./routes/TransacaoRoute.js";
 import contaRoute from "./routes/ContaRouter.js";
+import cartaoCreditoRoute from "./routes/CartaoCreditoRoute.js";
 
 export default () => {
 	const app = Router();
@@ -18,6 +19,9 @@ export default () => {
 
 	// Register Conta routes
 	contaRoute(app);
+
+	// Register CartaoCredito routes
+	cartaoCreditoRoute(app);
 
 	return app
 }

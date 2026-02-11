@@ -9,11 +9,13 @@ export default interface ITransacaoController {
 
     createSaida(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
-    createReembolso(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
-
     createCredito(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
+    createReembolso(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+
     createDespesaMensal(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+
+    concluirDespesaMensal(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
     updateTransacao(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
@@ -21,14 +23,23 @@ export default interface ITransacaoController {
 
     getTransacaoById(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
-    getTransacaoByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    // Get all by type
+    getContaTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    getCartaoTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    getDespesaMensal(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
-    getTransacaoByTipo(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    // Filter by categoria
+    getContaTransactionsByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    getCartaoTransactionsByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    getDespesaMensalByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
-    getTransacaoByStatus(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    // Filter by status
+    getCartaoTransactionsByStatus(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    getDespesaMensalByStatus(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
-    getTransacaoByDateRange(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
-
-    getAllTransacoes(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    // Filter by period
+    getContaTransactionsByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    getCartaoTransactionsByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    getDespesaMensalByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 }
 

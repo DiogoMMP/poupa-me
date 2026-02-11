@@ -52,24 +52,6 @@ export default class TransacaoController implements ITransacaoController {
     }
 
     /**
-     * Handles the creation of a new Reembolso transaction linked to an original transaction
-     * @param req Express request object containing the transaction data in the body, including the original transaction id (reembolso)
-     * @param res Express response object used to send back the result
-     * @param next Express next function for error handling
-     */
-    public async createReembolso(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const inputDTO = req.body as ITransacaoReembolsoDTO;
-            inputDTO.userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.createReembolso(inputDTO);
-            if (result.isFailure) return res.status(400).json({ error: result.error });
-            return res.status(201).json(result.getValue());
-        } catch (e) {
-            next(e);
-        }
-    }
-
-    /**
      * Handles the creation of a new Crédito transaction
      * @param req Express request object containing the transaction data in the body
      * @param res Express response object used to send back the result
@@ -80,6 +62,24 @@ export default class TransacaoController implements ITransacaoController {
             const inputDTO = req.body as ITransacaoInputDTO;
             inputDTO.userId = (req as AuthenticatedRequest).currentUser?.id;
             const result = await this.transacaoService.createCredito(inputDTO);
+            if (result.isFailure) return res.status(400).json({ error: result.error });
+            return res.status(201).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles the creation of a new Reembolso transaction
+     * @param req Express request object containing the transaction data in the body
+     * @param res Express response object used to send back the result
+     * @param next Express next function for error handling
+     */
+    public async createReembolso(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const inputDTO = req.body as ITransacaoReembolsoDTO;
+            inputDTO.userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.createReembolso(inputDTO);
             if (result.isFailure) return res.status(400).json({ error: result.error });
             return res.status(201).json(result.getValue());
         } catch (e) {
@@ -145,6 +145,25 @@ export default class TransacaoController implements ITransacaoController {
     }
 
     /**
+     * Handles concluding a Despesa Mensal (change from Pendente to Concluído and subtract from destination account)
+     * @param req Express request object containing the transaction ID in the URL parameters
+     * @param res Express response object used to send back the result
+     * @param next Express next function for error handling
+     */
+    public async concluirDespesaMensal(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const id = req.params.id as string;
+            if (!id) return res.status(400).json({ error: 'Transaction ID is required' });
+
+            const result = await this.transacaoService.concluirDespesaMensal(id);
+            if (result.isFailure) return res.status(400).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
      * Handles retrieving a Transacao by its domain ID. The ID can be provided in the URL parameters or query parameters.
      * @param req Express request object containing the transaction ID in the URL parameters or query parameters
      * @param res Express response object used to send back the result
@@ -163,106 +182,226 @@ export default class TransacaoController implements ITransacaoController {
         }
     }
 
-    /**
-     * Handles retrieving transactions by category. The category ID can be provided in the URL parameters or query parameters using keys like "categoriaId" or "categoria".
-     * @param req Express request object containing the category ID in the URL parameters or query parameters
-     * @param res Express response object used to send back the result
-     * @param next Express next function for error handling
-     */
-    public async getTransacaoByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const categoriaId = (req.query.categoriaId || req.params.categoriaId || req.query.categoria || req.params.categoria) as string;
-            if (!categoriaId) return res.status(400).json({ error: 'Categoria ID is required' });
-
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.findTransacaoByCategoria(categoriaId, userId);
-            if (result.isFailure) return res.status(404).json({ error: result.error });
-            return res.status(200).json(result.getValue());
-        } catch (e) {
-            next(e);
-        }
-    }
+    // --- Query Methods: Get All by Type ---
 
     /**
-     * Handles retrieving transactions by tipo (e.g., "Entrada", "Saída", "Crédito"). The tipo can be provided in the URL parameters or query parameters using keys like "tipo".
-     * @param req Express request object containing the tipo in the URL parameters or query parameters
-     * @param res Express response object used to send back the result
-     * @param next Express next function for error handling
+     * Handles retrieving all Entrada/Saída transactions (conta-based) for a specific account
      */
-    public async getTransacaoByTipo(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+    public async getContaTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const tipo = (req.query.tipo || req.params.tipo) as string;
-            if (!tipo) return res.status(400).json({ error: 'Tipo is required' });
+            const contaId = (req.query.contaId || req.params.contaId) as string;
+            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
 
             const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.findTransacaoByTipo(tipo, userId);
-            if (result.isFailure) return res.status(404).json({ error: result.error });
-            return res.status(200).json(result.getValue());
-        } catch (e) {
-            next(e);
-        }
-    }
-
-    /**
-     * Handles retrieving transactions by status (e.g., "Pendente", "Concluído"). The status can be provided in the URL parameters or query parameters using keys
-     * @param req Express request object containing the status in the URL parameters or query parameters
-     * @param res Express response object used to send back the result
-     * @param next Express next function for error handling
-     */
-    public async getTransacaoByStatus(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const status = (req.query.status || req.params.status) as string;
-            if (!status) return res.status(400).json({ error: 'Status is required' });
-
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.findTransacaoByStatus(status, userId);
-            if (result.isFailure) return res.status(404).json({ error: result.error });
-            return res.status(200).json(result.getValue());
-        } catch (e) {
-            next(e);
-        }
-    }
-
-    /**
-     * Handles retrieving transactions that fall within a specified date range. The start and end dates can be provided in the query parameters using keys like "start" & "end" or "from" & "to". The method validates the presence and format of the dates, converts them to the expected IData shape, and then calls the service to retrieve the transactions within that date range.
-     * @param req Express request object containing the start and end dates in the query parameters
-     * @param res Express response object used to send back the result
-     * @param next Express next function for error handling
-     */
-    public async getTransacaoByDateRange(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const start = (req.query.start || req.query.from) as string;
-            const end = (req.query.end || req.query.to) as string;
-            if (!start || !end) return res.status(400).json({ error: 'Start and end dates are required (query: start & end)' });
-
-            const startDate = new Date(start);
-            const endDate = new Date(end);
-            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return res.status(400).json({ error: 'Invalid date format' });
-
-            // convert to IData shape expected by the service
-            const startIData = { dia: startDate.getDate(), mes: startDate.getMonth() + 1, ano: startDate.getFullYear() };
-            const endIData = { dia: endDate.getDate(), mes: endDate.getMonth() + 1, ano: endDate.getFullYear() };
-
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.findTransacaoByDateRange(startIData, endIData, userId);
-            if (result.isFailure) return res.status(404).json({ error: result.error });
-            return res.status(200).json(result.getValue());
-        } catch (e) {
-            next(e);
-        }
-    }
-
-    /**
-     * Handles retrieving all transactions. This method does not require any parameters and simply calls the service to get all transactions, returning them in the response.
-     * @param req Express request object (not used in this method but included for consistency)
-     * @param res Express response object used to send back the result
-     * @param next Express next function for error handling
-     */
-    public async getAllTransacoes(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.findAllTransacoes(userId);
+            const result = await this.transacaoService.findContaTransactions(contaId, userId);
             if (result.isFailure) return res.status(500).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles retrieving all Crédito/Reembolso transactions (cartão-based) for a specific credit card
+     */
+    public async getCartaoTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const cartaoCreditoId = (req.query.cartaoCreditoId || req.params.cartaoCreditoId) as string;
+            if (!cartaoCreditoId) return res.status(400).json({ error: 'cartaoCreditoId is required' });
+
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.findCartaoTransactions(cartaoCreditoId, userId);
+            if (result.isFailure) return res.status(500).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles retrieving all Despesa Mensal transactions for a specific account
+     */
+    public async getDespesaMensal(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const contaId = (req.query.contaId || req.params.contaId) as string;
+            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
+
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.findDespesaMensal(contaId, userId);
+            if (result.isFailure) return res.status(500).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    // --- Query Methods: Filter by Categoria ---
+
+    /**
+     * Handles retrieving Entrada/Saída transactions by category for a specific account
+     */
+    public async getContaTransactionsByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const contaId = (req.query.contaId || req.params.contaId) as string;
+            const categoriaId = (req.query.categoriaId || req.params.categoriaId) as string;
+            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
+            if (!categoriaId) return res.status(400).json({ error: 'categoriaId is required' });
+
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.findContaTransactionsByCategoria(contaId, categoriaId, userId);
+            if (result.isFailure) return res.status(404).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles retrieving Crédito/Reembolso transactions by category for a specific credit card
+     */
+    public async getCartaoTransactionsByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const cartaoCreditoId = (req.query.cartaoCreditoId || req.params.cartaoCreditoId) as string;
+            const categoriaId = (req.query.categoriaId || req.params.categoriaId) as string;
+            if (!cartaoCreditoId) return res.status(400).json({ error: 'cartaoCreditoId is required' });
+            if (!categoriaId) return res.status(400).json({ error: 'categoriaId is required' });
+
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.findCartaoTransactionsByCategoria(cartaoCreditoId, categoriaId, userId);
+            if (result.isFailure) return res.status(404).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles retrieving Despesa Mensal transactions by category for a specific account
+     */
+    public async getDespesaMensalByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const contaId = (req.query.contaId || req.params.contaId) as string;
+            const categoriaId = (req.query.categoriaId || req.params.categoriaId) as string;
+            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
+            if (!categoriaId) return res.status(400).json({ error: 'categoriaId is required' });
+
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.findDespesaMensalByCategoria(contaId, categoriaId, userId);
+            if (result.isFailure) return res.status(404).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    // --- Query Methods: Filter by Status (one for cartão, one for despesa mensal) ---
+
+    /**
+     * Handles retrieving Crédito and Reembolso transactions by status for a specific credit card
+     */
+    public async getCartaoTransactionsByStatus(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const cartaoCreditoId = (req.query.cartaoCreditoId || req.params.cartaoCreditoId) as string;
+            const status = (req.query.status || req.params.status) as string;
+            if (!cartaoCreditoId) return res.status(400).json({ error: 'cartaoCreditoId is required' });
+            if (!status) return res.status(400).json({ error: 'status is required' });
+
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.findCartaoTransactionsByStatus(cartaoCreditoId, status, userId);
+            if (result.isFailure) return res.status(404).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles retrieving Despesa Mensal transactions by status for a specific account
+     */
+    public async getDespesaMensalByStatus(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const contaId = (req.query.contaId || req.params.contaId) as string;
+            const status = (req.query.status || req.params.status) as string;
+            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
+            if (!status) return res.status(400).json({ error: 'status is required' });
+
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.findDespesaMensalByStatus(contaId, status, userId);
+            if (result.isFailure) return res.status(404).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    // --- Query Methods: Filter by Period (one per type) ---
+
+    /**
+     * Handles retrieving Entrada/Saída transactions by predefined period for a specific account
+     */
+    public async getContaTransactionsByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const contaId = (req.query.contaId || req.params.contaId) as string;
+            const period = (req.query.period || req.params.period) as string;
+            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
+            if (!period) return res.status(400).json({ error: 'period is required' });
+
+            const validPeriods = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'];
+            if (!validPeriods.includes(period)) {
+                return res.status(400).json({ error: `Period must be one of: ${validPeriods.join(', ')}` });
+            }
+
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.findContaTransactionsByPeriod(contaId, period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId);
+            if (result.isFailure) return res.status(404).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles retrieving Crédito/Reembolso transactions by predefined period for a specific credit card
+     */
+    public async getCartaoTransactionsByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const cartaoCreditoId = (req.query.cartaoCreditoId || req.params.cartaoCreditoId) as string;
+            const period = (req.query.period || req.params.period) as string;
+            if (!cartaoCreditoId) return res.status(400).json({ error: 'cartaoCreditoId is required' });
+            if (!period) return res.status(400).json({ error: 'period is required' });
+
+            const validPeriods = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'];
+            if (!validPeriods.includes(period)) {
+                return res.status(400).json({ error: `Period must be one of: ${validPeriods.join(', ')}` });
+            }
+
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.findCartaoTransactionsByPeriod(cartaoCreditoId, period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId);
+            if (result.isFailure) return res.status(404).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles retrieving Despesa Mensal transactions by predefined period for a specific account
+     */
+    public async getDespesaMensalByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const contaId = (req.query.contaId || req.params.contaId) as string;
+            const period = (req.query.period || req.params.period) as string;
+            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
+            if (!period) return res.status(400).json({ error: 'period is required' });
+
+            const validPeriods = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'];
+            if (!validPeriods.includes(period)) {
+                return res.status(400).json({ error: `Period must be one of: ${validPeriods.join(', ')}` });
+            }
+
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.findDespesaMensalByPeriod(contaId, period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId);
+            if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {
             next(e);

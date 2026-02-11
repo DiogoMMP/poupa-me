@@ -2,14 +2,13 @@ import { Service, Inject } from 'typedi';
 import { Result } from '../core/logic/Result.js';
 import type IContaService from './IServices/IContaService.js';
 import type IContaRepo from '../repos/IRepos/IContaRepo.js';
-import type { IContaDTO, IContaInputDTO } from '../dto/IContaDTO.js';
+import type { IContaDTO, IContaInputDTO, IContaUpdateDTO } from '../dto/IContaDTO.js';
 import { ContaMap } from '../mappers/ContaMap.js';
 import { Nome } from '../domain/Shared/ValueObjects/Nome.js';
 import { Icon } from '../domain/Shared/ValueObjects/Icon.js';
 import { Dinheiro } from '../domain/Shared/ValueObjects/Dinheiro.js';
 import { UniqueEntityID } from '../core/domain/UniqueEntityID.js';
 import { Conta } from '../domain/Conta/Entities/Conta.js';
-import type { Transacao } from '../domain/Transacao/Entities/Transacao.js';
 
 /**
  * Service layer for managing Conta entities. Handles business logic and interacts with the Conta repository.
@@ -42,8 +41,7 @@ export default class ContaService implements IContaService {
                 userId: new UniqueEntityID(String(inputDTO.userId)),
                 nome: nomeOrError.getValue(),
                 icon: iconOrError.getValue(),
-                saldo: dinheiroOrError.getValue(),
-                transacoes: [] as Transacao[]
+                saldo: dinheiroOrError.getValue()
             };
 
             const contaOrError = Conta.create(props);
@@ -59,12 +57,12 @@ export default class ContaService implements IContaService {
     }
 
     /**
-     * Updates an existing Conta with the provided ID using the partial input DTO. Only fields present in the input DTO will be updated; others will remain unchanged.
+     * Updates an existing Conta with the provided ID using the update DTO. Only name and icon can be updated.
      * @param id - The domain ID of the Conta to update.
-     * @param inputDTO - Partial data transfer object containing the fields to update. Can include nome, icon, and/or saldo.
+     * @param inputDTO - Data transfer object containing the fields to update. Can include nome, icon, and/or saldo.
      * @returns A Result object containing the updated Conta DTO on success, or an error message on failure.
      */
-    public async updateConta(id: string, inputDTO: Partial<IContaInputDTO>): Promise<Result<IContaDTO>> {
+    public async updateConta(id: string, inputDTO: IContaUpdateDTO): Promise<Result<IContaDTO>> {
         try {
             const existing = await this.contaRepo.findById(id);
             if (!existing) return Result.fail<IContaDTO>('Conta not found');
@@ -72,9 +70,8 @@ export default class ContaService implements IContaService {
             // Build updated value objects
             const nomeOrError = Nome.create(inputDTO.nome ?? existing.nome.value);
             const iconOrError = Icon.create(inputDTO.icon ?? existing.icon.value);
-            const saldoVal = inputDTO.saldo ? Number(inputDTO.saldo.valor ?? existing.saldo.value) : existing.saldo.value;
-            const moedaVal = inputDTO.saldo ? String(inputDTO.saldo.moeda ?? existing.saldo.moeda) : existing.saldo.moeda;
-            const dinheiroOrError = Dinheiro.create(saldoVal, moedaVal);
+            // Preserve existing saldo when updating via IContaUpdateDTO
+            const dinheiroOrError = Dinheiro.create(existing.saldo.value, existing.saldo.moeda);
 
             const combine = Result.combine([nomeOrError, iconOrError, dinheiroOrError]);
             if (combine.isFailure) return Result.fail<IContaDTO>(combine.errorValue() as string);
@@ -83,8 +80,7 @@ export default class ContaService implements IContaService {
                 userId: existing.userId,
                 nome: nomeOrError.getValue(),
                 icon: iconOrError.getValue(),
-                saldo: dinheiroOrError.getValue(),
-                transacoes: existing.transacoes
+                saldo: dinheiroOrError.getValue()
             };
 
             const updatedOrError = Conta.create(props, existing.id);

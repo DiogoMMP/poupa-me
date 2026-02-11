@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { CategoriaEntity } from './CategoriaEntity.js';
 import { ContaEntity } from './ContaEntity.js';
+import { CartaoCreditoEntity } from './CartaoCreditoEntity.js';
 
 @Entity({ name: 'transacao' })
 export class TransacaoEntity {
@@ -56,8 +57,19 @@ export class TransacaoEntity {
     @Column({ name: 'conta_id', type: 'int', nullable: true })
     contaId?: number;
 
-    @Column({ name: 'original_transaction_id', type: 'varchar', length: 50, nullable: true })
-    originalTransactionId?: string;
+    @ManyToOne(() => ContaEntity, { eager: false })
+    @JoinColumn({ name: 'conta_destino_id' })
+    contaDestino?: ContaEntity;
+
+    @Column({ name: 'conta_destino_id', type: 'int', nullable: true })
+    contaDestinoId?: number;
+
+    @ManyToOne(() => CartaoCreditoEntity, { eager: false })
+    @JoinColumn({ name: 'cartao_credito_id' })
+    cartaoCredito?: CartaoCreditoEntity;
+
+    @Column({ name: 'cartao_credito_id', type: 'int', nullable: true })
+    cartaoCreditoId?: number;
 
     @Column({ name: 'user_domain_id', type: 'varchar', length: 50 })
     userDomainId!: string;

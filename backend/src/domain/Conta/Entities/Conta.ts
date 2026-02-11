@@ -5,7 +5,6 @@ import {Result} from "../../../core/logic/Result.js";
 import {Nome} from "../../Shared/ValueObjects/Nome.js";
 import {Icon} from "../../Shared/ValueObjects/Icon.js";
 import {Dinheiro} from "../../Shared/ValueObjects/Dinheiro.js";
-import {Transacao} from "../../Transacao/Entities/Transacao.js";
 
 /**
  * Interface representing the properties of a Conta entity
@@ -15,7 +14,6 @@ interface ContaProps {
     nome: Nome;
     icon: Icon;
     saldo: Dinheiro; // Current balance snapshot
-    transacoes: Transacao[];
 }
 
 /**
@@ -45,19 +43,12 @@ export class Conta extends AggregateRoot<ContaProps> {
     }
 
     /**
-     * Gets the current saldo (balance) of the Conta. This is a snapshot that gets updated with each transaction.
+     * Gets the current saldo (balance) of the Conta.
      */
     get saldo(): Dinheiro {
         return this.props.saldo;
     }
 
-    /**
-     * Gets the list of transacoes (transactions) associated with this Conta. This is the source of truth for all
-     * financial activity, while saldo is a derived snapshot that gets updated as transactions are registered.
-     */
-    get transacoes(): Transacao[] {
-        return this.props.transacoes;
-    }
 
     /**
      * Private constructor to enforce the use of the static create method for instantiation. This ensures that all
@@ -71,51 +62,28 @@ export class Conta extends AggregateRoot<ContaProps> {
     }
 
     /**
-     * Processes a transaction and updates the snapshot balance.
-     * @param transacao - The transaction to register
+     * Updates the account balance by adding the specified amount.
+     * @param valor - The amount to add to the balance
      */
-    public registarTransacao(transacao: Transacao): Result<void> {
-        const isPositiveImpact = transacao.tipo.value === "Entrada" || transacao.tipo.value === "Reembolso";
-
-        // We update the balance based on the transaction type
-        const updatedSaldoResult = isPositiveImpact
-            ? this.props.saldo.add(transacao.valor)
-            : this.props.saldo.subtract(transacao.valor);
-
+    public adicionarSaldo(valor: Dinheiro): Result<void> {
+        const updatedSaldoResult = this.props.saldo.add(valor);
         if (updatedSaldoResult.isFailure) {
             return Result.fail<void>(updatedSaldoResult.errorValue() as unknown as string);
         }
-
         this.props.saldo = updatedSaldoResult.getValue();
-        this.props.transacoes.push(transacao);
-
         return Result.ok<void>();
     }
 
     /**
-     * Reverts the impact of a previously registered transaction from this account.
-     * It will attempt to remove the transaction from the transacoes list and update the saldo accordingly.
-     * If the transaction is not found, it still attempts to reverse the balance change.
+     * Updates the account balance by subtracting the specified amount.
+     * @param valor - The amount to subtract from the balance
      */
-    public reverterTransacao(transacao: Transacao): Result<void> {
-        const wasPositiveImpact = transacao.tipo.value === "Entrada" || transacao.tipo.value === "Reembolso";
-
-        // To revert, invert the operation that was applied when registering
-        const updatedSaldoResult = wasPositiveImpact
-            ? this.props.saldo.subtract(transacao.valor)
-            : this.props.saldo.add(transacao.valor);
-
+    public subtrairSaldo(valor: Dinheiro): Result<void> {
+        const updatedSaldoResult = this.props.saldo.subtract(valor);
         if (updatedSaldoResult.isFailure) {
             return Result.fail<void>(updatedSaldoResult.errorValue() as unknown as string);
         }
-
         this.props.saldo = updatedSaldoResult.getValue();
-
-        // Remove the transaction from the list if present (by domain id equality)
-        const idx = this.props.transacoes.findIndex(t => t.id.toString() === transacao.id.toString());
-        if (idx >= 0) {
-            this.props.transacoes.splice(idx, 1);
-        }
 
         return Result.ok<void>();
     }
@@ -132,8 +100,7 @@ export class Conta extends AggregateRoot<ContaProps> {
             {argument: props.userId, argumentName: 'userId'},
             {argument: props.nome, argumentName: 'nome'},
             {argument: props.icon, argumentName: 'icon'},
-            {argument: props.saldo, argumentName: 'saldo'},
-            {argument: props.transacoes, argumentName: 'transacoes'}
+            {argument: props.saldo, argumentName: 'saldo'}
         ];
 
         const guardResult = Guard.againstNullOrUndefinedBulk(guardedProps);

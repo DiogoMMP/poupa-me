@@ -61,6 +61,7 @@ export default async ({expressApp}: { expressApp: Application }) => {
     };
 
 
+
     const contaController = {
         name: config.controllers.conta.name,
         path: config.controllers.conta.path
@@ -69,12 +70,30 @@ export default async ({expressApp}: { expressApp: Application }) => {
     const contaService = {
         name: config.services.conta.name,
         path: config.services.conta.path
-    }
+    };
 
     const contaRepo = {
         name: config.repos.conta.name,
         path: config.repos.conta.path
-    }
+    };
+
+
+
+    const cartaoController = {
+        name: config.controllers.cartao.name,
+        path: config.controllers.cartao.path
+    };
+
+    const cartaoService = {
+        name: config.services.cartao.name,
+        path: config.services.cartao.path
+    };
+
+    const cartaoRepo = {
+        name: config.repos.cartao.name,
+        path: config.repos.cartao.path
+    };
+
 
     await dependencyInjectorLoader({
         dataSource: dataSource as any,
@@ -83,19 +102,22 @@ export default async ({expressApp}: { expressApp: Application }) => {
             authController,
             categoriaController,
             transacaoController,
-            contaController
+            contaController,
+            cartaoController
         ],
         repos: [
             userRepo,
             categoriaRepo,
             transacaoRepo,
-            contaRepo
+            contaRepo,
+            cartaoRepo
         ],
         services: [
             authService,
             categoriaService,
             transacaoService,
-            contaService
+            contaService,
+            cartaoService
         ]
     } as any);
     Logger.info('✌️ Entities, Controllers, Repositories, Services, etc. loaded');

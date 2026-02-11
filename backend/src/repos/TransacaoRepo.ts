@@ -6,6 +6,8 @@ import { TransacaoEntity } from '../persistence/entities/TransacaoEntity.js';
 import { Transacao } from '../domain/Transacao/Entities/Transacao.js';
 import { CategoriaEntity } from '../persistence/entities/CategoriaEntity.js';
 import { ContaEntity } from '../persistence/entities/ContaEntity.js';
+import { CartaoCreditoEntity } from '../persistence/entities/CartaoCreditoEntity.js';
+import { TransacaoIdHelper } from '../utils/IDGenerator.js';
 
 /**
  * Repository for managing Transacao entities in the database using TypeORM.
@@ -31,21 +33,43 @@ export default class TransacaoRepo implements ITransacaoRepo {
         try {
             const raw = TransacaoMap.toPersistence(transacao);
 
-            // Resolve categoria FK: try to find CategoriaEntity by domainId
+            // Resolve categoria FK: accept both 'categoriaId' (camel) and 'categoria_id' (snake) from the mapped raw
             const categoriaRepo = this.dataSource.getRepository(CategoriaEntity);
-            const categoriaRow = await categoriaRepo.findOne({ where: { domainId: String(raw['categoriaId']) } });
+            const categoriaDomainId = String(raw['categoriaId'] ?? raw['categoria_id'] ?? raw['categoria'] ?? '');
+            if (!categoriaDomainId) throw new Error('Categoria id missing for transacao');
+            const categoriaRow = await categoriaRepo.findOne({ where: { domainId: categoriaDomainId } });
             if (!categoriaRow) throw new Error('Categoria not found for transacao');
 
             // typed locals for data and valor to satisfy linter
             const data = (raw['data'] ?? {}) as { dia?: number; mes?: number; ano?: number };
             const valor = (raw['valor'] ?? {}) as { valor?: number; moeda?: string };
-            const originalTransactionId = raw['reembolso'] ? String(raw['reembolso']) : undefined;
             const userDomainId = raw['userDomainId'] ? String(raw['userDomainId']) : undefined;
-            const contaDomainId = raw['contaId'] ? String(raw['contaId']) : undefined;
+            const contaDomainId = raw['contaId'] ?? raw['conta_id'] ?? raw['conta'] ?? undefined;
+            const contaDomainIdStr = contaDomainId ? String(contaDomainId) : undefined;
+
+            // Extract year from transaction data for ID generation
+            const year = data.ano ?? new Date().getFullYear();
+
+            // Always generate sequential domain ID with year (override UUID from domain entity)
+            const prefix = TransacaoIdHelper.generatePrefix(year);
+            const yearTransactions = await this.repo
+                .createQueryBuilder('t')
+                .select('t.domainId')
+                .where('t.domain_id LIKE :pattern', { pattern: `${prefix}-%` })
+                .orderBy('t.id', 'DESC')
+                .limit(100)
+                .getMany();
+
+            let maxSeq = 0;
+            for (const t of yearTransactions) {
+                const seq = TransacaoIdHelper.extractSequence(t.domainId, year);
+                if (seq !== null && seq > maxSeq) maxSeq = seq;
+            }
+            const domainId = maxSeq === 0 ? TransacaoIdHelper.generateFirst(year) : TransacaoIdHelper.generateNext(maxSeq, year);
 
             // Prepare entity object; we'll possibly fill userDomainId from contaRow if missing
             const entityObj: Record<string, unknown> = {
-                domainId: raw['domainId'],
+                domainId,
                 descricao: raw['descricao'],
                 dia: data.dia ?? 0,
                 mes: data.mes ?? 0,
@@ -55,18 +79,32 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 tipo: raw['tipo'],
                 status: raw['status'],
                 categoria: categoriaRow,
-                categoriaId: categoriaRow.id,
-                originalTransactionId: originalTransactionId
+                categoriaId: categoriaRow.id
             } as Record<string, unknown>;
 
-            // if contaId provided, resolve ContaEntity and attach
+            // if the domain object already contains conta or cartaoCredito, prefer that and resolve to persistence entity
             let contaRow: ContaEntity | null = null;
-            if (contaDomainId) {
+            if ((transacao as unknown as Record<string, unknown>).conta) {
+                const contaDomain = (transacao as unknown as Record<string, unknown>).conta as { id: { toString(): string } };
                 const contaRepo = this.dataSource.getRepository(ContaEntity);
-                contaRow = await contaRepo.findOne({ where: { domainId: contaDomainId } });
-                if (!contaRow) throw new Error('Conta not found for transacao');
-                entityObj['conta'] = contaRow;
+                contaRow = await contaRepo.findOne({ where: { domainId: contaDomain.id.toString() } });
+                if (!contaRow) throw new Error('Conta (from domain) not found for transacao');
+                // Prefer explicit FK column to avoid relation-persistence inconsistencies
                 entityObj['contaId'] = contaRow.id;
+            } else if (contaDomainIdStr) {
+                const contaRepo = this.dataSource.getRepository(ContaEntity);
+                contaRow = await contaRepo.findOne({ where: { domainId: contaDomainIdStr } });
+                if (!contaRow) throw new Error('Conta not found for transacao');
+                entityObj['contaId'] = contaRow.id;
+            }
+
+            // If domain object contains contaDestino (for Despesa Mensal), resolve it
+            if ((transacao as unknown as Record<string, unknown>).contaDestino) {
+                const contaDestinoDomain = (transacao as unknown as Record<string, unknown>).contaDestino as { id: { toString(): string } };
+                const contaRepo = this.dataSource.getRepository(ContaEntity);
+                const contaDestinoRow = await contaRepo.findOne({ where: { domainId: contaDestinoDomain.id.toString() } });
+                if (!contaDestinoRow) throw new Error('ContaDestino (from domain) not found for transacao');
+                entityObj['contaDestinoId'] = contaDestinoRow.id;
             }
 
             // determine userDomainId: prefer explicit value from mapped raw, otherwise derive from contaRow.userDomainId if available
@@ -79,22 +117,59 @@ export default class TransacaoRepo implements ITransacaoRepo {
 
             entityObj['userDomainId'] = String(userDomainIdVal);
 
+            // If domain object contains cartaoCredito, resolve and attach too
+            if ((transacao as unknown as Record<string, unknown>).cartaoCredito) {
+                const cartaoDomain = (transacao as unknown as Record<string, unknown>).cartaoCredito as { id: { toString(): string } };
+                // attempt to find CartaoCreditoEntity by domainId via repository manager
+                try {
+                    const cartao = await this.dataSource.getRepository(CartaoCreditoEntity).findOne({ where: { domainId: cartaoDomain.id.toString() } });
+                    if (cartao) {
+                        entityObj['cartaoCredito'] = cartao;
+                        entityObj['cartaoCreditoId'] = cartao.id;
+                    }
+                } catch {
+                    // ignore; cartao will remain unset if not found
+                }
+            }
+
             const entity = this.repo.create(entityObj as unknown as TransacaoEntity);
 
             const saved = await this.repo.save(entity);
             if (!saved) throw new Error('Failed to save transacao');
 
             // Re-fetch with relations to ensure categoria relation is present and DB types are accurate
-            const persisted = await this.repo.findOne({ where: { id: (saved as TransacaoEntity).id }, relations: ['categoria', 'conta'] });
+            const persisted = await this.repo.findOne({ where: { id: (saved as TransacaoEntity).id }, relations: ['categoria', 'conta', 'cartaoCredito'] });
             if (!persisted) throw new Error('Failed to re-fetch saved transacao');
 
             // map persisted entity to domain; include userDomainId explicitly
             const savedRaw: Record<string, unknown> = {
                 ...(persisted as unknown as Record<string, unknown>),
-                userDomainId: (persisted as TransacaoEntity).userDomainId,
+                user_domain_id: (persisted as TransacaoEntity).userDomainId,
                 categoria: (persisted as TransacaoEntity).categoria ?? categoriaRow,
-                conta: (persisted as TransacaoEntity).conta ?? undefined
+                conta: (persisted as TransacaoEntity).conta ?? undefined,
+                cartaoCredito: (persisted as TransacaoEntity).cartaoCredito ?? undefined
             };
+
+            // Ensure nested relation objects include snake_case user_domain_id so their mappers can read owner id
+            try {
+                if (savedRaw['conta']) {
+                    const c = savedRaw['conta'] as Record<string, unknown>;
+                    const persistedConta = (persisted as TransacaoEntity).conta;
+                    if (persistedConta && persistedConta.userDomainId) c['user_domain_id'] = persistedConta.userDomainId;
+                }
+            } catch {
+                // ignore
+            }
+            try {
+                if (savedRaw['cartaoCredito']) {
+                    const cc = savedRaw['cartaoCredito'] as Record<string, unknown>;
+                    const persistedCc = (persisted as TransacaoEntity).cartaoCredito;
+                    if (persistedCc && persistedCc.userDomainId) cc['user_domain_id'] = persistedCc.userDomainId;
+                }
+            } catch {
+                // ignore
+            }
+
             const domain = await TransacaoMap.toDomain(savedRaw);
             if (!domain) {
                 this.logger.error('TransacaoRepo.save: failed to map savedRaw to domain. savedRaw=%o', savedRaw);
@@ -118,45 +193,78 @@ export default class TransacaoRepo implements ITransacaoRepo {
 
             // Resolve categoria FK
             const categoriaRepo = this.dataSource.getRepository(CategoriaEntity);
-            const categoriaRow = await categoriaRepo.findOne({ where: { domainId: String(raw['categoriaId']) } });
+            const categoriaDomainId2 = String(raw['categoriaId'] ?? raw['categoria_id'] ?? raw['categoria'] ?? '');
+            if (!categoriaDomainId2) throw new Error('Categoria id missing for transacao');
+            const categoriaRow = await categoriaRepo.findOne({ where: { domainId: categoriaDomainId2 } });
             if (!categoriaRow) throw new Error('Categoria not found for transacao');
 
             const data = (raw['data'] ?? {}) as { dia?: number; mes?: number; ano?: number };
             const valor = (raw['valor'] ?? {}) as { valor?: number; moeda?: string };
-            const originalTransactionId = raw['reembolso'] ? String(raw['reembolso']) : undefined;
             const userDomainId = raw['userDomainId'] ? String(raw['userDomainId']) : undefined;
-            const contaDomainId = raw['contaId'] ? String(raw['contaId']) : undefined;
-
             if (raw['domainId']) {
-                // If a contaId was provided, resolve the ContaEntity first and ensure it exists
+                // Resolve conta if provided
                 let contaRowForUpdate: ContaEntity | null = null;
-                if (raw['contaId']) {
+                const contaDomainIdForUpdate = raw['contaId'] ?? raw['conta_id'] ?? raw['conta'] ?? null;
+                if (contaDomainIdForUpdate) {
                     const contaRepo = this.dataSource.getRepository(ContaEntity);
-                    contaRowForUpdate = await contaRepo.findOne({ where: { domainId: String(raw['contaId']) } });
+                    contaRowForUpdate = await contaRepo.findOne({ where: { domainId: String(contaDomainIdForUpdate) } });
                     if (!contaRowForUpdate) throw new Error('Conta not found for transacao');
                 }
 
+                // Resolve contaDestino if provided (for Despesa Mensal)
+                let contaDestinoRowForUpdate: ContaEntity | null = null;
+                const contaDestinoDomainIdForUpdate = raw['contaDestinoId'] ?? raw['conta_destino_id'] ?? raw['contaDestino'] ?? null;
+                if (contaDestinoDomainIdForUpdate) {
+                    const contaRepo = this.dataSource.getRepository(ContaEntity);
+                    contaDestinoRowForUpdate = await contaRepo.findOne({ where: { domainId: String(contaDestinoDomainIdForUpdate) } });
+                    if (!contaDestinoRowForUpdate) throw new Error('Conta destino not found for transacao');
+                }
+
+                // Resolve cartaoCredito if provided
+                let cartaoRowForUpdate = null;
+                const cartaoDomainIdForUpdate = raw['cartaoCreditoId'] ?? raw['cartao_credito_id'] ?? raw['cartaoCredito'] ?? null;
+                if (cartaoDomainIdForUpdate) {
+                    const cartaoRepo = this.dataSource.getRepository(CartaoCreditoEntity);
+                    cartaoRowForUpdate = await cartaoRepo.findOne({ where: { domainId: String(cartaoDomainIdForUpdate) } });
+                    if (!cartaoRowForUpdate) throw new Error('Cartao credito not found for transacao');
+                }
+
+                const updateSet: Record<string, unknown> = {
+                    descricao: String(raw['descricao'] ?? ''),
+                    dia: data.dia ?? 0,
+                    mes: data.mes ?? 0,
+                    ano: data.ano ?? 0,
+                    valor: valor.valor ?? 0,
+                    moeda: valor.moeda ?? 'EUR',
+                    tipo: String(raw['tipo'] ?? ''),
+                    status: String(raw['status'] ?? ''),
+                    categoriaId: categoriaRow.id
+                };
+
+                // Only update foreign keys if they were provided (to avoid overwriting with null)
+                if (contaRowForUpdate !== null) updateSet['contaId'] = contaRowForUpdate.id;
+                if (contaDestinoRowForUpdate !== null) updateSet['contaDestinoId'] = contaDestinoRowForUpdate.id;
+                if (cartaoRowForUpdate !== null) updateSet['cartaoCreditoId'] = cartaoRowForUpdate.id;
+
                 await this.repo.createQueryBuilder()
                     .update(TransacaoEntity)
-                    .set({
-                        descricao: String(raw['descricao'] ?? ''),
-                        dia: data.dia ?? 0,
-                        mes: data.mes ?? 0,
-                        ano: data.ano ?? 0,
-                        valor: valor.valor ?? 0,
-                        moeda: valor.moeda ?? 'EUR',
-                        tipo: String(raw['tipo'] ?? ''),
-                        status: String(raw['status'] ?? ''),
-                        categoriaId: categoriaRow.id,
-                        contaId: contaRowForUpdate ? contaRowForUpdate.id : undefined,
-                        originalTransactionId: originalTransactionId
-                    })
+                    .set(updateSet)
                     .where('domain_id = :domainId', { domainId: raw['domainId'] })
                     .execute();
 
-                const saved = await this.repo.findOne({ where: { domainId: raw['domainId'] as string }, relations: ['categoria', 'conta'] });
+                const saved = await this.repo.findOne({
+                    where: { domainId: raw['domainId'] as string },
+                    relations: ['categoria', 'conta', 'contaDestino', 'cartaoCredito']
+                });
                 if (!saved) throw new Error('Failed to find updated transacao by domainId');
-                const savedRaw: Record<string, unknown> = { ...(saved as unknown as Record<string, unknown>), userDomainId: (saved as TransacaoEntity).userDomainId, categoria: (saved as TransacaoEntity).categoria ?? categoriaRow, conta: (saved as TransacaoEntity).conta ?? undefined };
+                const savedRaw: Record<string, unknown> = {
+                    ...(saved as unknown as Record<string, unknown>),
+                    user_domain_id: (saved as TransacaoEntity).userDomainId,
+                    categoria: (saved as TransacaoEntity).categoria ?? categoriaRow,
+                    conta: (saved as TransacaoEntity).conta ?? undefined,
+                    contaDestino: (saved as TransacaoEntity).contaDestino ?? undefined,
+                    cartaoCredito: (saved as TransacaoEntity).cartaoCredito ?? undefined
+                };
                 const domain = await TransacaoMap.toDomain(savedRaw);
                 if (!domain) {
                     this.logger.error('TransacaoRepo.update: failed to map savedRaw to domain. savedRaw=%o', savedRaw);
@@ -178,12 +286,12 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 status: raw['status'],
                 categoria: categoriaRow,
                 categoriaId: categoriaRow.id,
-                originalTransactionId: originalTransactionId,
                 userDomainId: userDomainId
             } as Record<string, unknown>;
-            if (contaDomainId) {
+            const contaDomainId2 = raw['contaId'] ?? raw['conta_id'] ?? raw['conta'] ?? undefined;
+            if (contaDomainId2) {
                 const contaRepo = this.dataSource.getRepository(ContaEntity);
-                const contaRow = await contaRepo.findOne({ where: { domainId: contaDomainId } });
+                const contaRow = await contaRepo.findOne({ where: { domainId: String(contaDomainId2) } });
                 if (!contaRow) throw new Error('Conta not found for transacao');
                 entityObj2['conta'] = contaRow;
                 entityObj2['contaId'] = contaRow.id;
@@ -192,7 +300,14 @@ export default class TransacaoRepo implements ITransacaoRepo {
 
             const saved = await this.repo.save(entity);
             if (!saved) throw new Error('Failed to update transacao');
-            const savedRaw: Record<string, unknown> = { ...(saved as unknown as Record<string, unknown>), userDomainId: (saved as TransacaoEntity).userDomainId, categoria: (saved as TransacaoEntity).categoria ?? categoriaRow, conta: (saved as TransacaoEntity).conta ?? undefined };
+            const savedRaw: Record<string, unknown> = {
+                ...(saved as unknown as Record<string, unknown>),
+                user_domain_id: (saved as TransacaoEntity).userDomainId,
+                categoria: (saved as TransacaoEntity).categoria ?? categoriaRow,
+                conta: (saved as TransacaoEntity).conta ?? undefined,
+                contaDestino: (saved as TransacaoEntity).contaDestino ?? undefined,
+                cartaoCredito: (saved as TransacaoEntity).cartaoCredito ?? undefined
+            };
             const domain = await TransacaoMap.toDomain(savedRaw);
             if (!domain) {
                 this.logger.error('TransacaoRepo.update (fallback save): failed to map savedRaw to domain. savedRaw=%o', savedRaw);
@@ -224,11 +339,14 @@ export default class TransacaoRepo implements ITransacaoRepo {
      */
     public async findById(transacaoId: string): Promise<Transacao | null> {
         try {
-            const row = await this.repo.findOne({ where: { domainId: transacaoId }, relations: ['categoria', 'conta'] });
+            const row = await this.repo.findOne({
+                where: { domainId: transacaoId },
+                relations: ['categoria', 'conta', 'contaDestino', 'cartaoCredito']
+            });
             if (!row) return null;
             // include user_domain_id in raw for mapping
             const rowEntity = row as TransacaoEntity;
-            const raw: Record<string, unknown> = { ...(row as unknown as Record<string, unknown>), userDomainId: rowEntity.userDomainId };
+            const raw: Record<string, unknown> = { ...(row as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
             return await TransacaoMap.toDomain(raw);
         } catch (err) {
             this.logger.error('TransacaoRepo.findById error: %o', err);
@@ -237,144 +355,403 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds all Transacao records in the database. Returns an array of Transacao mapped to domain format, ordered by ID ascending.
+     * Finds all Entrada and Saída transactions (conta-based) for a specific account.
+     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
+     * @param contaId - The domain ID of the Conta to filter transactions by.
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findAll(userId?: string): Promise<Transacao[]> {
+    public async findContaTransactions(contaId: string, userId?: string): Promise<Transacao[]> {
         try {
-            let rows: TransacaoEntity[];
-            if (userId) {
-                rows = await this.repo.createQueryBuilder('t')
-                    .leftJoinAndSelect('t.categoria', 'c')
-                    .leftJoinAndSelect('t.conta', 'co')
-                    .where('t.user_domain_id = :userId', { userId })
-                    .orderBy('t.id', 'ASC')
-                    .getMany();
-            } else {
-                rows = await this.repo.find({ order: { id: 'ASC' }, relations: ['categoria', 'conta'] });
-            }
+            const qb = this.repo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.conta', 'co')
+                .where('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] })
+                .andWhere('co.domain_id = :contaId', { contaId });
+            if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
+            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+
             const res: Transacao[] = [];
             for (const r of rows) {
                 const rowEntity = r as TransacaoEntity;
-                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), userDomainId: rowEntity.userDomainId };
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
                 const d = await TransacaoMap.toDomain(raw);
                 if (d) res.push(d);
             }
             return res;
         } catch (err) {
-            this.logger.error('TransacaoRepo.findAll error: %o', err);
+            this.logger.error('TransacaoRepo.findContaTransactions error: %o', err);
             throw err;
         }
     }
 
     /**
-     * Finds all Transacao records that belong to a specific Categoria, identified by the Categoria's domain ID. Returns
-     * an array of Transacao mapped to domain format, ordered by ID ascending.
+     * Finds all Crédito and Reembolso transactions (cartão-based) for a specific credit card.
+     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
+     * @param cartaoCreditoId - The domain ID of the CartaoCredito to filter transactions by.
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
+     */
+    public async findCartaoTransactions(cartaoCreditoId: string, userId?: string): Promise<Transacao[]> {
+        try {
+            const qb = this.repo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.cartaoCredito', 'cc')
+                .where('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] })
+                .andWhere('cc.domain_id = :cartaoCreditoId', { cartaoCreditoId });
+            if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
+            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+
+            const res: Transacao[] = [];
+            for (const r of rows) {
+                const rowEntity = r as TransacaoEntity;
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
+                const d = await TransacaoMap.toDomain(raw);
+                if (d) res.push(d);
+            }
+            return res;
+        } catch (err) {
+            this.logger.error('TransacaoRepo.findCartaoTransactions error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Finds all Despesa Mensal transactions for a specific account.
+     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
+     * @param contaId - The domain ID of the Conta to filter transactions by.
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
+     */
+    public async findDespesaMensal(contaId: string, userId?: string): Promise<Transacao[]> {
+        try {
+            const qb = this.repo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.conta', 'co')
+                .leftJoinAndSelect('t.contaDestino', 'cd')
+                .where('t.tipo = :tipo', { tipo: 'Despesa Mensal' })
+                .andWhere('co.domain_id = :contaId', { contaId });
+            if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
+            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+
+            const res: Transacao[] = [];
+            for (const r of rows) {
+                const rowEntity = r as TransacaoEntity;
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
+                const d = await TransacaoMap.toDomain(raw);
+                if (d) res.push(d);
+            }
+            return res;
+        } catch (err) {
+            this.logger.error('TransacaoRepo.findDespesaMensal error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Finds Entrada/Saída transactions by categoria for a specific account.
+     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
+     * @param contaId - The domain ID of the Conta to filter transactions by.
      * @param categoriaId - The domain ID of the Categoria to filter Transacao records by.
-     * @param userId - Optional user ID to scope the search to a specific user's transactions. If provided, only transactions with a matching userDomainId will be returned.
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findByCategoria(categoriaId: string, userId?: string): Promise<Transacao[]> {
+    public async findContaTransactionsByCategoria(contaId: string, categoriaId: string, userId?: string): Promise<Transacao[]> {
         try {
-             // Find transactions whose category has the given domainId
              const qb = this.repo.createQueryBuilder('t')
                  .leftJoinAndSelect('t.categoria', 'c')
                  .leftJoinAndSelect('t.conta', 'co')
-                 .where('c.domain_id = :domainId', { domainId: categoriaId });
+                 .where('c.domain_id = :domainId', { domainId: categoriaId })
+                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] })
+                 .andWhere('co.domain_id = :contaId', { contaId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'ASC').getMany();
+            const rows = await qb.orderBy('t.id', 'DESC').getMany();
 
              const res: Transacao[] = [];
              for (const r of rows) {
                 const rowEntity = r as TransacaoEntity;
-                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), userDomainId: rowEntity.userDomainId };
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
                 const d = await TransacaoMap.toDomain(raw);
                  if (d) res.push(d);
              }
              return res;
         } catch (err) {
-            this.logger.error('TransacaoRepo.findByCategoria error: %o', err);
+            this.logger.error('TransacaoRepo.findContaTransactionsByCategoria error: %o', err);
             throw err;
         }
     }
 
     /**
-     * Finds all Transacao records that have a specific tipo. Returns an array of Transacao mapped to domain format, ordered by ID ascending.
-     * @param tipo - The tipo value to filter Transacao records by (e.g., "Entrada", "Saída").
-     * @param userId - Optional user ID to scope the search to a specific user's transactions. If provided, only transactions with a matching userDomainId will be returned.
+     * Finds Crédito/Reembolso transactions by categoria for a specific credit card.
+     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
+     * @param cartaoCreditoId - The domain ID of the CartaoCredito to filter transactions by.
+     * @param categoriaId - The domain ID of the Categoria to filter Transacao records by.
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findByTipo(tipo: string, userId?: string): Promise<Transacao[]> {
+    public async findCartaoTransactionsByCategoria(cartaoCreditoId: string, categoriaId: string, userId?: string): Promise<Transacao[]> {
         try {
-            const qb = this.repo.createQueryBuilder('t')
-                .leftJoinAndSelect('t.categoria', 'c')
-                .leftJoinAndSelect('t.conta', 'co')
-                .where('t.tipo = :tipo', { tipo });
+             const qb = this.repo.createQueryBuilder('t')
+                 .leftJoinAndSelect('t.categoria', 'c')
+                 .leftJoinAndSelect('t.cartaoCredito', 'cc')
+                 .where('c.domain_id = :domainId', { domainId: categoriaId })
+                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] })
+                 .andWhere('cc.domain_id = :cartaoCreditoId', { cartaoCreditoId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'ASC').getMany();
-            const res: Transacao[] = [];
-            for (const r of rows) {
+            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+
+             const res: Transacao[] = [];
+             for (const r of rows) {
                 const rowEntity = r as TransacaoEntity;
-                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), userDomainId: rowEntity.userDomainId };
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
                 const d = await TransacaoMap.toDomain(raw);
-                if (d) res.push(d);
-            }
-            return res;
+                 if (d) res.push(d);
+             }
+             return res;
         } catch (err) {
-            this.logger.error('TransacaoRepo.findByTipo error: %o', err);
+            this.logger.error('TransacaoRepo.findCartaoTransactionsByCategoria error: %o', err);
             throw err;
         }
     }
 
     /**
-     * Finds all Transacao records that have a specific status. Returns an array of Transacao mapped to domain format, ordered by ID ascending.
+     * Finds Despesa Mensal transactions by categoria for a specific account.
+     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
+     * @param contaId - The domain ID of the Conta to filter transactions by.
+     * @param categoriaId - The domain ID of the Categoria to filter Transacao records by.
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
+     */
+    public async findDespesaMensalByCategoria(contaId: string, categoriaId: string, userId?: string): Promise<Transacao[]> {
+        try {
+             const qb = this.repo.createQueryBuilder('t')
+                 .leftJoinAndSelect('t.categoria', 'c')
+                 .leftJoinAndSelect('t.conta', 'co')
+                 .leftJoinAndSelect('t.contaDestino', 'cd')
+                 .where('c.domain_id = :domainId', { domainId: categoriaId })
+                 .andWhere('t.tipo = :tipo', { tipo: 'Despesa Mensal' })
+                 .andWhere('co.domain_id = :contaId', { contaId });
+            if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
+            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+
+             const res: Transacao[] = [];
+             for (const r of rows) {
+                const rowEntity = r as TransacaoEntity;
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
+                const d = await TransacaoMap.toDomain(raw);
+                 if (d) res.push(d);
+             }
+             return res;
+        } catch (err) {
+            this.logger.error('TransacaoRepo.findDespesaMensalByCategoria error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Finds Crédito and Reembolso transactions by status for a specific credit card.
+     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
+     * @param cartaoCreditoId - The domain ID of the CartaoCredito to filter transactions by.
      * @param status - The status value to filter Transacao records by (e.g., "Concluído", "Pendente").
-     * @param userId - Optional user ID to scope the search to a specific user's transactions. If provided, only transactions with a matching userDomainId will be returned.
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findByStatus(status: string, userId?: string): Promise<Transacao[]> {
+    public async findCartaoTransactionsByStatus(cartaoCreditoId: string, status: string, userId?: string): Promise<Transacao[]> {
         try {
             const qb = this.repo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
-                .leftJoinAndSelect('t.conta', 'co')
-                .where('t.status = :status', { status });
+                .leftJoinAndSelect('t.cartaoCredito', 'cc')
+                .where('t.status = :status', { status })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] })
+                .andWhere('cc.domain_id = :cartaoCreditoId', { cartaoCreditoId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'ASC').getMany();
+            const rows = await qb.orderBy('t.id', 'DESC').getMany();
             const res: Transacao[] = [];
             for (const r of rows) {
                 const rowEntity = r as TransacaoEntity;
-                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), userDomainId: rowEntity.userDomainId };
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
                 const d = await TransacaoMap.toDomain(raw);
                 if (d) res.push(d);
             }
             return res;
         } catch (err) {
-            this.logger.error('TransacaoRepo.findByStatus error: %o', err);
+            this.logger.error('TransacaoRepo.findCartaoTransactionsByStatus error: %o', err);
             throw err;
         }
     }
 
     /**
-     * Finds all Transacao records that have a created_at date between the specified start and end dates. Returns an array of Transacao mapped to domain format, ordered by ID ascending.
-     * @param startDate - The start date of the range to filter Transacao records by (inclusive).
-     * @param endDate - The end date of the range to filter Transacao records by (inclusive).
-     * @param userId - Optional user ID to scope the search to a specific user's transactions. If provided, only transactions with a matching userDomainId will be returned.
+     * Finds Despesa Mensal transactions by status for a specific account.
+     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
+     * @param contaId - The domain ID of the Conta to filter transactions by.
+     * @param status - The status value to filter Transacao records by (e.g., "Concluído", "Pendente").
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findByDateRange(startDate: Date, endDate: Date, userId?: string): Promise<Transacao[]> {
+    public async findDespesaMensalByStatus(contaId: string, status: string, userId?: string): Promise<Transacao[]> {
         try {
-             const qb = this.repo.createQueryBuilder('t')
-                 .leftJoinAndSelect('t.categoria', 'c')
-                 .leftJoinAndSelect('t.conta', 'co')
-                 .where('t.created_at BETWEEN :start AND :end', { start: startDate, end: endDate });
+            const qb = this.repo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.conta', 'co')
+                .leftJoinAndSelect('t.contaDestino', 'cd')
+                .where('t.status = :status', { status })
+                .andWhere('t.tipo = :tipo', { tipo: 'Despesa Mensal' })
+                .andWhere('co.domain_id = :contaId', { contaId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'ASC').getMany();
-
-             const res: Transacao[] = [];
-             for (const r of rows) {
+            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            const res: Transacao[] = [];
+            for (const r of rows) {
                 const rowEntity = r as TransacaoEntity;
-                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), userDomainId: rowEntity.userDomainId };
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
                 const d = await TransacaoMap.toDomain(raw);
-                 if (d) res.push(d);
-             }
-             return res;
+                if (d) res.push(d);
+            }
+            return res;
         } catch (err) {
-            this.logger.error('TransacaoRepo.findByDateRange error: %o', err);
+            this.logger.error('TransacaoRepo.findDespesaMensalByStatus error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Finds Entrada/Saída transactions by predefined period for a specific account.
+     * Accepts: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'.
+     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
+     * @param contaId - The domain ID of the Conta to filter transactions by.
+     * @param period - The period to filter by
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
+     */
+    public async findContaTransactionsByPeriod(contaId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Transacao[]> {
+        try {
+            const now = new Date();
+            let startDate: Date;
+
+            switch (period) {
+                case 'Este Mês':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    break;
+                case 'Últimos 3 Meses':
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+                    break;
+                case 'Último Ano':
+                    startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+                    break;
+                default:
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            }
+
+            const qb = this.repo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.conta', 'co')
+                .where('t.created_at >= :start', { start: startDate })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] })
+                .andWhere('co.domain_id = :contaId', { contaId });
+            if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
+            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+
+            const res: Transacao[] = [];
+            for (const r of rows) {
+                const rowEntity = r as TransacaoEntity;
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
+                const d = await TransacaoMap.toDomain(raw);
+                if (d) res.push(d);
+            }
+            return res;
+        } catch (err) {
+            this.logger.error('TransacaoRepo.findContaTransactionsByPeriod error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Finds Crédito/Reembolso transactions by predefined period for a specific credit card.
+     * Accepts: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'.
+     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
+     * @param cartaoCreditoId - The domain ID of the CartaoCredito to filter transactions by.
+     * @param period - The period to filter by
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
+     */
+    public async findCartaoTransactionsByPeriod(cartaoCreditoId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Transacao[]> {
+        try {
+            const now = new Date();
+            let startDate: Date;
+
+            switch (period) {
+                case 'Este Mês':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    break;
+                case 'Últimos 3 Meses':
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+                    break;
+                case 'Último Ano':
+                    startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+                    break;
+                default:
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            }
+
+            const qb = this.repo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.cartaoCredito', 'cc')
+                .where('t.created_at >= :start', { start: startDate })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] })
+                .andWhere('cc.domain_id = :cartaoCreditoId', { cartaoCreditoId });
+            if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
+            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+
+            const res: Transacao[] = [];
+            for (const r of rows) {
+                const rowEntity = r as TransacaoEntity;
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
+                const d = await TransacaoMap.toDomain(raw);
+                if (d) res.push(d);
+            }
+            return res;
+        } catch (err) {
+            this.logger.error('TransacaoRepo.findCartaoTransactionsByPeriod error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Finds Despesa Mensal transactions by predefined period for a specific account.
+     * Accepts: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'.
+     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
+     * @param contaId - The domain ID of the Conta to filter transactions by.
+     * @param period - The period to filter by
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
+     */
+    public async findDespesaMensalByPeriod(contaId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Transacao[]> {
+        try {
+            const now = new Date();
+            let startDate: Date;
+
+            switch (period) {
+                case 'Este Mês':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    break;
+                case 'Últimos 3 Meses':
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+                    break;
+                case 'Último Ano':
+                    startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+                    break;
+                default:
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            }
+
+            const qb = this.repo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.conta', 'co')
+                .leftJoinAndSelect('t.contaDestino', 'cd')
+                .where('t.created_at >= :start', { start: startDate })
+                .andWhere('t.tipo = :tipo', { tipo: 'Despesa Mensal' })
+                .andWhere('co.domain_id = :contaId', { contaId });
+            if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
+            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+
+            const res: Transacao[] = [];
+            for (const r of rows) {
+                const rowEntity = r as TransacaoEntity;
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
+                const d = await TransacaoMap.toDomain(raw);
+                if (d) res.push(d);
+            }
+            return res;
+        } catch (err) {
+            this.logger.error('TransacaoRepo.findDespesaMensalByPeriod error: %o', err);
             throw err;
         }
     }

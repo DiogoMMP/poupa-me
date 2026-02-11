@@ -4,6 +4,7 @@ import type IContaRepo from './IRepos/IContaRepo.js';
 import { ContaMap } from '../mappers/ContaMap.js';
 import { ContaEntity } from '../persistence/entities/ContaEntity.js';
 import { Conta } from '../domain/Conta/Entities/Conta.js';
+import { ContaIdHelper, extractSequenceNumber } from '../utils/IDGenerator.js';
 
 /**
  * Repository implementation for Conta using TypeORM. Handles all database interactions for Conta entities.
@@ -35,7 +36,17 @@ export default class ContaRepo implements IContaRepo {
                 userDomainId?: string;
             };
 
-            const domainId = String(raw.domainId ?? '');
+            let domainId = String(raw.domainId ?? '');
+
+            // Always generate sequential domain ID (override UUID from domain entity)
+            const allContas = await this.repo.find({ select: ['domainId'], order: { id: 'DESC' }, take: 100 });
+            let maxSeq = 0;
+            for (const c of allContas) {
+                const seq = extractSequenceNumber(c.domainId, ContaIdHelper.prefix);
+                if (seq !== null && seq > maxSeq) maxSeq = seq;
+            }
+            domainId = maxSeq === 0 ? ContaIdHelper.generateFirst() : ContaIdHelper.generateNext(maxSeq);
+
             const nome = String(raw.nome ?? '');
             const icon = String(raw.icon ?? '');
             const userDomainId = String(raw.user_domain_id ?? raw.userDomainId ?? '');

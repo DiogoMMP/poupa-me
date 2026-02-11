@@ -1,4 +1,4 @@
-import type {IDinheiroProps, ITransacaoDTO} from "./ITransacaoDTO.js";
+import type {IDinheiroProps} from "./ITransacaoDTO.js";
 
 export interface IContaDTO {
     id: string;
@@ -6,7 +6,6 @@ export interface IContaDTO {
     nome: string;
     icon: string;
     saldo: IDinheiroProps;
-    transacoes: ITransacaoDTO[];
 }
 
 export interface IContaInputDTO {

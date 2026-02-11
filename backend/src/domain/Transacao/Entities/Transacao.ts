@@ -1,15 +1,15 @@
 import {AggregateRoot} from "../../../core/domain/AggregateRoot.js";
 import {Descricao} from "../ValueObjects/Descricao.js";
-import {Data} from "../ValueObjects/Data.js";
+import {Data} from "../../Shared/ValueObjects/Data.js";
 import {Dinheiro} from "../../Shared/ValueObjects/Dinheiro.js";
 import {Tipo} from "../ValueObjects/Tipo.js";
 import {Status} from "../ValueObjects/Status.js";
 import {Categoria} from "../../Categoria/Entities/Categoria.js";
-import {Reembolso} from "../ValueObjects/Reembolso.js";
 import {UniqueEntityID} from "../../../core/domain/UniqueEntityID.js";
 import {Guard} from "../../../core/logic/Guard.js";
 import {Result} from "../../../core/logic/Result.js";
 import type {Conta} from '../../Conta/Entities/Conta.js';
+import type {CartaoCredito} from '../../CartaoCredito/Entities/CartaoCredito.js';
 
 interface TransacaoProps {
     descricao: Descricao;
@@ -19,7 +19,8 @@ interface TransacaoProps {
     categoria: Categoria;
     status: Status;
     conta?: Conta;
-    reembolso?: Reembolso;
+    cartaoCredito?: CartaoCredito;
+    contaDestino?: Conta; // Only for Despesa Mensal - conta that will receive the monthly expense
 }
 
 export class Transacao extends AggregateRoot<TransacaoProps> {
@@ -47,12 +48,16 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
         return this.props.status;
     }
 
-    get reembolso(): Reembolso | undefined {
-        return this.props.reembolso;
-    }
-
     get conta(): Conta | undefined {
         return this.props.conta;
+    }
+
+    get cartaoCredito(): CartaoCredito | undefined {
+        return this.props.cartaoCredito;
+    }
+
+    get contaDestino(): Conta | undefined {
+        return this.props.contaDestino;
     }
 
     private constructor(props: TransacaoProps, id?: UniqueEntityID) {
@@ -74,6 +79,18 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
             return Result.fail<Transacao>(guardResult.message || 'Invalid Transacao properties');
         }
 
+        // Validate that either conta or cartaoCredito is present, but never both or none
+        const hasConta = props.conta !== undefined && props.conta !== null;
+        const hasCartao = props.cartaoCredito !== undefined && props.cartaoCredito !== null;
+
+        if (!hasConta && !hasCartao) {
+            return Result.fail<Transacao>('Transacao must have either conta or cartaoCredito');
+        }
+
+        if (hasConta && hasCartao) {
+            return Result.fail<Transacao>('Transacao cannot have both conta and cartaoCredito');
+        }
+
         const transacao = new Transacao(props, id);
         return Result.ok<Transacao>(transacao);
     }
@@ -85,7 +102,7 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
      * @return A Result object containing either a valid Transacao instance or an error message if validation fails
      */
     public static createEntrada(
-        props: Omit<TransacaoProps, 'tipo' | 'reembolso' | 'status'>,
+        props: Omit<TransacaoProps, 'tipo' | 'status'>,
         id?: UniqueEntityID
     ): Result<Transacao> {
         // We force the 'Entrada' type and 'Completed' status by default for simple recipes
@@ -109,7 +126,7 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
      * @return A Result object containing either a valid Transacao instance or an error message if validation fails
      */
     public static createSaida(
-        props: Omit<TransacaoProps, 'tipo' | 'reembolso' | 'status'>,
+        props: Omit<TransacaoProps, 'tipo' | 'status'>,
         id?: UniqueEntityID
     ): Result<Transacao> {
         // We force the 'Saída' type and 'Completed' status by default for simple expenses
@@ -125,32 +142,6 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
         }, id);
     }
 
-    /**
-     * Specialized factory for creating a Refund transaction based on an original transaction ID
-     * @param props - The properties required to create a Transacao entity, excluding 'tipo' and 'reembolso' which are set by default for this factory
-     * @param originalId - The UniqueEntityID of the original transaction that is being refunded
-     * @param id - Optional UniqueEntityID to restore/preserve domain id from persistence
-     * @return A Result object containing either a valid Transacao instance or an error message if validation fails
-     */
-    public static createReembolso(
-        props: Omit<TransacaoProps, 'tipo' | 'reembolso' | 'status'>,
-        originalId: UniqueEntityID,
-        id?: UniqueEntityID
-    ): Result<Transacao> {
-        const typeResult = Tipo.create("Reembolso");
-        const refundResult = Reembolso.create(originalId);
-        const statusResult = Status.create("Pendente");
-
-        const combine = Result.combine([typeResult, refundResult, statusResult]);
-        if (combine.isFailure) return Result.fail<Transacao>(combine.errorValue() as string);
-
-        return Transacao.create({
-            ...props,
-            tipo: typeResult.getValue(),
-            reembolso: refundResult.getValue(),
-            status: statusResult.getValue()
-        }, id);
-    }
 
     /**
      * Specialized factory for creating a Credit transaction, which is a type of expense that is pending until confirmed
@@ -159,7 +150,7 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
      * @return A Result object containing either a valid Transacao instance or an error message if validation fails
      */
     public static createCredito(
-        props: Omit<TransacaoProps, 'tipo' | 'reembolso' | 'status'>,
+        props: Omit<TransacaoProps, 'tipo' | 'status'>,
         id?: UniqueEntityID
     ): Result<Transacao> {
         const typeResult = Tipo.create("Crédito");
@@ -176,13 +167,36 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
     }
 
     /**
-     * Specialized factory for creating a Monthly Expense transaction, which is a type of expense that is pending until confirmed
+     * Specialized factory for creating a Refund transaction
+     * @param props - The properties required to create a Transacao entity, excluding 'tipo' and 'status' which are set by default for this factory
+     * @param id - Optional UniqueEntityID to restore/preserve domain id from persistence
+     * @return A Result object containing either a valid Transacao instance or an error message if validation fails
+     */
+    public static createReembolso(
+        props: Omit<TransacaoProps, 'tipo' | 'status'>,
+        id?: UniqueEntityID
+    ): Result<Transacao> {
+        const typeResult = Tipo.create("Reembolso");
+        const statusResult = Status.create("Concluído");
+
+        const combine = Result.combine([typeResult, statusResult]);
+        if (combine.isFailure) return Result.fail<Transacao>(combine.errorValue() as string);
+
+        return Transacao.create({
+            ...props,
+            tipo: typeResult.getValue(),
+            status: statusResult.getValue()
+        }, id);
+    }
+
+    /**
+     * Specialized factory for creating a Credit transaction, which is a type of expense that is pending until confirmed
      * @param props - The properties required to create a Transacao entity, excluding 'tipo' and 'status' which are set by default for this factory
      * @param id - Optional UniqueEntityID to restore/preserve domain id from persistence
      * @return A Result object containing either a valid Transacao instance or an error message if validation fails
      */
     public static createDespesaMensal(
-        props: Omit<TransacaoProps, 'tipo' | 'reembolso' | 'status'>,
+        props: Omit<TransacaoProps, 'tipo' | 'status'>,
         id?: UniqueEntityID
     ): Result<Transacao> {
         const typeResult = Tipo.create("Despesa Mensal");

@@ -4,17 +4,19 @@ import type {
     ITransacaoDTO,
     ITransacaoInputDTO,
     ITransacaoReembolsoDTO,
-    ITransacaoUpdateDTO,
-    IData
+    ITransacaoUpdateDTO
 } from '../dto/ITransacaoDTO.js';
 import type ITransacaoRepo from '../repos/IRepos/ITransacaoRepo.js';
 import type ICategoriaRepo from '../repos/IRepos/ICategoriaRepo.js';
 import type IContaRepo from '../repos/IRepos/IContaRepo.js';
+import type ICartaoCreditoRepo from '../repos/IRepos/ICartaoCreditoRepo.js';
 import { Transacao } from '../domain/Transacao/Entities/Transacao.js';
 import { Descricao } from '../domain/Transacao/ValueObjects/Descricao.js';
-import { Data } from '../domain/Transacao/ValueObjects/Data.js';
+import { Data } from '../domain/Shared/ValueObjects/Data.js';
 import { Dinheiro } from '../domain/Shared/ValueObjects/Dinheiro.js';
+import { Tipo } from '../domain/Transacao/ValueObjects/Tipo.js';
 import { TransacaoMap } from '../mappers/TransacaoMap.js';
+import {Status} from "../domain/Transacao/ValueObjects/Status.js";
 
 /**
  * Service class responsible for handling all business logic related to Transacao entities, including creation, updates, deletions, and queries.
@@ -27,6 +29,7 @@ export default class TransacaoService {
         @Inject('TransacaoRepo') private transacaoRepo: ITransacaoRepo,
         @Inject('CategoriaRepo') private categoriaRepo: ICategoriaRepo,
         @Inject('ContaRepo') private contaRepo: IContaRepo,
+        @Inject('CartaoCreditoRepo') private cartaoCreditoRepo: ICartaoCreditoRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {}
 
@@ -34,7 +37,8 @@ export default class TransacaoService {
 
     /**
      * Creates a new "Entrada" type Transacao based on the provided input DTO. This method validates the input,
-     * checks for the existence of related Categoria and Conta entities,
+     * checks for the existence of related Categoria and Conta entities.
+     * Entrada only applies to Conta (bank accounts), not credit cards.
      * @param inputDTO - The data transfer object containing the necessary information to create an Entrada transaction
      * @returns A Result object containing either the created Transacao DTO or an error message if the creation process fails at any step
      */
@@ -48,10 +52,13 @@ export default class TransacaoService {
             if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
 
             const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
-            if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Target Account not provided');
-            const conta = await this.contaRepo.findById(inputDTO.contaId);
-
             if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
+
+            // Entrada requires a Conta (account), not a credit card
+            if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Target Account is required for Entrada');
+            if (inputDTO.cartaoCreditoId) return Result.fail<ITransacaoDTO>('Entrada cannot be applied to credit cards');
+
+            const conta = await this.contaRepo.findById(inputDTO.contaId);
             if (!conta) return Result.fail<ITransacaoDTO>('Target Account not found');
 
             const transacaoOrError = Transacao.createEntrada({
@@ -68,13 +75,14 @@ export default class TransacaoService {
             // attach owner user id (non-domain prop) so persistence includes user_domain_id
             (transacao as unknown as Record<string, unknown>)['userDomainId'] = inputDTO.userId ?? conta.userId.toString();
 
-            const balanceResult = conta.registarTransacao(transacao);
+            // Entrada increases account balance
+            const balanceResult = conta.adicionarSaldo(transacao.valor);
             if (balanceResult.isFailure) return Result.fail<ITransacaoDTO>(String(balanceResult.error));
 
-            await this.transacaoRepo.save(transacao);
+            const savedTransacao = await this.transacaoRepo.save(transacao);
             await this.contaRepo.update(conta);
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(transacao));
+            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
         } catch (e) {
             this.logger.error('TransacaoService.createEntrada error: %o', e);
             return Result.fail<ITransacaoDTO>('Error creating entrada');
@@ -84,6 +92,7 @@ export default class TransacaoService {
     /**
      * Creates a new "Saida" type Transacao based on the provided input DTO. This method validates the input,
      * checks for the existence of related Categoria and Conta entities, and ensures that the transaction can be registered with the account's balance.
+     * Saida only applies to Conta (bank accounts), not credit cards.
      * @param inputDTO - The data transfer object containing the necessary information to create a Saida transaction
      * @returns A Result object containing either the created Transacao DTO or an error message if the creation process
      * fails at any step, such as validation errors, missing related entities, or balance issues
@@ -98,10 +107,13 @@ export default class TransacaoService {
             if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
 
             const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
-            if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Target Account not provided');
-            const conta = await this.contaRepo.findById(inputDTO.contaId);
-
             if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
+
+            // Saida requires a Conta (account), not a credit card
+            if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Target Account is required for Saida');
+            if (inputDTO.cartaoCreditoId) return Result.fail<ITransacaoDTO>('Saida cannot be applied to credit cards');
+
+            const conta = await this.contaRepo.findById(inputDTO.contaId);
             if (!conta) return Result.fail<ITransacaoDTO>('Target Account not found');
 
             const transacaoOrError = Transacao.createSaida({
@@ -118,13 +130,14 @@ export default class TransacaoService {
             // attach owner user id
             (transacao as unknown as Record<string, unknown>)['userDomainId'] = inputDTO.userId ?? conta.userId.toString();
 
-            const balanceResult = conta.registarTransacao(transacao);
+            // Saida decreases account balance
+            const balanceResult = conta.subtrairSaldo(transacao.valor);
             if (balanceResult.isFailure) return Result.fail<ITransacaoDTO>(String(balanceResult.error));
 
-            await this.transacaoRepo.save(transacao);
+            const savedTransacao = await this.transacaoRepo.save(transacao);
             await this.contaRepo.update(conta);
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(transacao));
+            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
         } catch (e) {
             this.logger.error('TransacaoService.createSaida error: %o', e);
             return Result.fail<ITransacaoDTO>('Error creating saida');
@@ -132,11 +145,9 @@ export default class TransacaoService {
     }
 
     /**
-     * Creates a new "Credito" type Transacao based on the provided input DTO. This method validates the input,
-     * checks for the existence of related Categoria and Conta entities, and ensures that the transaction can be registered with the account's balance.
-     * @param inputDTO - The data transfer object containing the necessary information to create a Credito transaction
-     * @returns A Result object containing either the created Transacao DTO or an error message if the creation process
-     * fails at any step, such as validation errors, missing related entities, or balance issues
+     * Creates a new "Credito" type Transacao. This method receives a cartaoCreditoId,
+     * gets the associated payment account, adds to card utilization and subtracts from account balance.
+     * @param inputDTO - The data transfer object containing the necessary information to create a Credito transaction (requires cartaoCreditoId)
      */
     public async createCredito(inputDTO: ITransacaoInputDTO): Promise<Result<ITransacaoDTO>> {
         try {
@@ -148,33 +159,53 @@ export default class TransacaoService {
             if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
 
             const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
-            if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Target Account not provided');
-            const conta = await this.contaRepo.findById(inputDTO.contaId);
-
             if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
-            if (!conta) return Result.fail<ITransacaoDTO>('Target Account not found');
+
+            // Credito requires cartaoCreditoId
+            if (!inputDTO.cartaoCreditoId) {
+                return Result.fail<ITransacaoDTO>('cartaoCreditoId is required for Credito');
+            }
+
+            const cartaoCredito = await this.cartaoCreditoRepo.findById(inputDTO.cartaoCreditoId);
+            if (!cartaoCredito) return Result.fail<ITransacaoDTO>('Target Credit Card not found');
+
+            // Get the associated payment account from the card
+            const contaPagamentoId = cartaoCredito.contaPagamentoId;
+            if (!contaPagamentoId) {
+                return Result.fail<ITransacaoDTO>('Credit card does not have an associated payment account');
+            }
+            const conta = await this.contaRepo.findById(contaPagamentoId.toString());
+            if (!conta) return Result.fail<ITransacaoDTO>('Payment account associated with credit card not found');
+
+            const userId = inputDTO.userId ?? cartaoCredito.userId.toString();
 
             const transacaoOrError = Transacao.createCredito({
                 descricao: descricaoResult.getValue(),
                 data: dataResult.getValue(),
                 valor: dinheiroResult.getValue(),
                 categoria: categoria,
-                conta: conta
+                cartaoCredito: cartaoCredito
             });
 
             if (transacaoOrError.isFailure) return Result.fail<ITransacaoDTO>(String(transacaoOrError.error));
             const transacao = transacaoOrError.getValue();
 
             // attach owner user id
-            (transacao as unknown as Record<string, unknown>)['userDomainId'] = inputDTO.userId ?? conta.userId.toString();
+            (transacao as unknown as Record<string, unknown>)['userDomainId'] = userId;
 
-            const balanceResult = conta.registarTransacao(transacao);
-            if (balanceResult.isFailure) return Result.fail<ITransacaoDTO>(String(balanceResult.error));
+            // Crédito: add to card utilization and subtract from account balance
+            const addToCardResult = cartaoCredito.adicionarUtilizacao(transacao.valor);
+            if (addToCardResult.isFailure) return Result.fail<ITransacaoDTO>(String(addToCardResult.error));
 
-            await this.transacaoRepo.save(transacao);
+            const subtractFromAccountResult = conta.subtrairSaldo(transacao.valor);
+            if (subtractFromAccountResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractFromAccountResult.error));
+
+            await this.cartaoCreditoRepo.update(cartaoCredito);
             await this.contaRepo.update(conta);
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(transacao));
+            const savedTransacao = await this.transacaoRepo.save(transacao);
+
+            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
         } catch (e) {
             this.logger.error('TransacaoService.createCredito error: %o', e);
             return Result.fail<ITransacaoDTO>('Error creating credito');
@@ -182,8 +213,77 @@ export default class TransacaoService {
     }
 
     /**
+     * Creates a new "Reembolso" type Transacao. This method receives a cartaoCreditoId,
+     * gets the associated payment account, adds to the account balance and subtracts from card utilization.
+     * @param inputDTO - The data transfer object containing the necessary information to create a Reembolso transaction (requires cartaoCreditoId)
+     */
+    public async createReembolso(inputDTO: ITransacaoReembolsoDTO): Promise<Result<ITransacaoDTO>> {
+        try {
+            const descricaoResult = Descricao.create(inputDTO.descricao ?? '');
+            const dataResult = Data.createFromParts(inputDTO.data.dia, inputDTO.data.mes, inputDTO.data.ano);
+            const dinheiroResult = Dinheiro.create(Number(inputDTO.valor.valor), String(inputDTO.valor.moeda ?? 'EUR'));
+
+            const combine = Result.combine([descricaoResult, dataResult, dinheiroResult]);
+            if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
+
+            const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
+            if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
+
+            // Reembolso requires cartaoCreditoId
+            if (!inputDTO.cartaoCreditoId) {
+                return Result.fail<ITransacaoDTO>('cartaoCreditoId is required for Reembolso');
+            }
+
+            const cartaoCredito = await this.cartaoCreditoRepo.findById(inputDTO.cartaoCreditoId);
+            if (!cartaoCredito) return Result.fail<ITransacaoDTO>('Target Credit Card not found');
+
+            // Get the associated payment account from the card
+            const contaPagamentoId = cartaoCredito.contaPagamentoId;
+            if (!contaPagamentoId) {
+                return Result.fail<ITransacaoDTO>('Credit card does not have an associated payment account');
+            }
+            const conta = await this.contaRepo.findById(contaPagamentoId.toString());
+            if (!conta) return Result.fail<ITransacaoDTO>('Payment account associated with credit card not found');
+
+            const userId = inputDTO.userId ?? cartaoCredito.userId.toString();
+
+            const transacaoOrError = Transacao.createReembolso({
+                descricao: descricaoResult.getValue(),
+                data: dataResult.getValue(),
+                valor: dinheiroResult.getValue(),
+                categoria: categoria,
+                cartaoCredito: cartaoCredito
+            });
+
+            if (transacaoOrError.isFailure) return Result.fail<ITransacaoDTO>(String(transacaoOrError.error));
+            const transacao = transacaoOrError.getValue();
+
+            // attach owner user id
+            (transacao as unknown as Record<string, unknown>)['userDomainId'] = userId;
+
+            // Reembolso: add to account balance and subtract from card utilization
+            const addToAccountResult = conta.adicionarSaldo(transacao.valor);
+            if (addToAccountResult.isFailure) return Result.fail<ITransacaoDTO>(String(addToAccountResult.error));
+
+            const subtractFromCardResult = cartaoCredito.reduzirUtilizacao(transacao.valor);
+            if (subtractFromCardResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractFromCardResult.error));
+
+            await this.contaRepo.update(conta);
+            await this.cartaoCreditoRepo.update(cartaoCredito);
+
+            const savedTransacao = await this.transacaoRepo.save(transacao);
+
+            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+        } catch (e) {
+            this.logger.error('TransacaoService.createReembolso error: %o', e);
+            return Result.fail<ITransacaoDTO>('Error creating reembolso');
+        }
+    }
+
+    /**
      * Creates a new "Despesa Mensal" type Transacao based on the provided input DTO. This method validates the input,
      * checks for the existence of related Categoria and Conta entities, and ensures that the transaction can be registered with the account's balance.
+     * Despesa Mensal only applies to Conta (bank accounts), not credit cards.
      * @param inputDTO - The data transfer object containing the necessary information to create a Despesa Mensal transaction
      * @returns A Result object containing either the created Transacao DTO or an error message if the creation process
      * fails at any step, such as validation errors, missing related entities, or balance issues
@@ -198,18 +298,26 @@ export default class TransacaoService {
             if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
 
             const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
-            if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Target Account not provided');
-            const conta = await this.contaRepo.findById(inputDTO.contaId);
-
             if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
-            if (!conta) return Result.fail<ITransacaoDTO>('Target Account not found');
+
+            // Despesa Mensal requires both contaId (origin) and contaDestinoId (destination)
+            if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Origin Account (contaId) is required for Despesa Mensal');
+            if (!inputDTO.contaDestinoId) return Result.fail<ITransacaoDTO>('Destination Account (contaDestinoId) is required for Despesa Mensal');
+            if (inputDTO.cartaoCreditoId) return Result.fail<ITransacaoDTO>('Despesa Mensal cannot be applied to credit cards');
+
+            const conta = await this.contaRepo.findById(inputDTO.contaId);
+            if (!conta) return Result.fail<ITransacaoDTO>('Origin Account not found');
+
+            const contaDestino = await this.contaRepo.findById(inputDTO.contaDestinoId);
+            if (!contaDestino) return Result.fail<ITransacaoDTO>('Destination Account not found');
 
             const transacaoOrError = Transacao.createDespesaMensal({
                 descricao: descricaoResult.getValue(),
                 data: dataResult.getValue(),
                 valor: dinheiroResult.getValue(),
                 categoria: categoria,
-                conta: conta
+                conta: conta,
+                contaDestino: contaDestino
             });
 
             if (transacaoOrError.isFailure) return Result.fail<ITransacaoDTO>(String(transacaoOrError.error));
@@ -218,13 +326,18 @@ export default class TransacaoService {
             // attach owner user id
             (transacao as unknown as Record<string, unknown>)['userDomainId'] = inputDTO.userId ?? conta.userId.toString();
 
-            const balanceResult = conta.registarTransacao(transacao);
-            if (balanceResult.isFailure) return Result.fail<ITransacaoDTO>(String(balanceResult.error));
+            // Despesa Mensal (Pendente): subtract from origin account, add to destination account
+            const subtractResult = conta.subtrairSaldo(transacao.valor);
+            if (subtractResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractResult.error));
 
-            await this.transacaoRepo.save(transacao);
+            const addResult = contaDestino.adicionarSaldo(transacao.valor);
+            if (addResult.isFailure) return Result.fail<ITransacaoDTO>(String(addResult.error));
+
+            const savedTransacao = await this.transacaoRepo.save(transacao);
             await this.contaRepo.update(conta);
+            await this.contaRepo.update(contaDestino);
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(transacao));
+            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
         } catch (e) {
             this.logger.error('TransacaoService.createDespesaMensal error: %o', e);
             return Result.fail<ITransacaoDTO>('Error creating despesa mensal');
@@ -232,101 +345,361 @@ export default class TransacaoService {
     }
 
     /**
-     * Creates a new "Reembolso" type Transacao based on the provided input DTO. This method validates the input,
-     * checks for the existence of related Categoria and Conta entities, ensures that the original transaction exists and is eligible for reimbursement,
-     * and ensures that the new transaction can be registered with the account's balance.
-     * @param inputDTO - The data transfer object containing the necessary information to create a Reembolso transaction,
-     * including a reference to the original transaction being reimbursed
+     * Concludes a monthly expense that is in "Pendente" status. Changes status to "Concluído" and subtracts
+     * the amount from the destination account (contaDestino).
+     * @param transacaoId - The domain ID of the Despesa Mensal transaction to conclude
+     * @returns A Result object containing either the updated Transacao DTO or an error message
      */
-    public async createReembolso(inputDTO: ITransacaoReembolsoDTO): Promise<Result<ITransacaoDTO>> {
+    public async concluirDespesaMensal(transacaoId: string): Promise<Result<ITransacaoDTO>> {
         try {
-            // find original transaction
-            const original = await this.transacaoRepo.findById(inputDTO.reembolso);
-            if (!original) return Result.fail<ITransacaoDTO>('Original transaction not found');
+            const transacao = await this.transacaoRepo.findById(transacaoId);
+            if (!transacao) return Result.fail<ITransacaoDTO>('Transaction not found');
 
-            const descricaoResult = Descricao.create(inputDTO.descricao ?? '');
-            const dataResult = Data.createFromParts(inputDTO.data.dia, inputDTO.data.mes, inputDTO.data.ano);
-            const dinheiroResult = Dinheiro.create(Number(inputDTO.valor.valor), String(inputDTO.valor.moeda ?? 'EUR'));
+            if (transacao.tipo.value !== 'Despesa Mensal') {
+                return Result.fail<ITransacaoDTO>('Transaction is not a Despesa Mensal');
+            }
 
-            const combine = Result.combine([descricaoResult, dataResult, dinheiroResult]);
-            if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
+            if (transacao.status.value !== 'Pendente') {
+                return Result.fail<ITransacaoDTO>('Transaction is not in Pendente status');
+            }
 
-            const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
-            if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Target Account not provided');
-            const conta = await this.contaRepo.findById(inputDTO.contaId);
+            if (!transacao.contaDestino) {
+                return Result.fail<ITransacaoDTO>('Destination account not found for this transaction');
+            }
 
-            if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
-            if (!conta) return Result.fail<ITransacaoDTO>('Target Account not found');
+            // Change status to Concluído by recreating the transaction
+            const statusResult = Status.create('Concluído');
+            if (statusResult.isFailure) return Result.fail<ITransacaoDTO>(String(statusResult.error));
 
-            const transacaoOrError = Transacao.createReembolso({
-                descricao: descricaoResult.getValue(),
-                data: dataResult.getValue(),
-                valor: dinheiroResult.getValue(),
-                categoria: categoria,
-                conta: conta
-            }, original.id);
+            // Recreate transacao with new status
+            const updatedTransacaoOrError = Transacao.create({
+                descricao: transacao.descricao,
+                data: transacao.data,
+                valor: transacao.valor,
+                tipo: transacao.tipo,
+                categoria: transacao.categoria,
+                status: statusResult.getValue(),
+                conta: transacao.conta,
+                contaDestino: transacao.contaDestino,
+                cartaoCredito: transacao.cartaoCredito
+            }, transacao.id);
 
-            if (transacaoOrError.isFailure) return Result.fail<ITransacaoDTO>(String(transacaoOrError.error));
-            const transacao = transacaoOrError.getValue();
+            if (updatedTransacaoOrError.isFailure) {
+                return Result.fail<ITransacaoDTO>(String(updatedTransacaoOrError.error));
+            }
 
-            // attach owner user id
-            (transacao as unknown as Record<string, unknown>)['userDomainId'] = inputDTO.userId ?? conta.userId.toString();
+            const updatedTransacao = updatedTransacaoOrError.getValue();
 
-            const balanceResult = conta.registarTransacao(transacao);
-            if (balanceResult.isFailure) return Result.fail<ITransacaoDTO>(String(balanceResult.error));
+            // Attach user domain id
+            (updatedTransacao as unknown as Record<string, unknown>)['userDomainId'] =
+                (transacao as unknown as Record<string, unknown>)['userDomainId'];
 
-            await this.transacaoRepo.save(transacao);
-            await this.contaRepo.update(conta);
+            // Subtract from destination account
+            const subtractResult = transacao.contaDestino.subtrairSaldo(transacao.valor);
+            if (subtractResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractResult.error));
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(transacao));
+            const savedTransacao = await this.transacaoRepo.update(updatedTransacao);
+            await this.contaRepo.update(transacao.contaDestino);
+
+            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
         } catch (e) {
-            this.logger.error('TransacaoService.createReembolso error: %o', e);
-            return Result.fail<ITransacaoDTO>('Error creating reembolso');
+            this.logger.error('TransacaoService.concluirDespesaMensal error: %o', e);
+            return Result.fail<ITransacaoDTO>('Error concluding despesa mensal');
         }
     }
+
 
     // --- Update & Delete ---
 
     /**
-     * Updates an existing Transacao with new values provided in the update DTO. This method first checks if the transaction to update exists,
-     * then it validates the new values, checks for the existence of related Categoria and Conta entities if they are being updated,
-     * and finally applies the updates while ensuring that the account balance is correctly adjusted based on the changes.
+     * Reverts the impact of an Entrada or Saída transaction
+     */
+    private async revertEntradaSaidaImpact(transacao: Transacao): Promise<Result<void>> {
+        if (!transacao.conta) return Result.fail<void>('Conta not found for Entrada/Saída');
+        const conta = await this.contaRepo.findById(transacao.conta.id.toString());
+        if (!conta) return Result.fail<void>('Associated account not found');
+
+        const revertResult = transacao.tipo.value === 'Entrada'
+            ? conta.subtrairSaldo(transacao.valor)
+            : conta.adicionarSaldo(transacao.valor);
+        if (revertResult.isFailure) return Result.fail<void>(String(revertResult.error));
+
+        await this.contaRepo.update(conta);
+        return Result.ok<void>();
+    }
+
+    /**
+     * Reverts the impact of a Crédito transaction (affects both card and payment account)
+     */
+    private async revertCreditoImpact(transacao: Transacao): Promise<Result<void>> {
+        if (!transacao.cartaoCredito) return Result.fail<void>('CartaoCredito not found for Crédito');
+        const cartao = await this.cartaoCreditoRepo.findById(transacao.cartaoCredito.id.toString());
+        if (!cartao) return Result.fail<void>('Associated credit card not found');
+
+        // Revert: reduce card utilization
+        const revertCardResult = cartao.reduzirUtilizacao(transacao.valor);
+        if (revertCardResult.isFailure) return Result.fail<void>(String(revertCardResult.error));
+
+        // Revert: add back to payment account
+        if (!cartao.contaPagamentoId) return Result.fail<void>('Payment account ID not found for credit card');
+        const contaPagamento = await this.contaRepo.findById(cartao.contaPagamentoId.toString());
+        if (!contaPagamento) return Result.fail<void>('Payment account not found for credit card');
+        const revertAccountResult = contaPagamento.adicionarSaldo(transacao.valor);
+        if (revertAccountResult.isFailure) return Result.fail<void>(String(revertAccountResult.error));
+
+        await this.cartaoCreditoRepo.update(cartao);
+        await this.contaRepo.update(contaPagamento);
+        return Result.ok<void>();
+    }
+
+    /**
+     * Reverts the impact of a Reembolso transaction (affects both card and payment account)
+     */
+    private async revertReembolsoImpact(transacao: Transacao): Promise<Result<void>> {
+        if (!transacao.cartaoCredito) return Result.fail<void>('CartaoCredito not found for Reembolso');
+        const cartao = await this.cartaoCreditoRepo.findById(transacao.cartaoCredito.id.toString());
+        if (!cartao) return Result.fail<void>('Associated credit card not found');
+
+        // Revert: add back card utilization
+        const revertCardResult = cartao.adicionarUtilizacao(transacao.valor);
+        if (revertCardResult.isFailure) return Result.fail<void>(String(revertCardResult.error));
+
+        // Revert: subtract from payment account
+        if (!cartao.contaPagamentoId) return Result.fail<void>('Payment account ID not found for credit card');
+        const contaPagamento = await this.contaRepo.findById(cartao.contaPagamentoId.toString());
+        if (!contaPagamento) return Result.fail<void>('Payment account not found for credit card');
+        const revertAccountResult = contaPagamento.subtrairSaldo(transacao.valor);
+        if (revertAccountResult.isFailure) return Result.fail<void>(String(revertAccountResult.error));
+
+        await this.cartaoCreditoRepo.update(cartao);
+        await this.contaRepo.update(contaPagamento);
+        return Result.ok<void>();
+    }
+
+    /**
+     * Reverts the impact of a Despesa Mensal transaction (affects two accounts)
+     */
+    private async revertDespesaMensalImpact(transacao: Transacao): Promise<Result<void>> {
+        if (!transacao.conta) return Result.fail<void>('Conta origem not found for Despesa Mensal');
+        if (!transacao.contaDestino) return Result.fail<void>('Conta destino not found for Despesa Mensal');
+
+        const contaOrigem = await this.contaRepo.findById(transacao.conta.id.toString());
+        const contaDestino = await this.contaRepo.findById(transacao.contaDestino.id.toString());
+        if (!contaOrigem) return Result.fail<void>('Origin account not found');
+        if (!contaDestino) return Result.fail<void>('Destination account not found');
+
+        // Revert based on status
+        if (transacao.status.value === 'Pendente') {
+            // Revert: add back to origem, subtract from destino
+            const revertOrigemResult = contaOrigem.adicionarSaldo(transacao.valor);
+            const revertDestinoResult = contaDestino.subtrairSaldo(transacao.valor);
+            if (revertOrigemResult.isFailure) return Result.fail<void>(String(revertOrigemResult.error));
+            if (revertDestinoResult.isFailure) return Result.fail<void>(String(revertDestinoResult.error));
+        } else if (transacao.status.value === 'Concluído') {
+            // Revert: add back to origem, add back to destino (since it was subtracted)
+            const revertOrigemResult = contaOrigem.adicionarSaldo(transacao.valor);
+            const revertDestinoResult = contaDestino.adicionarSaldo(transacao.valor);
+            if (revertOrigemResult.isFailure) return Result.fail<void>(String(revertOrigemResult.error));
+            if (revertDestinoResult.isFailure) return Result.fail<void>(String(revertDestinoResult.error));
+        }
+
+        await this.contaRepo.update(contaOrigem);
+        await this.contaRepo.update(contaDestino);
+        return Result.ok<void>();
+    }
+
+    /**
+     * Applies the impact of an Entrada or Saída transaction
+     */
+    private async applyEntradaSaidaImpact(transacao: Transacao): Promise<Result<void>> {
+        if (!transacao.conta) return Result.fail<void>('Conta not found');
+        const conta = await this.contaRepo.findById(transacao.conta.id.toString());
+        if (!conta) return Result.fail<void>('Associated account not found');
+
+        const applyResult = transacao.tipo.value === 'Entrada'
+            ? conta.adicionarSaldo(transacao.valor)
+            : conta.subtrairSaldo(transacao.valor);
+        if (applyResult.isFailure) return Result.fail<void>(String(applyResult.error));
+
+        await this.contaRepo.update(conta);
+        return Result.ok<void>();
+    }
+
+    /**
+     * Applies the impact of a Crédito transaction (affects both card and payment account)
+     */
+    private async applyCreditoImpact(transacao: Transacao): Promise<Result<void>> {
+        if (!transacao.cartaoCredito) return Result.fail<void>('CartaoCredito not found');
+        const cartao = await this.cartaoCreditoRepo.findById(transacao.cartaoCredito.id.toString());
+        if (!cartao) return Result.fail<void>('Associated credit card not found');
+
+        // Apply: add to card utilization
+        const applyCardResult = cartao.adicionarUtilizacao(transacao.valor);
+        if (applyCardResult.isFailure) return Result.fail<void>(String(applyCardResult.error));
+
+        // Apply: subtract from payment account
+        if (!cartao.contaPagamentoId) return Result.fail<void>('Payment account ID not found for credit card');
+        const contaPagamento = await this.contaRepo.findById(cartao.contaPagamentoId.toString());
+        if (!contaPagamento) return Result.fail<void>('Payment account not found');
+        const applyAccountResult = contaPagamento.subtrairSaldo(transacao.valor);
+        if (applyAccountResult.isFailure) return Result.fail<void>(String(applyAccountResult.error));
+
+        await this.cartaoCreditoRepo.update(cartao);
+        await this.contaRepo.update(contaPagamento);
+        return Result.ok<void>();
+    }
+
+    /**
+     * Applies the impact of a Reembolso transaction (affects both card and payment account)
+     */
+    private async applyReembolsoImpact(transacao: Transacao): Promise<Result<void>> {
+        if (!transacao.cartaoCredito) return Result.fail<void>('CartaoCredito not found');
+        const cartao = await this.cartaoCreditoRepo.findById(transacao.cartaoCredito.id.toString());
+        if (!cartao) return Result.fail<void>('Associated credit card not found');
+
+        // Apply: reduce card utilization
+        const applyCardResult = cartao.reduzirUtilizacao(transacao.valor);
+        if (applyCardResult.isFailure) return Result.fail<void>(String(applyCardResult.error));
+
+        // Apply: add to payment account
+        if (!cartao.contaPagamentoId) return Result.fail<void>('Payment account ID not found for credit card');
+        const contaPagamento = await this.contaRepo.findById(cartao.contaPagamentoId.toString());
+        if (!contaPagamento) return Result.fail<void>('Payment account not found');
+        const applyAccountResult = contaPagamento.adicionarSaldo(transacao.valor);
+        if (applyAccountResult.isFailure) return Result.fail<void>(String(applyAccountResult.error));
+
+        await this.cartaoCreditoRepo.update(cartao);
+        await this.contaRepo.update(contaPagamento);
+        return Result.ok<void>();
+    }
+
+    /**
+     * Applies the impact of a Despesa Mensal transaction (affects two accounts)
+     */
+    private async applyDespesaMensalImpact(transacao: Transacao): Promise<Result<void>> {
+        if (!transacao.conta) return Result.fail<void>('Conta origem not found');
+        if (!transacao.contaDestino) return Result.fail<void>('Conta destino not found');
+
+        const contaOrigem = await this.contaRepo.findById(transacao.conta.id.toString());
+        const contaDestino = await this.contaRepo.findById(transacao.contaDestino.id.toString());
+        if (!contaOrigem) return Result.fail<void>('Origin account not found');
+        if (!contaDestino) return Result.fail<void>('Destination account not found');
+
+        // Apply based on status
+        if (transacao.status.value === 'Pendente') {
+            // Apply: subtract from origem, add to destino
+            const applyOrigemResult = contaOrigem.subtrairSaldo(transacao.valor);
+            const applyDestinoResult = contaDestino.adicionarSaldo(transacao.valor);
+            if (applyOrigemResult.isFailure) return Result.fail<void>(String(applyOrigemResult.error));
+            if (applyDestinoResult.isFailure) return Result.fail<void>(String(applyDestinoResult.error));
+        } else if (transacao.status.value === 'Concluído') {
+            // Apply: subtract from origem, subtract from destino
+            const applyOrigemResult = contaOrigem.subtrairSaldo(transacao.valor);
+            const applyDestinoResult = contaDestino.subtrairSaldo(transacao.valor);
+            if (applyOrigemResult.isFailure) return Result.fail<void>(String(applyOrigemResult.error));
+            if (applyDestinoResult.isFailure) return Result.fail<void>(String(applyDestinoResult.error));
+        }
+
+        await this.contaRepo.update(contaOrigem);
+        await this.contaRepo.update(contaDestino);
+        return Result.ok<void>();
+    }
+
+    /**
+     * Updates an existing Transacao with new values provided in the update DTO.
+     * Properly handles transactions affecting multiple accounts/cards (Crédito, Reembolso, Despesa Mensal).
      * @param id - The unique identifier of the Transacao to update
-     * @param updateDTO - The data transfer object containing the new values for the Transacao. This may include changes
-     * to the description, value, category, or associated account.
+     * @param updateDTO - The data transfer object containing the new values for the Transacao.
      */
     public async updateTransacao(id: string, updateDTO: ITransacaoUpdateDTO): Promise<Result<ITransacaoDTO>> {
         try {
             const existing = await this.transacaoRepo.findById(id);
             if (!existing) return Result.fail<ITransacaoDTO>(`Transaction not found: ${id}`);
 
-            if (!existing.conta) return Result.fail<ITransacaoDTO>('Associated account not found');
-            const conta = await this.contaRepo.findById(existing.conta.id.toString());
-            if (!conta) return Result.fail<ITransacaoDTO>('Associated account not found');
+            const tipo = existing.tipo.value;
 
-            // Revert impact, update, apply new impact
-            conta.reverterTransacao(existing);
+            // STEP 1: Revert the impact of the OLD transaction
+            let revertResult: Result<void>;
+            switch (tipo) {
+                case 'Entrada':
+                case 'Saída':
+                    revertResult = await this.revertEntradaSaidaImpact(existing);
+                    break;
+                case 'Crédito':
+                    revertResult = await this.revertCreditoImpact(existing);
+                    break;
+                case 'Reembolso':
+                    revertResult = await this.revertReembolsoImpact(existing);
+                    break;
+                case 'Despesa Mensal':
+                    revertResult = await this.revertDespesaMensalImpact(existing);
+                    break;
+                default:
+                    return Result.fail<ITransacaoDTO>(`Unknown transaction type: ${tipo}`);
+            }
 
-            // Rebuild transaction with new values (simplified for brevity, ensure all fields map correctly)
+            if (revertResult.isFailure) return Result.fail<ITransacaoDTO>(String(revertResult.error));
+
+            // STEP 2: Build updated transaction with new values
             const descricao = updateDTO.descricao ? Descricao.create(updateDTO.descricao).getValue() : existing.descricao;
             const valor = updateDTO.valor ? Dinheiro.create(updateDTO.valor.valor, updateDTO.valor.moeda).getValue() : existing.valor;
+            const data = updateDTO.data ? Data.createFromParts(updateDTO.data.dia, updateDTO.data.mes, updateDTO.data.ano).getValue() : existing.data;
+            const status = updateDTO.status ? Status.create(updateDTO.status).getValue() : existing.status;
+            const tipoVO = updateDTO.tipo ? Tipo.create(updateDTO.tipo).getValue() : existing.tipo;
+
+            let categoria = existing.categoria;
+            if (updateDTO.categoriaId) {
+                const cat = await this.categoriaRepo.findById(updateDTO.categoriaId);
+                if (!cat) return Result.fail<ITransacaoDTO>('Category not found');
+                categoria = cat;
+            }
 
             const updatedOrError = Transacao.create({
-                ...existing.props,
                 descricao,
+                data,
                 valor,
-                // Add other update logic here...
+                tipo: tipoVO,
+                categoria,
+                status,
+                conta: existing.conta,
+                cartaoCredito: existing.cartaoCredito,
+                contaDestino: existing.contaDestino
             }, existing.id);
 
             if (updatedOrError.isFailure) return Result.fail<ITransacaoDTO>(String(updatedOrError.error));
-
             const updatedTransacao = updatedOrError.getValue();
-            conta.registarTransacao(updatedTransacao);
 
-            await this.transacaoRepo.update(updatedTransacao);
-            await this.contaRepo.update(conta);
+            // Attach userDomainId
+            (updatedTransacao as unknown as Record<string, unknown>)['userDomainId'] =
+                (existing as unknown as Record<string, unknown>)['userDomainId'];
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(updatedTransacao));
+            // STEP 3: Apply the impact of the NEW transaction
+            const newTipo = updatedTransacao.tipo.value;
+            let applyResult: Result<void>;
+
+            switch (newTipo) {
+                case 'Entrada':
+                case 'Saída':
+                    applyResult = await this.applyEntradaSaidaImpact(updatedTransacao);
+                    break;
+                case 'Crédito':
+                    applyResult = await this.applyCreditoImpact(updatedTransacao);
+                    break;
+                case 'Reembolso':
+                    applyResult = await this.applyReembolsoImpact(updatedTransacao);
+                    break;
+                case 'Despesa Mensal':
+                    applyResult = await this.applyDespesaMensalImpact(updatedTransacao);
+                    break;
+                default:
+                    return Result.fail<ITransacaoDTO>(`Unknown transaction type: ${newTipo}`);
+            }
+
+            if (applyResult.isFailure) return Result.fail<ITransacaoDTO>(String(applyResult.error));
+
+            const savedUpdated = await this.transacaoRepo.update(updatedTransacao);
+
+            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedUpdated));
         } catch (e) {
             this.logger.error('TransacaoService.updateTransacao error: %o', e);
             return Result.fail<ITransacaoDTO>('Error updating transaction');
@@ -334,24 +707,39 @@ export default class TransacaoService {
     }
 
     /**
-     * Deletes a Transacao by its unique identifier. This method first checks if the transaction exists, then it
-     * reverts the impact of the transaction from the associated account's balance,
+     * Deletes a Transacao by its unique identifier.
+     * Properly handles transactions affecting multiple accounts/cards (Crédito, Reembolso, Despesa Mensal).
      * @param id - The unique identifier of the Transacao to delete
-     * @returns A Result object containing either a boolean indicating successful deletion or an error message if the
-     * deletion process fails at any step, such as if the transaction is not found or if there are issues reverting the account balance
+     * @returns A Result object containing either a boolean indicating successful deletion or an error message
      */
     public async deleteTransacao(id: string): Promise<Result<boolean>> {
         try {
             const transacao = await this.transacaoRepo.findById(id);
             if (!transacao) return Result.fail<boolean>('Not found');
 
-            if (transacao.conta) {
-                const conta = await this.contaRepo.findById(transacao.conta.id.toString());
-                if (conta) {
-                    conta.reverterTransacao(transacao);
-                    await this.contaRepo.update(conta);
-                }
+            const tipo = transacao.tipo.value;
+
+            // Revert the impact of the transaction based on its type
+            let revertResult: Result<void>;
+            switch (tipo) {
+                case 'Entrada':
+                case 'Saída':
+                    revertResult = await this.revertEntradaSaidaImpact(transacao);
+                    break;
+                case 'Crédito':
+                    revertResult = await this.revertCreditoImpact(transacao);
+                    break;
+                case 'Reembolso':
+                    revertResult = await this.revertReembolsoImpact(transacao);
+                    break;
+                case 'Despesa Mensal':
+                    revertResult = await this.revertDespesaMensalImpact(transacao);
+                    break;
+                default:
+                    return Result.fail<boolean>(`Unknown transaction type: ${tipo}`);
             }
+
+            if (revertResult.isFailure) return Result.fail<boolean>(String(revertResult.error));
 
             await this.transacaoRepo.delete(id);
             return Result.ok<boolean>(true);
@@ -361,7 +749,7 @@ export default class TransacaoService {
         }
     }
 
-    // --- Query Methods (ALL included) ---
+    // --- Update & Delete ---
 
     /**
      * Finds a Transacao by its unique identifier. This method checks if the transaction exists and returns it as a DTO
@@ -382,93 +770,186 @@ export default class TransacaoService {
     }
 
     /**
-     * Finds Transacao entities by their associated Categoria. This method checks if the category exists and returns
-     * all transactions linked to that category as DTOs.
+     * Finds Entrada/Saída transactions by categoria for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
      * @param categoriaId - The unique identifier of the Categoria to find transactions for
      * @param userId - Optional user identifier to filter transactions by user ownership
-     * @returns A Result object containing either an array of Transacao DTOs associated with the specified category or
-     * an error message if there is an issue during the fetch operation
+     * @returns A Result object containing either an array of conta transaction DTOs or an error message
      */
-    public async findTransacaoByCategoria(categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
+    public async findContaTransactionsByCategoria(contaId: string, categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
         try {
-            const rows: Transacao[] = await this.transacaoRepo.findByCategoria(categoriaId, userId);
+            const rows: Transacao[] = await this.transacaoRepo.findContaTransactionsByCategoria(contaId, categoriaId, userId);
             return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
         } catch (e) {
-            this.logger.error('TransacaoService.findTransacaoByCategoria error: %o', e);
-            return Result.fail<ITransacaoDTO[]>('Error fetching transactions by category');
+            this.logger.error('TransacaoService.findContaTransactionsByCategoria error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching conta transactions by categoria');
         }
     }
 
     /**
-     * Finds Transacao entities by their type (e.g., "Entrada", "Saida", "Credito", "Despesa Mensal"). This method
-     * returns all transactions of the specified type as DTOs.
-     * @param tipo - The type of transactions to find (e.g., "Entrada", "Saida", "Credito", "Despesa Mensal")
+     * Finds Crédito/Reembolso transactions by categoria for a specific credit card.
+     * @param cartaoCreditoId - The domain id of the CartaoCredito to filter transactions by.
+     * @param categoriaId - The unique identifier of the Categoria to find transactions for
      * @param userId - Optional user identifier to filter transactions by user ownership
-     * @returns A Result object containing either an array of Transacao DTOs of the specified type or an error
-     * message if there is an issue during the fetch operation
+     * @returns A Result object containing either an array of cartão transaction DTOs or an error message
      */
-    public async findTransacaoByTipo(tipo: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
+    public async findCartaoTransactionsByCategoria(cartaoCreditoId: string, categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
         try {
-            const rows: Transacao[] = await this.transacaoRepo.findByTipo(tipo, userId);
+            const rows: Transacao[] = await this.transacaoRepo.findCartaoTransactionsByCategoria(cartaoCreditoId, categoriaId, userId);
             return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
         } catch (e) {
-            this.logger.error('TransacaoService.findTransacaoByTipo error: %o', e);
-            return Result.fail<ITransacaoDTO[]>('Error fetching transactions by type');
+            this.logger.error('TransacaoService.findCartaoTransactionsByCategoria error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching cartão transactions by categoria');
         }
     }
 
     /**
-     * Finds Transacao entities by their status (e.g., "Pendente", "Confirmada", "Cancelada"). This method returns
-     * all transactions of the specified status as DTOs.
-     * @param status - The status of transactions to find (e.g., "Pendente", "Confirmada", "Cancelada")
+     * Finds Despesa Mensal transactions by categoria for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param categoriaId - The unique identifier of the Categoria to find transactions for
      * @param userId - Optional user identifier to filter transactions by user ownership
-     * @returns A Result object containing either an array of Transacao DTOs of the specified status or an error
-     * message if there is an issue during the fetch operation
+     * @returns A Result object containing either an array of despesa mensal DTOs or an error message
      */
-    public async findTransacaoByStatus(status: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
+    public async findDespesaMensalByCategoria(contaId: string, categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
         try {
-            const rows: Transacao[] = await this.transacaoRepo.findByStatus(status, userId);
+            const rows: Transacao[] = await this.transacaoRepo.findDespesaMensalByCategoria(contaId, categoriaId, userId);
             return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
         } catch (e) {
-            this.logger.error('TransacaoService.findTransacaoByStatus error: %o', e);
-            return Result.fail<ITransacaoDTO[]>('Error fetching transactions by status');
+            this.logger.error('TransacaoService.findDespesaMensalByCategoria error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching despesa mensal by categoria');
         }
     }
 
     /**
-     * Finds Transacao entities that fall within a specified date range. This method converts the provided date parts into Date objects,
-     * queries the repository for transactions within that range, and returns them as DTOs.
-     * @param startDate - The starting date of the range, provided as an IData object containing day, month, and year
-     * @param endDate - The ending date of the range, provided as an IData object containing day, month, and year
+     * Finds Crédito and Reembolso transactions with a specific status for a specific credit card.
+     * @param cartaoCreditoId - The domain id of the CartaoCredito to filter transactions by.
+     * @param status - The status of transactions to find (e.g., "Pendente", "Concluído")
      * @param userId - Optional user identifier to filter transactions by user ownership
-     * @returns A Result object containing either an array of Transacao DTOs that fall within the specified date range
-     * or an error message if there is an issue during the fetch operation
+     * @returns A Result object containing either an array of transaction DTOs or an error message
      */
-    public async findTransacaoByDateRange(startDate: IData, endDate: IData, userId?: string): Promise<Result<ITransacaoDTO[]>> {
+    public async findCartaoTransactionsByStatus(cartaoCreditoId: string, status: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
         try {
-            const start = new Date(startDate.ano, startDate.mes - 1, startDate.dia, 0, 0, 0);
-            const end = new Date(endDate.ano, endDate.mes - 1, endDate.dia, 23, 59, 59);
-            const rows: Transacao[] = await this.transacaoRepo.findByDateRange(start, end, userId);
+            const rows: Transacao[] = await this.transacaoRepo.findCartaoTransactionsByStatus(cartaoCreditoId, status, userId);
             return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
         } catch (e) {
-            this.logger.error('TransacaoService.findTransacaoByDateRange error: %o', e);
-            return Result.fail<ITransacaoDTO[]>('Error fetching transactions by date range');
+            this.logger.error('TransacaoService.findCartaoTransactionsByStatus error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching cartão transactions by status');
         }
     }
 
     /**
-     * Finds all Transacao entities, optionally filtered by user ownership. This method retrieves all transactions
-     * from the repository and returns them as DTOs.
+     * Finds Despesa Mensal transactions with a specific status for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param status - The status of transactions to find (e.g., "Pendente", "Concluído")
      * @param userId - Optional user identifier to filter transactions by user ownership
-     * @returns A Result object containing either an array of all Transacao DTOs or an error message if there is an issue during the fetch operation
+     * @returns A Result object containing either an array of transaction DTOs or an error message
      */
-    public async findAllTransacoes(userId?: string): Promise<Result<ITransacaoDTO[]>> {
+    public async findDespesaMensalByStatus(contaId: string, status: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
         try {
-            const rows: Transacao[] = await this.transacaoRepo.findAll(userId);
+            const rows: Transacao[] = await this.transacaoRepo.findDespesaMensalByStatus(contaId, status, userId);
             return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
         } catch (e) {
-            this.logger.error('TransacaoService.findAllTransacoes error: %o', e);
-            return Result.fail<ITransacaoDTO[]>('Error fetching all transactions');
+            this.logger.error('TransacaoService.findDespesaMensalByStatus error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching despesa mensal by status');
+        }
+    }
+
+    /**
+     * Finds Entrada/Saída transactions by predefined period for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param period - The period to filter by: 'Este Mês', 'Últimos 3 Meses', or 'Último Ano'
+     * @param userId - Optional user identifier to filter transactions by user ownership
+     * @returns A Result object containing either an array of transaction DTOs or an error message
+     */
+    public async findContaTransactionsByPeriod(contaId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>> {
+        try {
+            const rows: Transacao[] = await this.transacaoRepo.findContaTransactionsByPeriod(contaId, period, userId);
+            return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
+        } catch (e) {
+            this.logger.error('TransacaoService.findContaTransactionsByPeriod error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching conta transactions by period');
+        }
+    }
+
+    /**
+     * Finds Crédito/Reembolso transactions by predefined period for a specific credit card.
+     * @param cartaoCreditoId - The domain id of the CartaoCredito to filter transactions by.
+     * @param period - The period to filter by: 'Este Mês', 'Últimos 3 Meses', or 'Último Ano'
+     * @param userId - Optional user identifier to filter transactions by user ownership
+     * @returns A Result object containing either an array of transaction DTOs or an error message
+     */
+    public async findCartaoTransactionsByPeriod(cartaoCreditoId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>> {
+        try {
+            const rows: Transacao[] = await this.transacaoRepo.findCartaoTransactionsByPeriod(cartaoCreditoId, period, userId);
+            return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
+        } catch (e) {
+            this.logger.error('TransacaoService.findCartaoTransactionsByPeriod error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching cartão transactions by period');
+        }
+    }
+
+    /**
+     * Finds Despesa Mensal transactions by predefined period for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param period - The period to filter by: 'Este Mês', 'Últimos 3 Meses', or 'Último Ano'
+     * @param userId - Optional user identifier to filter transactions by user ownership
+     * @returns A Result object containing either an array of transaction DTOs or an error message
+     */
+    public async findDespesaMensalByPeriod(contaId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>> {
+        try {
+            const rows: Transacao[] = await this.transacaoRepo.findDespesaMensalByPeriod(contaId, period, userId);
+            return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
+        } catch (e) {
+            this.logger.error('TransacaoService.findDespesaMensalByPeriod error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching despesa mensal by period');
+        }
+    }
+
+    /**
+     * Finds all Entrada and Saída transactions (conta-based) for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param userId - Optional user identifier to filter transactions by user ownership
+     * @returns A Result object containing either an array of conta transaction DTOs or an error message
+     */
+    public async findContaTransactions(contaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
+        try {
+            const rows: Transacao[] = await this.transacaoRepo.findContaTransactions(contaId, userId);
+            return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
+        } catch (e) {
+            this.logger.error('TransacaoService.findContaTransactions error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching conta transactions');
+        }
+    }
+
+    /**
+     * Finds all Crédito and Reembolso transactions (cartão-based) for a specific credit card.
+     * @param cartaoCreditoId - The domain id of the CartaoCredito to filter transactions by.
+     * @param userId - Optional user identifier to filter transactions by user ownership
+     * @returns A Result object containing either an array of cartão transaction DTOs or an error message
+     */
+    public async findCartaoTransactions(cartaoCreditoId: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
+        try {
+            const rows: Transacao[] = await this.transacaoRepo.findCartaoTransactions(cartaoCreditoId, userId);
+            return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
+        } catch (e) {
+            this.logger.error('TransacaoService.findCartaoTransactions error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching cartão transactions');
+        }
+    }
+
+    /**
+     * Finds all Despesa Mensal transactions for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param userId - Optional user identifier to filter transactions by user ownership
+     * @returns A Result object containing either an array of despesa mensal DTOs or an error message
+     */
+    public async findDespesaMensal(contaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
+        try {
+            const rows: Transacao[] = await this.transacaoRepo.findDespesaMensal(contaId, userId);
+            return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
+        } catch (e) {
+            this.logger.error('TransacaoService.findDespesaMensal error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching despesa mensal transactions');
         }
     }
 }

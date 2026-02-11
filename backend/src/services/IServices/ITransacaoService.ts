@@ -1,6 +1,5 @@
 import {Result} from "../../core/logic/Result.js";
 import type {
-    IData,
     ITransacaoDTO,
     ITransacaoInputDTO,
     ITransacaoReembolsoDTO,
@@ -29,22 +28,28 @@ export default interface ITransacaoService {
     createSaida(inputDTO: ITransacaoInputDTO): Promise<Result<ITransacaoDTO>>;
 
     /**
-     * Create and persist a Refund transaction linked to an original transaction.
-     * @param inputDTO - Input data including the original transaction id (reembolso) to link.
-     */
-    createReembolso(inputDTO: ITransacaoReembolsoDTO): Promise<Result<ITransacaoDTO>>;
-
-    /**
      * Create and persist a Credit transaction (Crédito).
      * @param inputDTO - Input data for creating a Crédito transaction.
      */
     createCredito(inputDTO: ITransacaoInputDTO): Promise<Result<ITransacaoDTO>>;
 
     /**
+     * Create and persist a Refund transaction (Reembolso).
+     * @param inputDTO - Input data for creating a Reembolso transaction.
+     */
+    createReembolso(inputDTO: ITransacaoReembolsoDTO): Promise<Result<ITransacaoDTO>>;
+
+    /**
      * Create and persist a Monthly Expense transaction (Despesa Mensal).
      * @param inputDTO - Input data for creating a Despesa Mensal transaction.
      */
     createDespesaMensal(inputDTO: ITransacaoInputDTO): Promise<Result<ITransacaoDTO>>;
+
+    /**
+     * Conclude a monthly expense (change from Pendente to Concluído and subtract from destination account).
+     * @param transacaoId - The domain ID of the Despesa Mensal transaction to conclude.
+     */
+    concluirDespesaMensal(transacaoId: string): Promise<Result<ITransacaoDTO>>;
 
     /**
      * Update an existing Transacao identified by its domain id.
@@ -65,38 +70,96 @@ export default interface ITransacaoService {
      */
     findTransacaoById(id: string): Promise<Result<ITransacaoDTO>>;
 
+    // --- Get all by type ---
+
     /**
-     * Find transactions belonging to a specific category (by category domain id).
+     * Find all Entrada/Saída transactions (conta-based) for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param userId - Optional user id to scope the search to a specific user's transactions.
+     */
+    findContaTransactions(contaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+
+    /**
+     * Find all Crédito/Reembolso transactions (cartão-based) for a specific credit card.
+     * @param cartaoCreditoId - The domain id of the CartaoCredito to filter transactions by.
+     * @param userId - Optional user id to scope the search to a specific user's transactions.
+     */
+    findCartaoTransactions(cartaoCreditoId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+
+    /**
+     * Find all Despesa Mensal transactions for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param userId - Optional user id to scope the search to a specific user's transactions.
+     */
+    findDespesaMensal(contaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+
+    // --- Filter by categoria (one per type) ---
+
+    /**
+     * Find Entrada/Saída transactions by category for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
      * @param categoriaId - Category domain id used to filter transactions.
      * @param userId - Optional user id to scope the search to a specific user's transactions.
      */
-    findTransacaoByCategoria(categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findContaTransactionsByCategoria(contaId: string, categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
-     * Find transactions by tipo (e.g., "Entrada", "Saída", "Crédito").
-     * @param tipo - The tipo value used to filter transactions.
+     * Find Crédito/Reembolso transactions by category for a specific credit card.
+     * @param cartaoCreditoId - The domain id of the CartaoCredito to filter transactions by.
+     * @param categoriaId - Category domain id used to filter transactions.
      * @param userId - Optional user id to scope the search to a specific user's transactions.
      */
-    findTransacaoByTipo(tipo: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findCartaoTransactionsByCategoria(cartaoCreditoId: string, categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
-     * Find transactions by status (e.g., "Pendente", "Concluído").
-     * @param status - The status value used to filter transactions.
+     * Find Despesa Mensal transactions by category for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param categoriaId - Category domain id used to filter transactions.
      * @param userId - Optional user id to scope the search to a specific user's transactions.
      */
-    findTransacaoByStatus(status: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findDespesaMensalByCategoria(contaId: string, categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+
+    // --- Filter by status (one for cartão, one for despesa mensal) ---
 
     /**
-     * Find transactions created between two dates (inclusive).
-     * @param startDate - Start of the date interval (inclusive).
-     * @param endDate - End of the date interval (inclusive).
+     * Find Crédito and Reembolso transactions by status for a specific credit card.
+     * @param cartaoCreditoId - The domain id of the CartaoCredito to filter transactions by.
+     * @param status - The status value used to filter transactions (e.g., "Pendente", "Concluído").
      * @param userId - Optional user id to scope the search to a specific user's transactions.
      */
-    findTransacaoByDateRange(startDate: IData, endDate: IData, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findCartaoTransactionsByStatus(cartaoCreditoId: string, status: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
-     * Retrieve all transactions.
+     * Find Despesa Mensal transactions by status for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param status - The status value used to filter transactions (e.g., "Pendente", "Concluído").
      * @param userId - Optional user id to scope the search to a specific user's transactions.
      */
-    findAllTransacoes(userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findDespesaMensalByStatus(contaId: string, status: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+
+    // --- Filter by period (one per type) ---
+
+    /**
+     * Find Entrada/Saída transactions by predefined period for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param period - Predefined period: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
+     * @param userId - Optional user id to scope the search to a specific user's transactions.
+     */
+    findContaTransactionsByPeriod(contaId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>>;
+
+    /**
+     * Find Crédito/Reembolso transactions by predefined period for a specific credit card.
+     * @param cartaoCreditoId - The domain id of the CartaoCredito to filter transactions by.
+     * @param period - Predefined period: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
+     * @param userId - Optional user id to scope the search to a specific user's transactions.
+     */
+    findCartaoTransactionsByPeriod(cartaoCreditoId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>>;
+
+    /**
+     * Find Despesa Mensal transactions by predefined period for a specific account.
+     * @param contaId - The domain id of the Conta to filter transactions by.
+     * @param period - Predefined period: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
+     * @param userId - Optional user id to scope the search to a specific user's transactions.
+     */
+    findDespesaMensalByPeriod(contaId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>>;
 }

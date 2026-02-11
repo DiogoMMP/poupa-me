@@ -55,6 +55,11 @@ export default {
         conta: {
             name: 'ContaRepo',
             path: '../repos/ContaRepo.js'
+        },
+
+        cartao: {
+            name: 'CartaoCreditoRepo',
+            path: '../repos/CartaoCreditoRepo.js'
         }
     },
 
@@ -77,6 +82,11 @@ export default {
         conta: {
             name: 'ContaService',
             path: '../services/ContaService.js'
+        },
+
+        cartao: {
+            name: 'CartaoCreditoService',
+            path: '../services/CartaoCreditoService.js'
         }
     },
 
@@ -99,6 +109,11 @@ export default {
         conta: {
             name: 'ContaController',
             path: '../controllers/ContaController.js'
+        },
+
+        cartao: {
+            name: 'CartaoCreditoController',
+            path: '../controllers/CartaoCreditoController.js'
         }
     },
 

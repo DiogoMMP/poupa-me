@@ -4,6 +4,7 @@ import type ICategoriaRepo from "./IRepos/ICategoriaRepo.js";
 import type {Categoria} from "../domain/Categoria/Entities/Categoria.js";
 import {CategoriaMap} from "../mappers/CategoriaMap.js";
 import {CategoriaEntity} from "../persistence/entities/CategoriaEntity.js";
+import { CategoriaIdHelper, extractSequenceNumber } from '../utils/IDGenerator.js';
 
 /**
  * Categoria Repository implementation using TypeORM. This class is responsible for handling all database operations related
@@ -41,6 +42,15 @@ export default class CategoriaRepo implements ICategoriaRepo {
     public async save(categoria: Categoria): Promise<Categoria> {
         try {
             const raw = CategoriaMap.toPersistence(categoria);
+
+            // Always generate sequential domain ID (override UUID from domain entity)
+            const allCategorias = await this.repo.find({ select: ['domainId'], order: { id: 'DESC' }, take: 100 });
+            let maxSeq = 0;
+            for (const c of allCategorias) {
+                const seq = extractSequenceNumber(String(c.domainId), CategoriaIdHelper.prefix);
+                if (seq !== null && seq > maxSeq) maxSeq = seq;
+            }
+            raw.domainId = maxSeq === 0 ? CategoriaIdHelper.generateFirst() : CategoriaIdHelper.generateNext(maxSeq);
 
             const entity = this.repo.create(raw as unknown as CategoriaEntity);
             const saved = await this.repo.save(entity);

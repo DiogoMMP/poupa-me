@@ -1,7 +1,7 @@
 @startuml
 
 package "Banco " <<aggregate>> {
-    class Banco <<Entity>> {
+    class Banco <<Entity>> <<root>> {
     }
 }
 
@@ -11,13 +11,13 @@ package "Conta " <<aggregate>> {
 }
 
 package "CartaoCredito " <<aggregate>> {
-    class CartaoCredito <<Entity>>{
+    class CartaoCredito <<Entity>> <<root>>{
     }
 
     class Periodo <<Value Object>> {
     }
 
-    ' Relation: Card defines its billing cycle
+    ' O Cartão define o seu ciclo
     CartaoCredito "1" --> "1" Periodo: define ciclo de
 }
 
@@ -40,12 +40,21 @@ package "Transacao " <<aggregate>> {
     class Descricao <<Value Object>> {
     }
 
-    ' Semantic relations for Transaction
+    ' Value Objects da Transação
     Transacao "1" --> "1" Data: ocorrida em
     Transacao "1" --> "0..1" Reembolso: pode originar
     Transacao "1" --> "1" Tipo: é do tipo
     Transacao "1" --> "1" Status: encontra-se em
     Transacao "1" --> "1" Descricao: detalhada por
+}
+
+package "Agendamento " <<aggregate>> {
+    class DespesaRecorrente <<Entity>> <<root>> {
+    }
+    note bottom of DespesaRecorrente
+        Molde para criar
+        transações automáticas
+    end note
 }
 
 package "Categoria " <<aggregate>> {
@@ -65,33 +74,36 @@ package "Shared " <<shared>> {
 }
 
 
-' ==== Inter-Package Connections ====
+' ==== Ligações entre Agregados (Corrigidas) ====
 
-' Conta connections
-Conta "1" --> "0..*" Transacao: regista
+' 1. A CONTA aponta para o BANCO (tem bancoId) - CORRIGIDO
+Conta "0..*" --> "1" Banco: domiciliada em
 Conta "1" ---> "0..1" Icon: identificada por
 Conta "1" ---> "1" Dinheiro: apresenta saldo
 Conta "1" ---> "1" Nome: designada como
 
-' CartaoCredito connections
+' 2. O CARTÃO aponta para a CONTA (tem contaPagamentoId)
 CartaoCredito "1" ---> "0..1" Icon: utiliza
-CartaoCredito "1" --> "1" Conta: debita em
-CartaoCredito "1" ---> "1" Dinheiro: acumula gasto
+CartaoCredito "1" --> "1" Conta: paga fatura via
+CartaoCredito "1" ---> "1" Dinheiro: tem limite/saldo
 CartaoCredito "1" ---> "1" Nome: apelidado de
-CartaoCredito "1" --> "0..*" Transacao: origina
 
-' Categoria connections
+' 3. A TRANSAÇÃO aponta para a CONTA ou CARTÃO (tem contaId)
+Transacao "0..*" --> "1" Conta: debita/credita em
+Transacao "0..*" --> "0..1" CartaoCredito: ou afeta limite de
+Transacao "1" --> "1" Categoria: classificada em
+Transacao "1" ---> "1" Dinheiro: movimenta
+
+' 4. O AGENDAMENTO aponta para a CONTA (regra futura) - NOVO
+DespesaRecorrente "1" --> "1" Conta: será debitada em
+DespesaRecorrente "1" --> "1" Categoria: pré-classificada como
+DespesaRecorrente "1" --> "1" Nome: nome da regra
+DespesaRecorrente "1" --> "1" Dinheiro: valor estimado
+
+' Categoria e Banco (Shared VOs)
 Categoria "1" ---> "0..1" Icon: ilustrada por
 Categoria "1" ---> "1" Nome: denominada
-
-' Banco connections
 Banco "1" ---> "0..1" Icon: ostenta marca
-Banco "1" --> "1..*" Conta: custodia
 Banco "1" ---> "1" Nome: chamado
-Banco "1" ---> "1" Dinheiro: detém montante de
-
-' Transaction cross-reference
-Transacao "1" --> "1" Categoria: enquadra-se em
-Transacao "1" ---> "1" Dinheiro: movimenta
 
 @enduml

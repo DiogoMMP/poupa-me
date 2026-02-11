@@ -4,6 +4,7 @@ import { User } from '../domain/User/Entities/User.js';
 import { UserMap } from '../mappers/UserMap.js';
 import { UserEntity } from '../persistence/entities/UserEntity.js';
 import type { DataSource, Repository } from 'typeorm';
+import { UserIdHelper, extractSequenceNumber } from '../utils/IDGenerator.js';
 
 /**
  * User Repository implementation using TypeORM. This class is responsible for handling all database operations related
@@ -45,6 +46,15 @@ export default class UserRepo implements IUserRepo {
     public async save(user: User): Promise<User> {
         try {
             const raw = UserMap.toPersistence(user);
+
+            // Always generate sequential domain ID (override UUID from domain entity)
+            const allUsers = await this.repo.find({ select: ['domainId'], order: { id: 'DESC' }, take: 100 });
+            let maxSeq = 0;
+            for (const u of allUsers) {
+                const seq = extractSequenceNumber(u.domainId, UserIdHelper.prefix);
+                if (seq !== null && seq > maxSeq) maxSeq = seq;
+            }
+            raw.domainId = maxSeq === 0 ? UserIdHelper.generateFirst() : UserIdHelper.generateNext(maxSeq);
 
             // TypeORM: create() creates an instance of the entity with the given data, but does not save it to the database.
             const entity = this.repo.create(raw);

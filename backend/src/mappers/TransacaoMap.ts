@@ -2,13 +2,13 @@ import { Mapper } from '../core/infra/Mapper.js';
 import { Result } from '../core/logic/Result.js';
 import { Transacao } from '../domain/Transacao/Entities/Transacao.js';
 import { Descricao } from '../domain/Transacao/ValueObjects/Descricao.js';
-import { Data } from '../domain/Transacao/ValueObjects/Data.js';
+import { Data } from '../domain/Shared/ValueObjects/Data.js';
 import { Dinheiro } from '../domain/Shared/ValueObjects/Dinheiro.js';
 import { Tipo } from '../domain/Transacao/ValueObjects/Tipo.js';
 import { Status } from '../domain/Transacao/ValueObjects/Status.js';
-import { Reembolso } from '../domain/Transacao/ValueObjects/Reembolso.js';
 import { CategoriaMap } from './CategoriaMap.js';
 import { ContaMap } from './ContaMap.js';
+import { CartaoCreditoMap } from './CartaoCreditoMap.js';
 import { UniqueEntityID } from '../core/domain/UniqueEntityID.js';
 import type { ITransacaoDTO } from '../dto/ITransacaoDTO.js';
 
@@ -29,56 +29,63 @@ export class TransacaoMap extends Mapper<Transacao> {
         if (!raw) return null;
         const r = raw as Record<string, unknown>;
 
-        // Descricao
-        const descricaoResult = Descricao.create(String(r['descricao'] ?? r['description'] ?? ''));
+        // Descricao (use entity column 'descricao')
+        const descricaoResult = Descricao.create(String(r['descricao'] ?? ''));
 
-        // Data: support object {data: {dia,mes,ano}} or top-level fields {dia,mes,ano} or {day,month,year} or string DD-MM-YYYY
+        // Data: use entity columns 'dia', 'mes', 'ano'
+        const day = Number(r['dia'] ?? NaN);
+        const month = Number(r['mes'] ?? NaN);
+        const year = Number(r['ano'] ?? NaN);
         let dataResult: Result<Data>;
-        const rawData = r['data'];
-        if (rawData && typeof rawData === 'object') {
-            const day = Number((rawData as Record<string, unknown>)['dia'] ?? (rawData as Record<string, unknown>)['day']);
-            const month = Number((rawData as Record<string, unknown>)['mes'] ?? (rawData as Record<string, unknown>)['month']);
-            const year = Number((rawData as Record<string, unknown>)['ano'] ?? (rawData as Record<string, unknown>)['year']);
-            dataResult = Data.createFromParts(day, month, year);
-        } else if (typeof rawData === 'string') {
-            dataResult = Data.parse(String(rawData));
-        } else if (r['dia'] !== undefined || r['mes'] !== undefined || r['ano'] !== undefined) {
-            const day = Number(r['dia'] ?? r['day']);
-            const month = Number(r['mes'] ?? r['month']);
-            const year = Number(r['ano'] ?? r['year']);
+        if (!Number.isNaN(day) && !Number.isNaN(month) && !Number.isNaN(year)) {
             dataResult = Data.createFromParts(day, month, year);
         } else {
             dataResult = Result.fail<Data>('Invalid or missing data');
         }
 
-        // Dinheiro: support either nested object {valor:{valor,moeda}} or top-level numeric column 'valor' and 'moeda'
+        // Dinheiro: accept multiple persistence shapes:
+        // - DB returns a plain decimal (number or string) in 'valor' column
+        // - Mapper may provide an object { valor, moeda }
         let valorNumber: number;
         let moeda: string;
-        if (typeof r['valor'] === 'number' || typeof r['valor'] === 'string') {
-            // top-level numeric column
-            valorNumber = Number(r['valor']);
-            moeda = String(r['moeda'] ?? r['currency'] ?? 'EUR');
+        const valorRaw = r['valor'] ?? r['valor'] ?? null;
+        if (valorRaw === null || valorRaw === undefined) {
+            valorNumber = 0;
+            moeda = String(r['moeda'] ?? 'EUR');
+        } else if (typeof valorRaw === 'object') {
+            const v = (valorRaw as Record<string, unknown>)['valor'] ?? (valorRaw as Record<string, unknown>)['value'] ?? 0;
+            valorNumber = typeof v === 'string' ? Number(String(v).replace(',', '.')) || 0 : Number(v || 0);
+            moeda = String((valorRaw as Record<string, unknown>)['moeda'] ?? (valorRaw as Record<string, unknown>)['currency'] ?? r['moeda'] ?? 'EUR');
         } else {
-            const valorObj = (r['valor'] ?? r['amount'] ?? r['value'] ?? {}) as Record<string, unknown>;
-            valorNumber = Number(valorObj['valor'] ?? valorObj['value'] ?? 0);
-            moeda = String(valorObj['moeda'] ?? valorObj['currency'] ?? 'EUR');
+            // string or number
+            valorNumber = Number(String(valorRaw).replace(',', '.')) || 0;
+            moeda = String(r['moeda'] ?? 'EUR');
         }
         const dinheiroResult = Dinheiro.create(Number(valorNumber), String(moeda));
 
         // Tipo and Status
-        const tipoResult = Tipo.create(String(r['tipo'] ?? r['type'] ?? ''));
-        const statusResult = Status.create(String(r['status'] ?? r['estado'] ?? ''));
+        const tipoResult = Tipo.create(String(r['tipo'] ?? ''));
+        const statusResult = Status.create(String(r['status'] ?? ''));
 
         // Categoria (may be nested object or null)
         let categoriaDomain = null;
         if (r['categoria']) {
-            categoriaDomain = await CategoriaMap.toDomain(r['categoria']);
-            if (!categoriaDomain) throw new Error('TransacaoMap.toDomain: failed to map nested categoria');
-        } else if (r['categoriaId'] || r['categoria_id']) {
-            // Attempt to resolve a Categoria domain from provided id; if CategoriaMap cannot build it, fail explicitly
-            categoriaDomain = (await CategoriaMap.toDomain({ id: r['categoriaId'] ?? r['categoria_id'] })) || null;
-            if (!categoriaDomain) throw new Error('TransacaoMap.toDomain: categoriaId present but failed to map categoria');
+            try {
+                categoriaDomain = await CategoriaMap.toDomain(r['categoria']);
+                if (!categoriaDomain) {
+                    console.error('TransacaoMap.toDomain - CategoriaMap.toDomain returned null for nested categoria:', r['categoria']);
+                    throw new Error('TransacaoMap.toDomain: failed to map nested categoria');
+                }
+            } catch (e) {
+                console.error('TransacaoMap.toDomain - error mapping nested categoria. raw.categoria=%o, err=%o', r['categoria'], e);
+                throw e;
+            }
+        } else if (r['categoria_id']) {
+            // expecting joined categoria object; if not present, cannot construct full domain
+            console.error('TransacaoMap.toDomain - missing nested categoria object but categoria_id present in raw:', r);
+            throw new Error('TransacaoMap.toDomain: missing nested categoria object; categoria_id present without join');
         } else {
+            console.error('TransacaoMap.toDomain - missing categoria in raw:', r);
             throw new Error('TransacaoMap.toDomain: missing categoria'); // category required
         }
 
@@ -87,16 +94,29 @@ export class TransacaoMap extends Mapper<Transacao> {
         if (r['conta']) {
             contaDomain = await ContaMap.toDomain(r['conta']);
             if (!contaDomain) throw new Error('TransacaoMap.toDomain: failed to map nested conta');
-        } else if (r['contaId'] || r['conta_id']) {
-            contaDomain = (await ContaMap.toDomain({ id: r['contaId'] ?? r['conta_id'] })) || null;
+        } else if (r['conta_id']) {
+            // no nested join provided
+            contaDomain = null;
         }
 
-        // Reembolso (optional)
-        let reembolsoResult: Result<Reembolso> | null = null;
-        const reembolsoRaw = r['originalTransactionId'] ?? r['original_transaction_id'] ?? r['original_transactionid'];
-        if (reembolsoRaw) {
-            const reembolsoId = String(reembolsoRaw);
-            reembolsoResult = Reembolso.create(new UniqueEntityID(reembolsoId));
+        // ContaDestino (optional - only for Despesa Mensal)
+        let contaDestinoDomain = null;
+        if (r['contaDestino']) {
+            contaDestinoDomain = await ContaMap.toDomain(r['contaDestino']);
+            if (!contaDestinoDomain) throw new Error('TransacaoMap.toDomain: failed to map nested contaDestino');
+        } else if (r['conta_destino_id']) {
+            // no nested join provided
+            contaDestinoDomain = null;
+        }
+
+        // CartaoCredito (optional)
+        let cartaoCreditoDomain = null;
+        if (r['cartaoCredito']) {
+            cartaoCreditoDomain = await CartaoCreditoMap.toDomain(r['cartaoCredito']);
+            if (!cartaoCreditoDomain) throw new Error('TransacaoMap.toDomain: failed to map nested cartaoCredito');
+        } else if (r['cartao_credito_id']) {
+            // no nested join provided
+            cartaoCreditoDomain = null;
         }
 
         const combinedResults = Result.combine([
@@ -104,19 +124,34 @@ export class TransacaoMap extends Mapper<Transacao> {
             dataResult,
             dinheiroResult,
             tipoResult,
-            statusResult,
-            ...(reembolsoResult ? [reembolsoResult] : [])
+            statusResult
         ]);
 
         if (combinedResults.isFailure) {
-            // Throw with details so upper layers (repo/service) can log the input that caused the failure.
-            const details = {
-                descricaoError: descricaoResult.isFailure ? descricaoResult.errorValue() : undefined,
-                dataError: dataResult.isFailure ? dataResult.errorValue() : undefined,
-                dinheiroError: dinheiroResult.isFailure ? dinheiroResult.errorValue() : undefined,
-                tipoError: tipoResult.isFailure ? tipoResult.errorValue() : undefined,
-                statusError: statusResult.isFailure ? statusResult.errorValue() : undefined
-            };
+            // Log detailed VO errors for diagnostics
+            const details: Record<string, unknown> = {};
+            try {
+                details.descricaoError = descricaoResult.isFailure ? descricaoResult.errorValue() : undefined;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (_) { details.descricaoError = descricaoResult.error; }
+            try {
+                details.dataError = dataResult.isFailure ? dataResult.errorValue() : undefined;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (_) { details.dataError = dataResult.error; }
+            try {
+                details.dinheiroError = dinheiroResult.isFailure ? dinheiroResult.errorValue() : undefined;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (_) { details.dinheiroError = dinheiroResult.error; }
+            try {
+                details.tipoError = tipoResult.isFailure ? tipoResult.errorValue() : undefined;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (_) { details.tipoError = tipoResult.error; }
+            try {
+                details.statusError = statusResult.isFailure ? statusResult.errorValue() : undefined;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (_) { details.statusError = statusResult.error; }
+
+            console.error('TransacaoMap.toDomain - VO validation failed. raw=%o, details=%o', r, details);
             throw new Error(`TransacaoMap.toDomain: value object validation failed: ${JSON.stringify(details)}`);
         }
 
@@ -129,7 +164,8 @@ export class TransacaoMap extends Mapper<Transacao> {
                 categoria: categoriaDomain,
                 status: statusResult.getValue(),
                 ...(contaDomain ? { conta: contaDomain } : {}),
-                reembolso: reembolsoResult ? reembolsoResult.getValue() : undefined
+                ...(contaDestinoDomain ? { contaDestino: contaDestinoDomain } : {}),
+                ...(cartaoCreditoDomain ? { cartaoCredito: cartaoCreditoDomain } : {})
             },
             new UniqueEntityID(String(r['domainId'] ?? r['id']))
         );
@@ -138,18 +174,33 @@ export class TransacaoMap extends Mapper<Transacao> {
 
         // Attach owner user id (non-domain prop) to the returned object so higher layers can persist/inspect it
         const domainObj = transacaoOrError.getValue();
-        const userIdFromRaw = String(r['userDomainId'] ?? r['user_domain_id'] ?? r['userId'] ?? '');
-        if (userIdFromRaw) (domainObj as unknown as DomainWithUser).userDomainId = userIdFromRaw;
-
-        // Preserve originalTransactionId on the returned domain object (non-domain prop) so DTO mapping can use it when necessary
-        if (reembolsoRaw) {
-            (domainObj as unknown as Record<string, unknown>)['originalTransactionId'] = String(reembolsoRaw);
+        const userIdFromRaw = String(r['user_domain_id'] ?? '');
+        if (userIdFromRaw) {
+            (domainObj as unknown as DomainWithUser).userDomainId = userIdFromRaw;
+            // Also ensure nested conta/cartao domain objects use the same owner id so DTOs match
+            try {
+                if ((domainObj as any).conta && (userIdFromRaw)) {
+                    // write directly into the Conta props.userId so ContaMap.toDTO will show this owner
+                    (domainObj as any).conta.props.userId = new UniqueEntityID(userIdFromRaw);
+                }
+            } catch (_e) { /* ignore */ }
+            try {
+                if ((domainObj as any).cartaoCredito && (userIdFromRaw)) {
+                    (domainObj as any).cartaoCredito.props.userId = new UniqueEntityID(userIdFromRaw);
+                }
+            } catch (_e) { /* ignore */ }
         }
 
         if (contaDomain) {
             (domainObj as unknown as Record<string, unknown>)['contaId'] = contaDomain.id.toString();
-        } else if (r['contaId'] || r['conta_id']) {
-            (domainObj as unknown as Record<string, unknown>)['contaId'] = String(r['contaId'] ?? r['conta_id']);
+        } else if (r['conta_id']) {
+            (domainObj as unknown as Record<string, unknown>)['contaId'] = String(r['conta_id']);
+        }
+
+        if (cartaoCreditoDomain) {
+            (domainObj as unknown as Record<string, unknown>)['cartaoCreditoId'] = cartaoCreditoDomain.id.toString();
+        } else if (r['cartao_credito_id']) {
+            (domainObj as unknown as Record<string, unknown>)['cartaoCreditoId'] = String(r['cartao_credito_id']);
         }
 
         return domainObj;
@@ -173,12 +224,12 @@ export class TransacaoMap extends Mapper<Transacao> {
                 moeda: transacao.valor.moeda
             },
             tipo: transacao.tipo.value,
-            categoriaId: transacao.categoria.id.toString(),
+            categoria_id: transacao.categoria.id.toString(),
             // allow a non-domain attached property 'contaId' (string) so callers can set conta without constructing a Conta domain
-            contaId: transacao.conta ? transacao.conta.id.toString() : (transacao as unknown as Record<string, unknown>)['contaId'] ?? undefined,
+            conta_id: transacao.conta ? transacao.conta.id.toString() : (transacao as unknown as Record<string, unknown>)['contaId'] ?? undefined,
+            cartao_credito_id: transacao.cartaoCredito ? transacao.cartaoCredito.id.toString() : (transacao as unknown as Record<string, unknown>)['cartaoCreditoId'] ?? undefined,
             status: transacao.status.value,
-            reembolso: transacao.reembolso ? transacao.reembolso.originalTransactionId.toString() : undefined,
-            userDomainId: userDomainId ?? undefined
+            user_domain_id: userDomainId ?? undefined
         };
     }
 
@@ -187,11 +238,6 @@ export class TransacaoMap extends Mapper<Transacao> {
      */
     public static toDTO(transacao: Transacao): ITransacaoDTO {
         const userDomainId = (transacao as unknown as DomainWithUser).userDomainId ?? '';
-        // attempt to derive reembolso id from domain VO or from any attached raw properties
-        const rawTrans = transacao as unknown as Record<string, unknown>;
-        const reembolsoFromVO = transacao.reembolso ? transacao.reembolso.originalTransactionId.toString() : undefined;
-        const reembolsoFallback = (rawTrans['originalTransactionId'] ?? rawTrans['original_transaction_id'] ?? rawTrans['original_transactionid']) as string | undefined;
-        const reembolsoValue = reembolsoFromVO ?? (reembolsoFallback ? String(reembolsoFallback) : undefined);
 
         return {
             id: transacao.id.toString(),
@@ -208,8 +254,19 @@ export class TransacaoMap extends Mapper<Transacao> {
             tipo: transacao.tipo.value,
             categoria: CategoriaMap.toDTO(transacao.categoria),
             status: transacao.status.value,
-            reembolso: reembolsoValue,
-            contaId: (transacao as unknown as Record<string, unknown>)['contaId'] ?? undefined,
+            conta: (() => {
+                if (!transacao.conta) return undefined;
+                const contaDto = ContaMap.toDTO(transacao.conta);
+                // Prefer transaction-level user id if available to ensure consistency
+                if (userDomainId) contaDto.userId = String(userDomainId);
+                return contaDto;
+            })(),
+            cartaoCredito: (() => {
+                if (!transacao.cartaoCredito) return undefined;
+                const cartaoDto = CartaoCreditoMap.toDTO(transacao.cartaoCredito);
+                if (userDomainId) cartaoDto.userId = String(userDomainId);
+                return cartaoDto;
+            })(),
             userId: userDomainId
         } as ITransacaoDTO;
     }
