@@ -1,0 +1,69 @@
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    CreateDateColumn,
+    UpdateDateColumn,
+    ManyToOne,
+    JoinColumn
+} from 'typeorm';
+import { CategoriaEntity } from './CategoriaEntity.js';
+import { ContaEntity } from './ContaEntity.js';
+
+@Entity({ name: 'despesa_recorrente' })
+export class DespesaRecorrenteEntity {
+    @PrimaryGeneratedColumn()
+    id!: number;
+
+    @Column({ name: 'domain_id', type: 'varchar', length: 50 })
+    domainId!: string;
+
+    @Column({ name: 'nome', type: 'varchar', length: 100 })
+    nome!: string;
+
+    @Column({ name: 'valor', type: 'decimal', precision: 12, scale: 2 })
+    valor!: number;
+
+    @Column({ name: 'moeda', type: 'varchar', length: 3, default: 'EUR' })
+    moeda!: string;
+
+    @Column({ name: 'dia_do_mes', type: 'integer' })
+    diaDoMes!: number;
+
+    @ManyToOne(() => CategoriaEntity)
+    @JoinColumn({ name: 'categoria_id' })
+    categoria?: CategoriaEntity;
+
+    @Column({ name: 'categoria_id' })
+    categoriaId!: number;
+
+    @ManyToOne(() => ContaEntity)
+    @JoinColumn({ name: 'conta_origem_id' })
+    contaOrigem?: ContaEntity;
+
+    @Column({ name: 'conta_origem_id' })
+    contaOrigemId!: number;
+
+    @ManyToOne(() => ContaEntity)
+    @JoinColumn({ name: 'conta_destino_id' })
+    contaDestino?: ContaEntity;
+
+    @Column({ name: 'conta_destino_id' })
+    contaDestinoId!: number;
+
+    @Column({ name: 'ultimo_processamento', type: 'date', nullable: true })
+    ultimoProcessamento!: Date | null;
+
+    @Column({ name: 'ativo', type: 'boolean', default: true })
+    ativo!: boolean;
+
+    @Column({ name: 'user_domain_id', type: 'varchar', length: 50 })
+    userDomainId!: string;
+
+    @CreateDateColumn({ name: 'created_at' })
+    createdAt!: Date;
+
+    @UpdateDateColumn({ name: 'updated_at' })
+    updatedAt!: Date;
+}
+

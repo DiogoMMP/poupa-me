@@ -2,6 +2,7 @@ import { Service, Inject } from 'typedi';
 import type { Request, Response, NextFunction } from 'express';
 import type IBancoController from './IControllers/IBancoController.js';
 import type IBancoService from '../services/IServices/IBancoService.js';
+import type IDespesaRecorrenteService from '../services/IServices/IDespesaRecorrenteService.js';
 import type { AuthenticatedRequest } from '../api/middlewares/isAuth.js';
 
 /**
@@ -11,7 +12,8 @@ import type { AuthenticatedRequest } from '../api/middlewares/isAuth.js';
 export default class BancoController implements IBancoController {
 
     constructor(
-        @Inject('BancoService') private bancoService: IBancoService
+        @Inject('BancoService') private bancoService: IBancoService,
+        @Inject('DespesaRecorrenteService') private despesaRecorrenteService: IDespesaRecorrenteService
     ) {}
 
     /**
@@ -162,6 +164,7 @@ export default class BancoController implements IBancoController {
 
     /**
      * GET /banco/:id/dashboard - Get dashboard for a specific bank
+     * MAGIC: This also triggers processing of recurring expenses in the background!
      */
     public async getDashboard(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
@@ -175,6 +178,13 @@ export default class BancoController implements IBancoController {
                 return res.status(400).json({ error: 'Banco ID is required' });
             }
 
+            // 🔥 THE MAGIC: FIRE AND FORGET - Process recurring expenses in background
+            // This runs asynchronously and doesn't block the dashboard response
+            this.despesaRecorrenteService.processarRecorrencias(userId).catch(err => {
+                console.error('Background recurring expenses processing error:', err);
+            });
+
+            // Continue with normal dashboard loading (doesn't wait for recurring processing)
             const result = await this.bancoService.getDashboard(bancoId, userId);
 
             if (result.isFailure) {

@@ -65,6 +65,11 @@ export default {
         banco: {
             name: 'BancoRepo',
             path: '../repos/BancoRepo.js'
+        },
+
+        despesaRecorrente: {
+            name: 'DespesaRecorrenteRepo',
+            path: '../repos/DespesaRecorrenteRepo.js'
         }
     },
 
@@ -97,6 +102,11 @@ export default {
         banco: {
             name: 'BancoService',
             path: '../services/BancoService.js'
+        },
+
+        despesaRecorrente: {
+            name: 'DespesaRecorrenteService',
+            path: '../services/DespesaRecorrenteService.js'
         }
     },
 
@@ -129,6 +139,11 @@ export default {
         banco: {
             name: 'BancoController',
             path: '../controllers/BancoController.js'
+        },
+
+        despesaRecorrente: {
+            name: 'DespesaRecorrenteController',
+            path: '../controllers/DespesaRecorrenteController.js'
         }
     },
 

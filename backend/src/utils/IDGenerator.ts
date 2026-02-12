@@ -166,6 +166,17 @@ export const BancoIdHelper = {
 };
 
 /**
+ * DespesaRecorrente domain ID helpers - prefix 'DRC'
+ * IDs: e.g. 'DRC00000000001'
+ */
+export const DespesaRecorrenteIdHelper = {
+  prefix: 'DRC',
+  generateFirst: () => generateFirstId('DRC'),
+  generateNext: (maxSeq: number) => generateNextId(maxSeq, 'DRC'),
+  extractSequence: (id: string) => extractSequenceNumber(id, 'DRC')
+};
+
+/**
  * Transacao domain ID helpers - prefix 'TRN-{year}'
  * IDs include year: e.g. 'TRN-2026-00000000001'
  */

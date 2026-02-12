@@ -5,6 +5,7 @@ import transacaoRoute from "./routes/TransacaoRoute.js";
 import contaRoute from "./routes/ContaRouter.js";
 import cartaoCreditoRoute from "./routes/CartaoCreditoRoute.js";
 import bancoRoute from "./routes/BancoRoute.js";
+import despesaRecorrenteRoute from "./routes/DespesaRecorrenteRoute.js";
 
 export default () => {
 	const app = Router();
@@ -26,6 +27,9 @@ export default () => {
 
 	// Register Banco routes
 	bancoRoute(app);
+
+	// Register DespesaRecorrente routes
+	despesaRecorrenteRoute(app);
 
 	return app
 }

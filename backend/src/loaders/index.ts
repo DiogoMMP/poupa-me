@@ -111,6 +111,22 @@ export default async ({expressApp}: { expressApp: Application }) => {
     };
 
 
+    const despesaRecorrenteController = {
+        name: config.controllers.despesaRecorrente.name,
+        path: config.controllers.despesaRecorrente.path
+    };
+
+    const despesaRecorrenteService = {
+        name: config.services.despesaRecorrente.name,
+        path: config.services.despesaRecorrente.path
+    };
+
+    const despesaRecorrenteRepo = {
+        name: config.repos.despesaRecorrente.name,
+        path: config.repos.despesaRecorrente.path
+    };
+
+
     await dependencyInjectorLoader({
         dataSource: dataSource as any,
         schemas: [],
@@ -120,7 +136,8 @@ export default async ({expressApp}: { expressApp: Application }) => {
             transacaoController,
             contaController,
             cartaoController,
-            bancoController
+            bancoController,
+            despesaRecorrenteController
         ],
         repos: [
             userRepo,
@@ -128,7 +145,8 @@ export default async ({expressApp}: { expressApp: Application }) => {
             transacaoRepo,
             contaRepo,
             cartaoRepo,
-            bancoRepo
+            bancoRepo,
+            despesaRecorrenteRepo
         ],
         services: [
             authService,
@@ -136,7 +154,8 @@ export default async ({expressApp}: { expressApp: Application }) => {
             transacaoService,
             contaService,
             cartaoService,
-            bancoService
+            bancoService,
+            despesaRecorrenteService
         ]
     } as any);
     Logger.info('✌️ Entities, Controllers, Repositories, Services, etc. loaded');
