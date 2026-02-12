@@ -1,16 +1,20 @@
-import { Service, Inject } from 'typedi';
-import { Result } from '../core/logic/Result.js';
+import {Service, Inject} from 'typedi';
+import {Result} from '../core/logic/Result.js';
 import type ICartaoCreditoService from './IServices/ICartaoCreditoService.js';
 import type ICartaoCreditoRepo from '../repos/IRepos/ICartaoCreditoRepo.js';
-import type { ICartaoCreditoDTO, ICartaoCreditoInputDTO, ICartaoCreditoUpdateDTO } from '../dto/ICartaoCreditoDTO.js';
-import { CartaoCreditoMap } from '../mappers/CartaoCreditoMap.js';
-import { Nome } from '../domain/Shared/ValueObjects/Nome.js';
-import { Icon } from '../domain/Shared/ValueObjects/Icon.js';
-import { Dinheiro } from '../domain/Shared/ValueObjects/Dinheiro.js';
-import { Periodo } from '../domain/CartaoCredito/ValueObjects/Periodo.js';
-import { UniqueEntityID } from '../core/domain/UniqueEntityID.js';
-import { CartaoCredito } from '../domain/CartaoCredito/Entities/CartaoCredito.js';
-import { Data } from '../domain/Shared/ValueObjects/Data.js';
+import type ITransacaoRepo from '../repos/IRepos/ITransacaoRepo.js';
+import type ICategoriaRepo from '../repos/IRepos/ICategoriaRepo.js';
+import type {ICartaoCreditoDTO, ICartaoCreditoInputDTO, ICartaoCreditoUpdateDTO, IPeriodoProps} from '../dto/ICartaoCreditoDTO.js';
+import {CartaoCreditoMap} from '../mappers/CartaoCreditoMap.js';
+import {Nome} from '../domain/Shared/ValueObjects/Nome.js';
+import {Icon} from '../domain/Shared/ValueObjects/Icon.js';
+import {Dinheiro} from '../domain/Shared/ValueObjects/Dinheiro.js';
+import {Periodo} from '../domain/CartaoCredito/ValueObjects/Periodo.js';
+import {UniqueEntityID} from '../core/domain/UniqueEntityID.js';
+import {CartaoCredito} from '../domain/CartaoCredito/Entities/CartaoCredito.js';
+import {Data} from '../domain/Shared/ValueObjects/Data.js';
+import type {IDinheiroProps, ITransacaoDTO} from "../dto/ITransacaoDTO.js";
+import { TransacaoMap } from '../mappers/TransacaoMap.js';
 
 /**
  * Service layer for managing CartaoCredito entities. Handles business logic and interacts with the CartaoCredito repository.
@@ -19,8 +23,11 @@ import { Data } from '../domain/Shared/ValueObjects/Data.js';
 export default class CartaoCreditoService implements ICartaoCreditoService {
     constructor(
         @Inject('CartaoCreditoRepo') private cartaoRepo: ICartaoCreditoRepo,
+        @Inject('TransacaoRepo') private transacaoRepo: ITransacaoRepo,
+        @Inject('CategoriaRepo') private categoriaRepo: ICategoriaRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
-    ) {}
+    ) {
+    }
 
     /**
      * Creates a new CartaoCredito based on the provided input DTO. Validates and maps the input to a domain entity, then persists it using the repository.
@@ -175,6 +182,123 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
         } catch (err) {
             this.logger.error('CartaoCreditoService.findAllCartoes error: %o', err);
             return Result.fail<ICartaoCreditoDTO[]>('Error fetching Cartoes');
+        }
+    }
+
+    /**
+     * Retrieves the extrato (statement) for a given CartaoCredito by its domain ID. This method fetches the transactions and current balance
+     * @param cartaoCreditoId - The domain ID of the CartaoCredito for which to retrieve the extrato. This ID is used
+     * to query the repository for related transactions and balance information.
+     * @param userId - Optional user ID to further filter transactions by. If provided, only transactions associated
+     * with the given user will be included in the extrato.
+     */
+    public async getExtrato(cartaoCreditoId: string, userId?: string): Promise<Result<{
+        transacoes: ITransacaoDTO[],
+        saldoAtual: IDinheiroProps
+    }>> {
+        try {
+            const extrato = await this.cartaoRepo.getExtrato(cartaoCreditoId, userId);
+
+            // Map domain Transacao[] to DTOs
+            const transacoesDTO: ITransacaoDTO[] = [];
+            for (const t of extrato.transacoes) {
+                try {
+                    transacoesDTO.push(TransacaoMap.toDTO(t));
+                } catch (e) {
+                    this.logger.error('CartaoCreditoService.getExtrato: failed to map transacao to DTO %o', e);
+                }
+            }
+
+            // Convert Dinheiro VO to IDinheiroProps
+            const saldoAtualVO = extrato.saldoAtual;
+            const saldoAtual: IDinheiroProps = {
+                valor: saldoAtualVO.value,
+                moeda: saldoAtualVO.moeda
+            };
+
+            return Result.ok<{ transacoes: ITransacaoDTO[], saldoAtual: IDinheiroProps }>({ transacoes: transacoesDTO, saldoAtual });
+        } catch (err) {
+            this.logger.error('CartaoCreditoService.getExtrato error: %o', err);
+            return Result.fail<{ transacoes: ITransacaoDTO[], saldoAtual: IDinheiroProps }>('Error fetching extrato');
+        }
+    }
+
+    /**
+     * Processes the card payment.
+     * Logic:
+     * 1. Calculates the amount to pay based on the current statement (extrato).
+     * 2. Updates the card period and saldo.
+     * 3. Calls TransacaoRepo to mark pending transactions and create payment transaction.
+     */
+    public async pagarCartao(cartaoId: string, userId: string, novoPeriodo: IPeriodoProps): Promise<Result<ITransacaoDTO>> {
+        try {
+            // 1. Get the amount to pay from the current statement
+            const extratoResult = await this.cartaoRepo.getExtrato(cartaoId, userId);
+            const { saldoAtual } = extratoResult;
+
+            const valorPagar = Dinheiro.create(saldoAtual.value, saldoAtual.moeda).getValue();
+
+            // Check if there is anything to pay
+            if (valorPagar.value === 0) return Result.fail<ITransacaoDTO>("No amount to pay on the card statement");
+
+            // 2. Load the Card Entity
+            const cartao = await this.cartaoRepo.findById(cartaoId);
+            if (!cartao) return Result.fail<ITransacaoDTO>("Cartão não encontrado");
+
+            // 3. Prepare new period dates
+            const novoPeriodoInicioOrError = Data.createFromParts(novoPeriodo.inicio.dia, novoPeriodo.inicio.mes, novoPeriodo.inicio.ano, true);
+            const novoPeriodoFechoOrError = Data.createFromParts(novoPeriodo.fecho.dia, novoPeriodo.fecho.mes, novoPeriodo.fecho.ano, true);
+
+            if (novoPeriodoInicioOrError.isFailure || novoPeriodoFechoOrError.isFailure) {
+                return Result.fail<ITransacaoDTO>('Invalid dates for new period');
+            }
+
+            const novoPeriodoVO = Periodo.create(novoPeriodoInicioOrError.getValue(), novoPeriodoFechoOrError.getValue());
+            if (novoPeriodoVO.isFailure) return Result.fail<ITransacaoDTO>(String(novoPeriodoVO.error));
+
+            // 4. Subtract payment from current saldoUtilizado
+            const novoSaldoResult = cartao.saldoUtilizado.subtract(valorPagar);
+            if (novoSaldoResult.isFailure) {
+                return Result.fail<ITransacaoDTO>(String(novoSaldoResult.error));
+            }
+            const novoSaldoUtilizado = novoSaldoResult.getValue();
+
+            // 5. Update the Card Entity with new balance and period
+            const updatedCartaoProps = {
+                userId: cartao.userId,
+                nome: cartao.nome,
+                icon: cartao.icon,
+                limiteCredito: cartao.limiteCredito,
+                saldoUtilizado: novoSaldoUtilizado,
+                periodo: novoPeriodoVO.getValue(),
+                contaPagamentoId: cartao.contaPagamentoId
+            };
+
+            const updatedCartaoOrError = CartaoCredito.create(updatedCartaoProps, cartao.id);
+            if (updatedCartaoOrError.isFailure) {
+                return Result.fail<ITransacaoDTO>(String(updatedCartaoOrError.error));
+            }
+
+            // 6. Persist the updated card
+            await this.cartaoRepo.update(updatedCartaoOrError.getValue());
+
+            // 7. Call TransacaoRepo to mark pending transactions and create payment transaction
+            // IMPORTANT: Pass the OLD period (current card period) to mark transactions in that period as completed
+            const periodoAntigoInicio = new Date(cartao.periodo.inicio.year, cartao.periodo.inicio.month - 1, cartao.periodo.inicio.day);
+            const periodoAntigoFecho = new Date(cartao.periodo.fecho.year, cartao.periodo.fecho.month - 1, cartao.periodo.fecho.day);
+
+            const transacaoPagamento = await this.transacaoRepo.pagarCartao(
+                cartaoId,
+                valorPagar.value,
+                userId,
+                { inicio: periodoAntigoInicio, fecho: periodoAntigoFecho } // OLD period, not new!
+            );
+
+            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(transacaoPagamento));
+
+        } catch (err) {
+            this.logger.error('CartaoCreditoService.pagarCartao error: %o', err);
+            return Result.fail<ITransacaoDTO>('Erro ao processar pagamento do cartão');
         }
     }
 }

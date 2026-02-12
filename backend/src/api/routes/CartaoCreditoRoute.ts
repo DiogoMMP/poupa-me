@@ -223,5 +223,126 @@ export default (app: Router) => {
    *         description: List of cartoes
    */
   route.get('/', isAuth, (req, res, next) => ctrl.getAllCartoes(req as AuthenticatedRequest, res, next));
-};
 
+  /**
+   * @openapi
+   * /cartao/{id}/extrato:
+   *   get:
+   *     tags:
+   *       - CartaoCredito
+   *     summary: Get extrato (pending créditos) for a specific cartao
+   *     description: Returns pending Crédito transactions for the card within the card period and the computed balance (créditos - reembolsos).
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Domain ID of the CartaoCredito
+   *     responses:
+   *       200:
+   *         description: Extrato for cartao
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 transacoes:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Transacao'
+   *                 saldoAtual:
+   *                   $ref: '#/components/schemas/IDinheiroProps'
+   *             example:
+   *               transacoes:
+   *                 - id: "TRN-2026-00000000001"
+   *                   data:
+   *                     dia: 11
+   *                     mes: 2
+   *                     ano: 2026
+   *                   descricao: "Compra supermercado"
+   *                   valor:
+   *                     valor: 50.00
+   *                     moeda: EUR
+   *                   tipo: "Crédito"
+   *                   categoria:
+   *                     id: "CAT00000000001"
+   *                     nome: "string1"
+   *                     icon: "string"
+   *                   status: "Pendente"
+   *               saldoAtual:
+   *                 valor: 50.00
+   *                 moeda: EUR
+   */
+  route.get('/:id/extrato', isAuth, (req, res, next) => ctrl.getExtrato(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
+   * /cartao/{id}/pagar:
+   *   post:
+   *     tags:
+   *       - CartaoCredito
+   *     summary: Process payment for a credit card
+   *     description: Marks all pending Crédito transactions as completed, creates a Saída transaction that reduces the card balance, and updates the card period for the next billing cycle.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Domain ID of the CartaoCredito
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - novoPeriodo
+   *             properties:
+   *               novoPeriodo:
+   *                 $ref: '#/components/schemas/Periodo'
+   *           example:
+   *             novoPeriodo:
+   *               inicio:
+   *                 dia: 15
+   *                 mes: 3
+   *                 ano: 2026
+   *               fecho:
+   *                 dia: 15
+   *                 mes: 4
+   *                 ano: 2026
+   *     responses:
+   *       200:
+   *         description: Payment processed successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Transacao'
+   *             example:
+   *               id: "TRN-2026-00000000010"
+   *               data:
+   *                 dia: 12
+   *                 mes: 2
+   *                 ano: 2026
+   *               descricao: "Pagamento Cartão Visa"
+   *               valor:
+   *                 valor: 150.00
+   *                 moeda: EUR
+   *               tipo: "Saída"
+   *               categoria:
+   *                 id: "CAT00000000001"
+   *                 nome: "Pagamentos"
+   *                 icon: "payment"
+   *               status: "Concluído"
+   *               cartaoCredito:
+   *                 id: "CCR00000000001"
+   *                 nome: "Visa"
+   *               userId: "swagger-dev"
+   */
+  route.post('/:id/pagar', isAuth, (req, res, next) => ctrl.pagarCartao(req as AuthenticatedRequest, res, next));
+};

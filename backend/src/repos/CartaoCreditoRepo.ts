@@ -1,18 +1,15 @@
-import { Service, Inject } from 'typedi';
-import type { DataSource, Repository } from 'typeorm';
+import {Service, Inject} from 'typedi';
+import type {DataSource, Repository} from 'typeorm';
 import type ICartaoCreditoRepo from './IRepos/ICartaoCreditoRepo.js';
-import { CartaoCreditoMap } from '../mappers/CartaoCreditoMap.js';
-import { CartaoCreditoEntity } from '../persistence/entities/CartaoCreditoEntity.js';
-import { CartaoCredito } from '../domain/CartaoCredito/Entities/CartaoCredito.js';
-import { ContaEntity } from '../persistence/entities/ContaEntity.js';
-import { Nome } from '../domain/Shared/ValueObjects/Nome.js';
-import { Icon } from '../domain/Shared/ValueObjects/Icon.js';
-import { Dinheiro } from '../domain/Shared/ValueObjects/Dinheiro.js';
-import { Data } from '../domain/Shared/ValueObjects/Data.js';
-import { Periodo } from '../domain/CartaoCredito/ValueObjects/Periodo.js';
-import { Result } from '../core/logic/Result.js';
-import { UniqueEntityID } from '../core/domain/UniqueEntityID.js';
-import { CartaoCreditoIdHelper, extractSequenceNumber } from '../utils/IDGenerator.js';
+import {CartaoCreditoMap} from '../mappers/CartaoCreditoMap.js';
+import {CartaoCreditoEntity} from '../persistence/entities/CartaoCreditoEntity.js';
+import {CartaoCredito} from '../domain/CartaoCredito/Entities/CartaoCredito.js';
+import {ContaEntity} from '../persistence/entities/ContaEntity.js';
+import {CartaoCreditoIdHelper, extractSequenceNumber} from '../utils/IDGenerator.js';
+import { Dinheiro } from "../domain/Shared/ValueObjects/Dinheiro.js";
+import { TransacaoMap } from '../mappers/TransacaoMap.js';
+import { TransacaoEntity } from '../persistence/entities/TransacaoEntity.js';
+import type {Transacao} from "../domain/Transacao/Entities/Transacao.js";
 
 /**
  * Repository for CartaoCredito entity, handling database operations using TypeORM.
@@ -43,7 +40,7 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
             let domainId = String(raw.domainId ?? '');
 
             // Always generate sequential domain ID (override UUID from domain entity)
-            const allCartoes = await this.repo.find({ select: ['domainId'], order: { id: 'DESC' }, take: 100 });
+            const allCartoes = await this.repo.find({select: ['domainId'], order: {id: 'DESC'}, take: 100});
             let maxSeq = 0;
             for (const c of allCartoes) {
                 const seq = extractSequenceNumber(c.domainId, CartaoCreditoIdHelper.prefix);
@@ -81,7 +78,7 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                     } else {
                         // lookup ContaEntity by domainId
                         const contaRepo = this.dataSource.getRepository(ContaEntity);
-                        const contaRow = await contaRepo.findOne({ where: { domainId: String(contaPagamentoIdRaw) } });
+                        const contaRow = await contaRepo.findOne({where: {domainId: String(contaPagamentoIdRaw)}});
                         contaPagamentoId = contaRow ? contaRow.id : null;
                     }
                 }
@@ -103,7 +100,7 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
             // Unique name check
             if (nome) {
                 const existingByName = await this.repo.createQueryBuilder('c')
-                    .where('LOWER(c.nome) = LOWER(:nome)', { nome })
+                    .where('LOWER(c.nome) = LOWER(:nome)', {nome})
                     .getOne();
 
                 if (existingByName) {
@@ -121,19 +118,26 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                                 userDomainId,
                                 contaPagamentoId
                             })
-                            .where('id = :id', { id: existingByName.id })
+                            .where('id = :id', {id: existingByName.id})
                             .execute();
 
-                        const savedRow = await this.repo.findOne({ where: { id: existingByName.id }, relations: ['contaPagamento'] });
+                        const savedRow = await this.repo.findOne({
+                            where: {id: existingByName.id},
+                            relations: ['contaPagamento']
+                        });
                         if (!savedRow) return Promise.reject(new Error('Failed to find updated cartao after duplicate-name update'));
-                        const savedRaw: Record<string, unknown> = { ...(savedRow as unknown as Record<string, unknown>), user_domain_id: (savedRow as CartaoCreditoEntity).userDomainId, conta_pagamento_id: (savedRow as CartaoCreditoEntity).contaPagamento ? (savedRow as CartaoCreditoEntity).contaPagamento.domainId : (savedRow as CartaoCreditoEntity).contaPagamentoId };
-                        try {
-                            const domain = await this.mapRawToDomain(savedRaw);
-                            return domain;
-                        } catch (err) {
-                            this.logger.error('CartaoCreditoRepo.save - failed mapping savedRow (duplicate-name update). raw: %o, err: %o', savedRaw, err);
-                            return Promise.reject(err);
+                        const savedRaw: Record<string, unknown> = {
+                            ...(savedRow as unknown as Record<string, unknown>),
+                            user_domain_id: (savedRow as CartaoCreditoEntity).userDomainId,
+                            conta_pagamento_id: (savedRow as CartaoCreditoEntity).contaPagamento ? (savedRow as CartaoCreditoEntity).contaPagamento.domainId : (savedRow as CartaoCreditoEntity).contaPagamentoId
+                        };
+                        // use mapper only
+                        const domain = await CartaoCreditoMap.toDomain(savedRaw);
+                        if (!domain) {
+                            this.logger.error('CartaoCreditoRepo.save - CartaoCreditoMap.toDomain returned null for duplicate-name update. raw: %o', savedRaw);
+                            return Promise.reject(new Error('Failed to map saved cartao to domain'));
                         }
+                        return domain;
                     }
 
                     return Promise.reject(new Error('CartaoCredito nome already in use'));
@@ -145,16 +149,22 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
             if (!saved) return Promise.reject(new Error('Failed to save cartao'));
 
             // Re-query the saved row to get the normalized entity shape from TypeORM/DB
-            const savedRow = await this.repo.findOne({ where: { id: (saved as CartaoCreditoEntity).id }, relations: ['contaPagamento'] });
+            const savedRow = await this.repo.findOne({
+                where: {id: (saved as CartaoCreditoEntity).id},
+                relations: ['contaPagamento']
+            });
             if (!savedRow) return Promise.reject(new Error('Failed to find saved cartao after insert'));
-            const savedRaw: Record<string, unknown> = { ...(savedRow as unknown as Record<string, unknown>), user_domain_id: (savedRow as CartaoCreditoEntity).userDomainId, conta_pagamento_id: (savedRow as CartaoCreditoEntity).contaPagamento ? (savedRow as CartaoCreditoEntity).contaPagamento.domainId : (savedRow as CartaoCreditoEntity).contaPagamentoId };
-            try {
-                const domain = await this.mapRawToDomain(savedRaw);
-                return domain;
-            } catch (err) {
-                this.logger.error('CartaoCreditoRepo.save - failed mapping savedRow after insert. raw: %o, err: %o', savedRaw, err);
-                return Promise.reject(err);
+            const savedRaw: Record<string, unknown> = {
+                ...(savedRow as unknown as Record<string, unknown>),
+                user_domain_id: (savedRow as CartaoCreditoEntity).userDomainId,
+                conta_pagamento_id: (savedRow as CartaoCreditoEntity).contaPagamento ? (savedRow as CartaoCreditoEntity).contaPagamento.domainId : (savedRow as CartaoCreditoEntity).contaPagamentoId
+            };
+            const domain = await CartaoCreditoMap.toDomain(savedRaw);
+            if (!domain) {
+                this.logger.error('CartaoCreditoRepo.save - CartaoCreditoMap.toDomain returned null after insert. raw: %o', savedRaw);
+                return Promise.reject(new Error('Failed to map saved cartao to domain'));
             }
+            return domain;
         } catch (err) {
             this.logger.error('CartaoCreditoRepo.save error: %o', err);
             throw err;
@@ -194,7 +204,7 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                         contaPagamentoId2 = asNum2;
                     } else {
                         const contaRepo2 = this.dataSource.getRepository(ContaEntity);
-                        const contaRow2 = await contaRepo2.findOne({ where: { domainId: String(contaPagamentoIdRaw) } });
+                        const contaRow2 = await contaRepo2.findOne({where: {domainId: String(contaPagamentoIdRaw)}});
                         contaPagamentoId2 = contaRow2 ? contaRow2.id : null;
                     }
                 }
@@ -219,20 +229,23 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                     userDomainId,
                     contaPagamentoId: contaPagamentoId2
                 })
-                .where('domain_id = :domainId', { domainId })
+                .where('domain_id = :domainId', {domainId})
                 .execute();
 
-            const saved = await this.repo.findOne({ where: { domainId }, relations: ['contaPagamento'] });
+            const saved = await this.repo.findOne({where: {domainId}, relations: ['contaPagamento']});
             if (!saved) return Promise.reject(new Error('Failed to find updated cartao by domainId'));
 
-            const savedRaw: Record<string, unknown> = { ...(saved as unknown as Record<string, unknown>), user_domain_id: (saved as CartaoCreditoEntity).userDomainId, conta_pagamento_id: (saved as CartaoCreditoEntity).contaPagamento ? (saved as CartaoCreditoEntity).contaPagamento.domainId : (saved as CartaoCreditoEntity).contaPagamentoId };
-            try {
-                const domain = await this.mapRawToDomain(savedRaw);
-                return domain;
-            } catch (err) {
-                this.logger.error('CartaoCreditoRepo.update - failed mapping savedRow after update. raw: %o, err: %o', savedRaw, err);
-                return Promise.reject(err);
+            const savedRaw: Record<string, unknown> = {
+                ...(saved as unknown as Record<string, unknown>),
+                user_domain_id: (saved as CartaoCreditoEntity).userDomainId,
+                conta_pagamento_id: (saved as CartaoCreditoEntity).contaPagamento ? (saved as CartaoCreditoEntity).contaPagamento.domainId : (saved as CartaoCreditoEntity).contaPagamentoId
+            };
+            const domain = await CartaoCreditoMap.toDomain(savedRaw);
+            if (!domain) {
+                this.logger.error('CartaoCreditoRepo.update - CartaoCreditoMap.toDomain returned null after update. raw: %o', savedRaw);
+                return Promise.reject(new Error('Failed to map saved cartao to domain'));
             }
+            return domain;
         } catch (err) {
             this.logger.error('CartaoCreditoRepo.update error: %o', err);
             throw err;
@@ -248,7 +261,7 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
             await this.repo.createQueryBuilder()
                 .delete()
                 .from(CartaoCreditoEntity)
-                .where('domain_id = :domainId', { domainId: cartaoId })
+                .where('domain_id = :domainId', {domainId: cartaoId})
                 .execute();
         } catch (err) {
             this.logger.error('CartaoCreditoRepo.delete error: %o', err);
@@ -263,11 +276,20 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
      */
     public async findById(cartaoId: string): Promise<CartaoCredito | null> {
         try {
-            const row = await this.repo.findOne({ where: { domainId: cartaoId }, relations: ['contaPagamento'] });
+            const row = await this.repo.findOne({where: {domainId: cartaoId}, relations: ['contaPagamento']});
             if (!row) return null;
             const rowEntity = row as CartaoCreditoEntity;
-            const raw: Record<string, unknown> = { ...(row as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId, conta_pagamento_id: rowEntity.contaPagamento ? rowEntity.contaPagamento.domainId : rowEntity.contaPagamentoId };
-            return await this.mapRawToDomain(raw);
+            const raw: Record<string, unknown> = {
+                ...(row as unknown as Record<string, unknown>),
+                user_domain_id: rowEntity.userDomainId,
+                conta_pagamento_id: rowEntity.contaPagamento ? rowEntity.contaPagamento.domainId : rowEntity.contaPagamentoId
+            };
+            const domain = await CartaoCreditoMap.toDomain(raw);
+            if (!domain) {
+                this.logger.error('CartaoCreditoRepo.findById - CartaoCreditoMap.toDomain returned null for raw: %o', raw);
+                return null;
+            }
+            return domain;
         } catch (err) {
             this.logger.error('CartaoCreditoRepo.findById error: %o', err);
             throw err;
@@ -286,19 +308,27 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
             if (userId) {
                 rows = await this.repo.createQueryBuilder('c')
                     .leftJoinAndSelect('c.contaPagamento', 'contaPagamento')
-                    .where('c.user_domain_id = :userId', { userId })
+                    .where('c.user_domain_id = :userId', {userId})
                     .orderBy('c.id', 'ASC')
                     .getMany();
             } else {
-                rows = await this.repo.find({ relations: ['contaPagamento'], order: { id: 'ASC' } });
+                rows = await this.repo.find({relations: ['contaPagamento'], order: {id: 'ASC'}});
             }
 
             const res: CartaoCredito[] = [];
             for (const r of rows) {
                 const rowEntity = r as CartaoCreditoEntity;
-                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId, conta_pagamento_id: rowEntity.contaPagamento ? rowEntity.contaPagamento.domainId : rowEntity.contaPagamentoId };
-                const d = await this.mapRawToDomain(raw);
-                if (d) res.push(d);
+                const raw: Record<string, unknown> = {
+                    ...(r as unknown as Record<string, unknown>),
+                    user_domain_id: rowEntity.userDomainId,
+                    conta_pagamento_id: rowEntity.contaPagamento ? rowEntity.contaPagamento.domainId : rowEntity.contaPagamentoId
+                };
+                const d = await CartaoCreditoMap.toDomain(raw);
+                if (d) {
+                    res.push(d);
+                } else {
+                    this.logger.error('CartaoCreditoRepo.findAll - CartaoCreditoMap.toDomain returned null for raw: %o', raw);
+                }
             }
             return res;
         } catch (err) {
@@ -308,77 +338,106 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
     }
 
     /**
-     * Try to map a raw DB row to CartaoCredito domain. Use CartaoCreditoMap first, then fall back to manual construction
-     * with detailed logging to help debugging mapping failures.
+     * Gets the extrato (transaction history and current balance) for a specific CartaoCredito. It retrieves all pending
+     * 'Crédito' and 'Reembolso' transactions linked to the CartaoCredito, optionally filtered by userId for access control.
+     * It then computes the current balance as the sum of 'Crédito' transactions minus the sum of 'Reembolso'
+     * transactions, and returns both the list of 'Crédito' transactions and the computed balance.
+     * @param cartaoCreditoId - The domainId of the CartaoCredito to get the extrato for.
+     * @param userId - Optional userId to filter transactions for access control. If provided, only transactions
+     * associated with that user will be included in the extrato.
+     * @return An object containing an array of 'Crédito' transactions and the current balance of the CartaoCredito.
+     * If the CartaoCredito is not found, it returns an empty transaction list and a zero balance.
      */
-    private async mapRawToDomain(raw: Record<string, unknown>): Promise<CartaoCredito> {
-        // try mapper first
-        const direct = await CartaoCreditoMap.toDomain(raw);
-        if (direct) return direct;
-
-        // manual fallback
+    public async getExtrato(cartaoCreditoId: string, userId?: string): Promise<{
+        transacoes: Transacao[];
+        saldoAtual: Dinheiro
+    }> {
         try {
-            this.logger.error('CartaoCreditoMap.toDomain returned null, attempting manual mapping. Raw: %o', raw);
-            const nomeOr = Nome.create(String(raw['nome'] ?? ''));
-            const iconOr = Icon.create(String(raw['icon'] ?? ''));
-            const moeda = String(raw['moeda'] ?? 'EUR');
-            const limiteVal = Number(raw['limiteCredito'] ?? raw['limite_credito'] ?? 0);
-            const limiteOr = Dinheiro.create(Number(limiteVal), moeda);
-            const saldoVal = Number(raw['saldoUtilizado'] ?? raw['saldo_utilizado'] ?? 0);
-            const saldoOr = Dinheiro.create(Number(saldoVal), moeda);
+            // load cartao (including contaPagamento to determine ownership if needed)
+            const cartaoRow = await this.repo.findOne({ where: { domainId: cartaoCreditoId }, relations: ['contaPagamento'] });
+            if (!cartaoRow) {
+                this.logger.error('CartaoCreditoRepo.getExtrato: cartao not found for id %s', cartaoCreditoId);
+                const fallback = Dinheiro.create(0, 'EUR');
+                return { transacoes: [], saldoAtual: fallback.isSuccess ? fallback.getValue() : Dinheiro.create(0, 'EUR').getValue() };
+            }
 
-            const pInicioRaw = raw['periodo_inicio'] ?? raw['periodoInicio'] ?? null;
-            const pFechoRaw = raw['periodo_fecho'] ?? raw['periodoFecho'] ?? null;
-            const now = new Date();
-            const dInicio = pInicioRaw ? new Date(String(pInicioRaw)) : now;
-            const dFecho = pFechoRaw ? new Date(String(pFechoRaw)) : now;
-            const inicioDataOr = Data.createFromParts(dInicio.getDate(), dInicio.getMonth() + 1, dInicio.getFullYear(), true);
-            const fechoDataOr = Data.createFromParts(dFecho.getDate(), dFecho.getMonth() + 1, dFecho.getFullYear(), true);
+            // determine period (inclusive)
+            const inicio: Date | null = cartaoRow.periodoInicio ? new Date(cartaoRow.periodoInicio) : null;
+            const fecho: Date | null = cartaoRow.periodoFecho ? new Date(cartaoRow.periodoFecho) : null;
 
-            // Log individual VO failures for diagnostics
-            const vos = { nomeOr, iconOr, limiteOr, saldoOr, inicioDataOr, fechoDataOr } as Record<string, any>;
-            for (const [k, v] of Object.entries(vos)) {
-                if (!v) {
-                    this.logger.error('mapRawToDomain missing VO result: %s', k);
-                } else if (v.isFailure) {
-                    this.logger.error('mapRawToDomain VO %s failed: %o', k, v.errorValue());
+            // Build query for crédito and reembolso pendentes linked to this card (we'll compute sums from both)
+            const transacaoRepo = this.dataSource.getRepository(TransacaoEntity);
+            const qbAll = transacaoRepo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.cartaoCredito', 'cc')
+                .where('cc.id = :cartaoRowId', { cartaoRowId: cartaoRow.id })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] })
+                .andWhere('t.status = :status', { status: 'Pendente' });
+
+            if (userId) qbAll.andWhere('t.user_domain_id = :userId', { userId });
+
+            if (inicio && fecho) {
+                // Filter by transaction date (dia/mes/ano) instead of created_at
+                // Build a date comparison using SQL date construction
+                const inicioDay = inicio.getDate();
+                const inicioMonth = inicio.getMonth() + 1; // Date.getMonth() returns 0-11
+                const inicioYear = inicio.getFullYear();
+
+                const fechoDay = fecho.getDate();
+                const fechoMonth = fecho.getMonth() + 1; // Date.getMonth() returns 0-11
+                const fechoYear = fecho.getFullYear();
+
+                // Create a comparable integer format: YYYYMMDD
+                // Note: t.mes in DB is already 1-12 (not 0-11)
+                qbAll.andWhere(
+                    '(t.ano * 10000 + t.mes * 100 + t.dia) >= :inicioInt AND (t.ano * 10000 + t.mes * 100 + t.dia) <= :fechoInt',
+                    {
+                        inicioInt: inicioYear * 10000 + inicioMonth * 100 + inicioDay,
+                        fechoInt: fechoYear * 10000 + fechoMonth * 100 + fechoDay
+                    }
+                );
+            }
+
+            const rowsAll = await qbAll.orderBy('t.id', 'ASC').getMany();
+
+            // compute sums: credito sum - reembolso sum
+            let sumCredito = 0;
+            let sumReembolso = 0;
+            const transacoesCreditos: Transacao[] = [];
+
+            for (const r of rowsAll) {
+                const rowEntity = r as TransacaoEntity;
+                const valorNum = Number(rowEntity.valor ?? 0);
+                const tipo = String(rowEntity.tipo ?? '');
+
+                if (tipo === 'Crédito') sumCredito += isFinite(valorNum) ? valorNum : 0;
+                if (tipo === 'Reembolso') sumReembolso += isFinite(valorNum) ? valorNum : 0;
+
+                // map domain; only push créditos to the returned list
+                const raw: Record<string, unknown> = {
+                    ...(r as unknown as Record<string, unknown>),
+                    user_domain_id: rowEntity.userDomainId,
+                    categoria: rowEntity.categoria ?? undefined,
+                    cartaoCredito: rowEntity.cartaoCredito ?? undefined,
+                    conta: rowEntity.conta ?? undefined
+                };
+                const domain = await TransacaoMap.toDomain(raw);
+                if (!domain) {
+                    this.logger.error('CartaoCreditoRepo.getExtrato - TransacaoMap.toDomain returned null for raw: %o', raw);
+                    continue;
                 }
+
+                if (domain.tipo.value === 'Crédito') transacoesCreditos.push(domain);
             }
 
-            const combine = Result.combine([nomeOr, iconOr, limiteOr, saldoOr, inicioDataOr, fechoDataOr]);
-            if (combine.isFailure) {
-                this.logger.error('mapRawToDomain value object combine failure (summary): %o; raw: %o', combine.errorValue(), raw);
-                return Promise.reject(new Error(String(combine.errorValue())));
-            }
+            const saldoValue = sumCredito - sumReembolso;
+            const saldoRes = Dinheiro.create(saldoValue, String(cartaoRow.moeda ?? 'EUR'));
+            const saldoAtual = saldoRes.isSuccess ? saldoRes.getValue() : Dinheiro.create(0, 'EUR').getValue();
 
-            const periodoOr = Periodo.create(inicioDataOr.getValue(), fechoDataOr.getValue());
-            if (periodoOr.isFailure) {
-                this.logger.error('mapRawToDomain Periodo.create failed: %o', periodoOr.errorValue());
-                return Promise.reject(new Error(String(periodoOr.errorValue())));
-            }
-
-            const rawConta = raw['conta_pagamento_id'] ?? raw['contaPagamentoId'] ?? null;
-            const contaUid = rawConta ? new UniqueEntityID(String(rawConta)) : undefined;
-
-            const props = {
-                userId: new UniqueEntityID(String(raw['user_domain_id'] ?? raw['userDomainId'] ?? '')),
-                nome: nomeOr.getValue(),
-                icon: iconOr.getValue(),
-                limiteCredito: limiteOr.getValue(),
-                saldoUtilizado: saldoOr.getValue(),
-                periodo: periodoOr.getValue(),
-                contaPagamentoId: contaUid
-            } as any;
-
-            const cartaoOrError = CartaoCredito.create(props, new UniqueEntityID(String(raw['domainId'] ?? raw['id'] ?? '')));
-            if (cartaoOrError.isFailure) {
-                this.logger.error('mapRawToDomain CartaoCredito.create failed: %o', cartaoOrError.errorValue());
-                return Promise.reject(new Error(String(cartaoOrError.errorValue())));
-            }
-            return cartaoOrError.getValue();
+            return { transacoes: transacoesCreditos, saldoAtual };
         } catch (err) {
-            this.logger.error('mapRawToDomain error: %o', err);
-            return Promise.reject(err);
+            this.logger.error('CartaoCreditoRepo.getExtrato error: %o', err);
+            throw err;
         }
     }
 }

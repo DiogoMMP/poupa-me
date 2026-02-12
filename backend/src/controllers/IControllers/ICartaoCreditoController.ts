@@ -53,4 +53,17 @@ export interface ICartaoCreditoController {
      * during retrieval, it should be passed to this function.
      */
     getAllCartoes(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+
+    /**
+     * Handles the retrieval of the extrato (transaction history) for a specific CartaoCredito. Expects a request
+     * containing the ID of the CartaoCredito to retrieve the extrato for (either in the URL parameters or query) and
+     * the authenticated user's ID (either in the body or inferred from authentication).
+     * @param req - The Express request object, which should contain the ID of the CartaoCredito to retrieve the extrato
+     * for (in params or query) and the authenticated user's ID (in body or inferred from authentication).
+     * @param res - The Express response object, used to send back the extrato (list of transactions and current balance)
+     * for the specified CartaoCredito or an error message if retrieval fails.
+     * @param next - The next middleware function in the Express pipeline, used for error handling. If an error occurs
+     * during retrieval of the extrato, it should be passed to this function.
+     */
+    getExtrato(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 }

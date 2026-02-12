@@ -1,4 +1,6 @@
 import type { CartaoCredito } from '../../domain/CartaoCredito/Entities/CartaoCredito.js';
+import type { Transacao } from "../../domain/Transacao/Entities/Transacao.js";
+import type {Dinheiro} from "../../domain/Shared/ValueObjects/Dinheiro.js";
 
 /**
  * Repository interface for CartaoCredito. Defines the contract for persistence operations.
@@ -37,5 +39,12 @@ export default interface ICartaoCreditoRepo {
      * @returns An array of CartaoCredito entities
      */
     findAll(userId?: string): Promise<CartaoCredito[]>;
-}
 
+    /**
+     * Gets the extrato (transaction history and current balance) for a specific CartaoCredito, optionally filtered by user ID for access control.
+     * @param cartaoCreditoId - The domain ID of the CartaoCredito to get the extrato for
+     * @param userId - Optional user domain ID to filter transactions for access control
+     * @returns An object containing an array of transaction DTOs and the current balance of the CartaoCredito
+     */
+    getExtrato(cartaoCreditoId: string, userId?: string): Promise<{ transacoes: Transacao[], saldoAtual: Dinheiro }>;
+}
