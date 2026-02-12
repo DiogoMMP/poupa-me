@@ -4,6 +4,7 @@ import categoriaRoute from "./routes/CategoriaRoute.js";
 import transacaoRoute from "./routes/TransacaoRoute.js";
 import contaRoute from "./routes/ContaRouter.js";
 import cartaoCreditoRoute from "./routes/CartaoCreditoRoute.js";
+import bancoRoute from "./routes/BancoRoute.js";
 
 export default () => {
 	const app = Router();
@@ -22,6 +23,9 @@ export default () => {
 
 	// Register CartaoCredito routes
 	cartaoCreditoRoute(app);
+
+	// Register Banco routes
+	bancoRoute(app);
 
 	return app
 }

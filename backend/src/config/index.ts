@@ -60,6 +60,11 @@ export default {
         cartao: {
             name: 'CartaoCreditoRepo',
             path: '../repos/CartaoCreditoRepo.js'
+        },
+
+        banco: {
+            name: 'BancoRepo',
+            path: '../repos/BancoRepo.js'
         }
     },
 
@@ -87,6 +92,11 @@ export default {
         cartao: {
             name: 'CartaoCreditoService',
             path: '../services/CartaoCreditoService.js'
+        },
+
+        banco: {
+            name: 'BancoService',
+            path: '../services/BancoService.js'
         }
     },
 
@@ -114,6 +124,11 @@ export default {
         cartao: {
             name: 'CartaoCreditoController',
             path: '../controllers/CartaoCreditoController.js'
+        },
+
+        banco: {
+            name: 'BancoController',
+            path: '../controllers/BancoController.js'
         }
     },
 

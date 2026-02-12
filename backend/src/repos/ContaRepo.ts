@@ -34,6 +34,7 @@ export default class ContaRepo implements IContaRepo {
                 saldo?: { valor?: number; moeda?: string } | number;
                 user_domain_id?: string;
                 userDomainId?: string;
+                banco_id?: string | null;
             };
 
             let domainId = String(raw.domainId ?? '');
@@ -62,7 +63,8 @@ export default class ContaRepo implements IContaRepo {
                 icon,
                 saldo: saldoVal,
                 moeda: moedaVal,
-                userDomainId
+                userDomainId,
+                bancoId: raw.banco_id ?? null
             };
 
             // Check for existing account with same name (global uniqueness in DB)
@@ -127,6 +129,7 @@ export default class ContaRepo implements IContaRepo {
                 saldo?: { valor?: number; moeda?: string } | number;
                 user_domain_id?: string;
                 userDomainId?: string;
+                banco_id?: string | null;
             };
 
             const domainId = String(raw.domainId ?? '');
@@ -145,7 +148,8 @@ export default class ContaRepo implements IContaRepo {
                     icon: iconVal,
                     saldo: saldoVal2,
                     moeda: moedaVal2,
-                    userDomainId: userDomainIdVal
+                    userDomainId: userDomainIdVal,
+                    bancoId: raw.banco_id ?? null
                 })
                 .where('domain_id = :domainId', { domainId })
                 .execute();

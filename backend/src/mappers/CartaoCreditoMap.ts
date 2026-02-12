@@ -98,6 +98,8 @@ export class CartaoCreditoMap extends Mapper<CartaoCredito> {
         const rawConta = r['conta_pagamento_id'] ?? r['contaPagamentoId'] ?? null;
         const contaPagamentoId = rawConta ? new UniqueEntityID(String(rawConta)) : undefined;
 
+        const bancoId = r['bancoId'] ?? r['banco_id'];
+
         const combined = Result.combine([nomeResult, iconResult, limiteCreditoResult, saldoUtilizadoResult, periodoResult]);
         if (combined.isFailure) return null;
 
@@ -108,7 +110,8 @@ export class CartaoCreditoMap extends Mapper<CartaoCredito> {
             limiteCredito: limiteCreditoResult.getValue(),
             saldoUtilizado: saldoUtilizadoResult.getValue(),
             periodo: periodoResult.getValue(),
-            contaPagamentoId
+            contaPagamentoId,
+            bancoId: bancoId ? String(bancoId) : undefined
         }, new UniqueEntityID(String(r['domainId'] ?? r['id'])));
 
         return cartaoOrError.isSuccess ? cartaoOrError.getValue() : null;
@@ -129,7 +132,8 @@ export class CartaoCreditoMap extends Mapper<CartaoCredito> {
             periodo_fecho: new Date(cartao.periodo.fecho.year, cartao.periodo.fecho.month - 1, cartao.periodo.fecho.day),
             periodo_inicio: new Date(cartao.periodo.inicio.year, cartao.periodo.inicio.month - 1, cartao.periodo.inicio.day),
             user_domain_id: cartao.userId.toString(),
-            conta_pagamento_id: cartao.contaPagamentoId ? cartao.contaPagamentoId.toString() : null
+            conta_pagamento_id: cartao.contaPagamentoId ? cartao.contaPagamentoId.toString() : null,
+            banco_id: cartao.bancoId
         };
     }
 
@@ -163,7 +167,8 @@ export class CartaoCreditoMap extends Mapper<CartaoCredito> {
                     ano: cartao.periodo.fecho.year
                 }
             },
-            contaPagamentoId: cartao.contaPagamentoId ? cartao.contaPagamentoId.toString() : null
+            contaPagamentoId: cartao.contaPagamentoId ? cartao.contaPagamentoId.toString() : null,
+            bancoId: cartao.bancoId
         } as ICartaoCreditoDTO;
     }
 }

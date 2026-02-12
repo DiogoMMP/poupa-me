@@ -1,5 +1,6 @@
-import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Unique, OneToMany} from 'typeorm';
+import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Unique, OneToMany, ManyToOne, JoinColumn} from 'typeorm';
 import {TransacaoEntity} from "./TransacaoEntity.js";
+import {BancoEntity} from "./BancoEntity.js";
 
 @Entity({name: 'conta'})
 @Unique(['nome'])
@@ -24,6 +25,13 @@ export class ContaEntity {
 
     @Column({ name: 'user_domain_id', type: 'varchar', length: 50 })
     userDomainId!: string;
+
+    @Column({ name: 'banco_id', type: 'varchar', length: 50, nullable: true })
+    bancoId?: string | null;
+
+    @ManyToOne(() => BancoEntity, (banco) => banco.contas, { nullable: true })
+    @JoinColumn({ name: 'banco_id', referencedColumnName: 'domainId' })
+    banco?: BancoEntity;
 
     @OneToMany(() => TransacaoEntity, (t) => t.conta)
     transacoes?: TransacaoEntity[];

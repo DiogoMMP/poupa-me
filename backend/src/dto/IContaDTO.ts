@@ -6,6 +6,7 @@ export interface IContaDTO {
     nome: string;
     icon: string;
     saldo: IDinheiroProps;
+    bancoId?: string;
 }
 
 export interface IContaInputDTO {
@@ -13,9 +14,11 @@ export interface IContaInputDTO {
     icon: string;
     userId?: string; // will be set by controller from authenticated user
     saldo?: IDinheiroProps; // optional initial balance; defaults to zero
+    bancoId?: string;
 }
 
 export interface IContaUpdateDTO {
     nome?: string;
     icon?: string;
+    bancoId?: string;
 }

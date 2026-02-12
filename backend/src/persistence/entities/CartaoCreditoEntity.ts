@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { TransacaoEntity } from './TransacaoEntity.js';
 import { ContaEntity } from './ContaEntity.js';
+import { BancoEntity } from './BancoEntity.js';
 
 @Entity({ name: 'cartao_credito' })
 @Unique(['nome'])
@@ -48,6 +49,13 @@ export class CartaoCreditoEntity {
 
     @Column({ name: 'conta_pagamento_id', nullable: true })
     contaPagamentoId!: number | null;
+
+    @Column({ name: 'banco_id', type: 'varchar', length: 50, nullable: true })
+    bancoId?: string | null;
+
+    @ManyToOne(() => BancoEntity, (banco) => banco.cartoesCredito, { nullable: true })
+    @JoinColumn({ name: 'banco_id', referencedColumnName: 'domainId' })
+    banco?: BancoEntity;
 
     @OneToMany(() => TransacaoEntity, (t) => t.cartaoCredito)
     transacoes?: TransacaoEntity[];

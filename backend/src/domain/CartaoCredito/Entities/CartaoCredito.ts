@@ -18,6 +18,7 @@ interface CartaoCreditoProps {
     saldoUtilizado: Dinheiro; // Amount already used
     periodo: Periodo;
     contaPagamentoId?: UniqueEntityID | null; // optional, may be null
+    bancoId?: string; // Optional: Domain ID of the associated Banco
 }
 
 /**
@@ -75,6 +76,12 @@ export class CartaoCredito extends AggregateRoot<CartaoCreditoProps> {
         return this.props.contaPagamentoId;
     }
 
+    /**
+     * Gets the bancoId (optional) associated with this CartaoCredito
+     */
+    get bancoId(): string | undefined {
+        return this.props.bancoId;
+    }
 
     /**
      * Private constructor to enforce the use of the static create method for instantiation. This ensures that all

@@ -73,6 +73,8 @@ export default (app: Router) => {
    *           $ref: '#/components/schemas/Periodo'
    *         contaPagamentoId:
    *           type: string
+   *         bancoId:
+   *           type: string
    *     CartaoCreditoInput:
    *       type: object
    *       required: [nome, icon, limiteCredito, periodo, contaPagamentoId]
@@ -87,6 +89,10 @@ export default (app: Router) => {
    *           $ref: '#/components/schemas/IDinheiroProps'
    *         periodo:
    *           $ref: '#/components/schemas/Periodo'
+   *         contaPagamentoId:
+   *           type: string
+   *         bancoId:
+   *           type: string
    *       example:
    *         nome: "Cartão Exemplo"
    *         icon: "visa"
@@ -102,8 +108,8 @@ export default (app: Router) => {
    *             dia: 15
    *             mes: 3
    *             ano: 2026
-   *         contaPagamentoId:
-   *           type: string
+   *         contaPagamentoId: "CNT00000000001"
+   *         bancoId: "BNC00000000001"
    *     CartaoCreditoUpdate:
    *       type: object
    *       properties:
@@ -116,6 +122,8 @@ export default (app: Router) => {
    *         periodo:
    *           $ref: '#/components/schemas/Periodo'
    *         contaPagamentoId:
+   *           type: string
+   *         bancoId:
    *           type: string
    */
 

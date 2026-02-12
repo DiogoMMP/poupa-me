@@ -25,6 +25,7 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
         @Inject('CartaoCreditoRepo') private cartaoRepo: ICartaoCreditoRepo,
         @Inject('TransacaoRepo') private transacaoRepo: ITransacaoRepo,
         @Inject('CategoriaRepo') private categoriaRepo: ICategoriaRepo,
+        @Inject('ContaRepo') private contaRepo: any,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {
     }
@@ -41,6 +42,11 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
             const iconOrError = Icon.create(inputDTO.icon ?? '');
             const limiteOrError = Dinheiro.create(Number(inputDTO.limiteCredito?.valor ?? 0), String(inputDTO.limiteCredito?.moeda ?? 'EUR'));
             const saldoOrError = Dinheiro.create(Number(inputDTO.saldoUtilizado?.valor ?? 0), String(inputDTO.saldoUtilizado?.moeda ?? 'EUR'));
+
+            // validate contaPagamentoId existence
+            if (!inputDTO.contaPagamentoId) return Result.fail<ICartaoCreditoDTO>('contaPagamentoId is required');
+            const contaRow = await this.contaRepo.findById(inputDTO.contaPagamentoId);
+            if (!contaRow) return Result.fail<ICartaoCreditoDTO>('Conta pagamento not found');
 
             // Build Data VOs for periodo
             const inicioDTO = inputDTO.periodo?.inicio;
@@ -64,7 +70,8 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
                 limiteCredito: limiteOrError.getValue(),
                 saldoUtilizado: saldoOrError.getValue(),
                 periodo: periodoOrError.getValue(),
-                contaPagamentoId: new UniqueEntityID(String(inputDTO.contaPagamentoId))
+                contaPagamentoId: new UniqueEntityID(String(inputDTO.contaPagamentoId)),
+                bancoId: inputDTO.bancoId
             };
 
             const cartaoOrError = CartaoCredito.create(props);
@@ -121,7 +128,8 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
                 limiteCredito: limiteOrError.getValue(),
                 saldoUtilizado: saldoOrError.getValue(),
                 periodo: periodoOrError.getValue(),
-                contaPagamentoId: inputDTO.contaPagamentoId ? new UniqueEntityID(String(inputDTO.contaPagamentoId)) : existing.contaPagamentoId
+                contaPagamentoId: inputDTO.contaPagamentoId ? new UniqueEntityID(String(inputDTO.contaPagamentoId)) : existing.contaPagamentoId,
+                bancoId: inputDTO.bancoId ?? existing.bancoId
             };
 
             const updatedOrError = CartaoCredito.create(props, existing.id);

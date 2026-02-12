@@ -95,6 +95,22 @@ export default async ({expressApp}: { expressApp: Application }) => {
     };
 
 
+    const bancoController = {
+        name: config.controllers.banco.name,
+        path: config.controllers.banco.path
+    };
+
+    const bancoService = {
+        name: config.services.banco.name,
+        path: config.services.banco.path
+    };
+
+    const bancoRepo = {
+        name: config.repos.banco.name,
+        path: config.repos.banco.path
+    };
+
+
     await dependencyInjectorLoader({
         dataSource: dataSource as any,
         schemas: [],
@@ -103,21 +119,24 @@ export default async ({expressApp}: { expressApp: Application }) => {
             categoriaController,
             transacaoController,
             contaController,
-            cartaoController
+            cartaoController,
+            bancoController
         ],
         repos: [
             userRepo,
             categoriaRepo,
             transacaoRepo,
             contaRepo,
-            cartaoRepo
+            cartaoRepo,
+            bancoRepo
         ],
         services: [
             authService,
             categoriaService,
             transacaoService,
             contaService,
-            cartaoService
+            cartaoService,
+            bancoService
         ]
     } as any);
     Logger.info('✌️ Entities, Controllers, Repositories, Services, etc. loaded');

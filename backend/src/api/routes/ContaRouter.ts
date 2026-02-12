@@ -52,6 +52,15 @@ export default (app: Router) => {
    *           type: string
    *         saldo:
    *           $ref: '#/components/schemas/IDinheiroProps'
+   *         bancoId:
+   *           type: string
+   *       example:
+   *         nome: "Conta Ordenado"
+   *         icon: "salary.png"
+   *         saldo:
+   *           valor: 1000
+   *           moeda: EUR
+   *         bancoId: "BNC00000000001"
    *     ContaUpdate:
    *       type: object
    *       properties:
@@ -202,4 +211,3 @@ export default (app: Router) => {
   // Get all contas (optionally filtered by userId query param)
   route.get('/', isAuth, (req, res, next) => ctrl.getAllContas(req as AuthenticatedRequest, res, next));
 };
-

@@ -15,6 +15,7 @@ export interface ICartaoCreditoDTO {
     saldoUtilizado: IDinheiroProps;
     periodo: IPeriodoProps;
     contaPagamentoId: string;
+    bancoId?: string;
 }
 
 export interface ICartaoCreditoInputDTO {
@@ -25,6 +26,7 @@ export interface ICartaoCreditoInputDTO {
     saldoUtilizado?: IDinheiroProps; // optional initial balance; defaults to zero
     periodo: IPeriodoProps;
     contaPagamentoId: string;
+    bancoId?: string;
 }
 
 export interface ICartaoCreditoUpdateDTO {
@@ -33,4 +35,5 @@ export interface ICartaoCreditoUpdateDTO {
     limiteCredito?: IDinheiroProps;
     periodo?: IPeriodoProps;
     contaPagamentoId?: string;
+    bancoId?: string;
 }

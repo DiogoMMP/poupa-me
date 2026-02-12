@@ -28,11 +28,14 @@ export class ContaMap extends Mapper<Conta> {
         const combined = Result.combine([nomeResult, iconResult, dinheiroResult]);
         if (combined.isFailure) return null;
 
+        const bancoId = r['bancoId'] ?? r['banco_id'];
+
         const contaOrError = Conta.create({
             userId,
             nome: nomeResult.getValue(),
             icon: iconResult.getValue(),
-            saldo: dinheiroResult.getValue()
+            saldo: dinheiroResult.getValue(),
+            bancoId: bancoId ? String(bancoId) : undefined
         }, new UniqueEntityID(String(r['domainId'] ?? r['id'])));
 
         return contaOrError.isSuccess ? contaOrError.getValue() : null;
@@ -48,7 +51,8 @@ export class ContaMap extends Mapper<Conta> {
             nome: conta.nome.value,
             icon: conta.icon.value,
             saldo: { valor: conta.saldo.value, moeda: conta.saldo.moeda },
-            user_domain_id: conta.userId.toString()
+            user_domain_id: conta.userId.toString(),
+            banco_id: conta.bancoId
         };
     }
 
@@ -62,7 +66,8 @@ export class ContaMap extends Mapper<Conta> {
             userId: conta.userId.toString(),
             nome: conta.nome.value,
             icon: conta.icon.value,
-            saldo: { valor: conta.saldo.value, moeda: conta.saldo.moeda }
+            saldo: { valor: conta.saldo.value, moeda: conta.saldo.moeda },
+            bancoId: conta.bancoId
         } as IContaDTO;
     }
 }

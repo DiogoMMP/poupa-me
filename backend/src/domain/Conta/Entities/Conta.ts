@@ -14,6 +14,7 @@ interface ContaProps {
     nome: Nome;
     icon: Icon;
     saldo: Dinheiro; // Current balance snapshot
+    bancoId?: string; // Optional: Domain ID of the associated Banco
 }
 
 /**
@@ -47,6 +48,13 @@ export class Conta extends AggregateRoot<ContaProps> {
      */
     get saldo(): Dinheiro {
         return this.props.saldo;
+    }
+
+    /**
+     * Gets the bancoId (optional) associated with this Conta
+     */
+    get bancoId(): string | undefined {
+        return this.props.bancoId;
     }
 
 

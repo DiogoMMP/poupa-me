@@ -155,6 +155,17 @@ export const CartaoCreditoIdHelper = {
 };
 
 /**
+ * Banco domain ID helpers - prefix 'BNC'
+ * IDs: e.g. 'BNC00000000001'
+ */
+export const BancoIdHelper = {
+  prefix: 'BNC',
+  generateFirst: () => generateFirstId('BNC'),
+  generateNext: (maxSeq: number) => generateNextId(maxSeq, 'BNC'),
+  extractSequence: (id: string) => extractSequenceNumber(id, 'BNC')
+};
+
+/**
  * Transacao domain ID helpers - prefix 'TRN-{year}'
  * IDs include year: e.g. 'TRN-2026-00000000001'
  */

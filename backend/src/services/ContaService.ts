@@ -41,7 +41,8 @@ export default class ContaService implements IContaService {
                 userId: new UniqueEntityID(String(inputDTO.userId)),
                 nome: nomeOrError.getValue(),
                 icon: iconOrError.getValue(),
-                saldo: dinheiroOrError.getValue()
+                saldo: dinheiroOrError.getValue(),
+                bancoId: inputDTO.bancoId
             };
 
             const contaOrError = Conta.create(props);
@@ -80,7 +81,8 @@ export default class ContaService implements IContaService {
                 userId: existing.userId,
                 nome: nomeOrError.getValue(),
                 icon: iconOrError.getValue(),
-                saldo: dinheiroOrError.getValue()
+                saldo: dinheiroOrError.getValue(),
+                bancoId: inputDTO.bancoId ?? existing.bancoId
             };
 
             const updatedOrError = Conta.create(props, existing.id);

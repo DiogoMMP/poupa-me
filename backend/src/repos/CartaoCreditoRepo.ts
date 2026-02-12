@@ -72,14 +72,19 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                 if (rawStr.length === 0 || rawStr.toLowerCase() === 'nan' || rawStr.toLowerCase() === 'undefined') {
                     contaPagamentoId = null;
                 } else {
+                    // If looks like a pure number, treat as PK
                     const asNum = Number(rawStr);
-                    if (!Number.isNaN(asNum)) {
+                    if (!Number.isNaN(asNum) && String(asNum) === rawStr) {
                         contaPagamentoId = asNum;
                     } else {
                         // lookup ContaEntity by domainId
                         const contaRepo = this.dataSource.getRepository(ContaEntity);
-                        const contaRow = await contaRepo.findOne({where: {domainId: String(contaPagamentoIdRaw)}});
-                        contaPagamentoId = contaRow ? contaRow.id : null;
+                        const contaRow = await contaRepo.findOne({ where: { domainId: rawStr } });
+                        if (!contaRow) {
+                            this.logger.error('CartaoCreditoRepo.save: contaPagamentoId lookup failed for domainId %s (userDomainId=%s)', rawStr, userDomainId);
+                            return Promise.reject(new Error('Conta not found for cartao.contaPagamentoId: ' + rawStr));
+                        }
+                        contaPagamentoId = contaRow.id;
                     }
                 }
             }
@@ -94,7 +99,8 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                 periodoFecho: periodoFechoVal,
                 periodoInicio: periodoInicioVal,
                 userDomainId,
-                contaPagamentoId
+                contaPagamentoId,
+                bancoId: raw.banco_id ?? null
             };
 
             // Unique name check
@@ -227,7 +233,8 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                     periodoFecho: periodoFechoVal2,
                     periodoInicio: periodoInicioVal2,
                     userDomainId,
-                    contaPagamentoId: contaPagamentoId2
+                    contaPagamentoId: contaPagamentoId2,
+                    bancoId: raw.banco_id as string | null | undefined
                 })
                 .where('domain_id = :domainId', {domainId})
                 .execute();
