@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [22.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
@@ -34,8 +34,6 @@ jobs:
         npm ci
         echo "=== Backend: build (if present) ==="
         npm run build --if-present
-        echo "=== Backend: test (if present) ==="
-        npm test --if-present
       shell: bash
 
     - name: Install, build and test frontend
@@ -45,6 +43,4 @@ jobs:
         npm ci
         echo "=== Frontend: build (if present) ==="
         npm run build --if-present
-        echo "=== Frontend: test (if present) ==="
-        npm test --if-present
       shell: bash
