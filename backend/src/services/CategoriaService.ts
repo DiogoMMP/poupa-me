@@ -1,6 +1,7 @@
 import { Service, Inject } from 'typedi';
 import { Result } from '../core/logic/Result.js';
 import type { ICategoriaDTO, IInputCategoriaDTO } from '../dto/ICategoriaDTO.js';
+import type ICategoriaService from './IServices/ICategoriaService.js';
 import type ICategoriaRepo from '../repos/IRepos/ICategoriaRepo.js';
 import { Categoria } from '../domain/Categoria/Entities/Categoria.js';
 import { Nome } from '../domain/Shared/ValueObjects/Nome.js';
@@ -9,7 +10,7 @@ import { Result as CoreResult } from '../core/logic/Result.js';
 import { CategoriaMap } from '../mappers/CategoriaMap.js';
 
 @Service()
-export default class CategoriaService {
+export default class CategoriaService implements ICategoriaService {
     constructor(
         @Inject('CategoriaRepo') private categoriaRepo: ICategoriaRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }

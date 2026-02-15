@@ -107,6 +107,11 @@ export default {
         despesaRecorrente: {
             name: 'DespesaRecorrenteService',
             path: '../services/DespesaRecorrenteService.js'
+        },
+
+        import: {
+            name: 'ImportService',
+            path: '../services/ImportService.js'
         }
     },
 
@@ -144,6 +149,11 @@ export default {
         despesaRecorrente: {
             name: 'DespesaRecorrenteController',
             path: '../controllers/DespesaRecorrenteController.js'
+        },
+
+        import: {
+            name: 'ImportController',
+            path: '../controllers/ImportController.js'
         }
     },
 

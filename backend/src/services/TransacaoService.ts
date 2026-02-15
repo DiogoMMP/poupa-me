@@ -6,6 +6,7 @@ import type {
     ITransacaoReembolsoDTO,
     ITransacaoUpdateDTO
 } from '../dto/ITransacaoDTO.js';
+import type ITransacaoService from './IServices/ITransacaoService.js';
 import type ITransacaoRepo from '../repos/IRepos/ITransacaoRepo.js';
 import type ICategoriaRepo from '../repos/IRepos/ICategoriaRepo.js';
 import type IContaRepo from '../repos/IRepos/IContaRepo.js';
@@ -24,7 +25,7 @@ import {Status} from "../domain/Transacao/ValueObjects/Status.js";
  * Each method returns a Result type, encapsulating success or failure and providing consistent error handling across the service.
  */
 @Service()
-export default class TransacaoService {
+export default class TransacaoService implements ITransacaoService {
     constructor(
         @Inject('TransacaoRepo') private transacaoRepo: ITransacaoRepo,
         @Inject('CategoriaRepo') private categoriaRepo: ICategoriaRepo,

@@ -17,18 +17,47 @@ export class ContaMap extends Mapper<Conta> {
 
         // Read authenticated owner id from DB/raw object: prefer snake_case column but accept camelCase entity prop
         const userIdRaw = String(r['user_domain_id'] ?? r['userDomainId'] ?? r['userId'] ?? '');
-        const userId = new UniqueEntityID(userIdRaw || '');
-        const nomeResult = Nome.create(String(r['nome'] ?? r['name'] ?? ''));
-        const iconResult = Icon.create(String(r['icon'] ?? ''));
-        const saldoRaw = r['saldo'] as Record<string, unknown> | undefined;
-        const saldoVal = typeof r['saldo'] === 'number' || typeof r['saldo'] === 'string' ? Number(r['saldo']) : (saldoRaw && (Number(saldoRaw['valor'] ?? saldoRaw['value'] ?? 0))) || 0;
-        const moeda = String((saldoRaw && (saldoRaw['moeda'] ?? saldoRaw['currency'])) ?? r['moeda'] ?? 'EUR');
+        if (!userIdRaw) {
+            console.error('ContaMap.toDomain: Missing userId in raw data:', r);
+            return null;
+        }
+
+        const userId = new UniqueEntityID(userIdRaw);
+        const nomeStr = String(r['nome'] ?? r['name'] ?? '');
+        const iconStr = String(r['icon'] ?? '');
+
+        const nomeResult = Nome.create(nomeStr);
+        const iconResult = Icon.create(iconStr);
+
+        // Handle saldo: can be a number (from DB entity), an object {valor, moeda}, or nested structure
+        let saldoVal = 0;
+        let moeda = 'EUR';
+
+        if (typeof r['saldo'] === 'number' || typeof r['saldo'] === 'string') {
+            // Direct number from TypeORM entity
+            saldoVal = Number(r['saldo']);
+            moeda = String(r['moeda'] ?? 'EUR');
+        } else if (r['saldo'] && typeof r['saldo'] === 'object') {
+            // Object structure {valor, moeda}
+            const saldoObj = r['saldo'] as Record<string, unknown>;
+            saldoVal = Number(saldoObj['valor'] ?? saldoObj['value'] ?? 0);
+            moeda = String(saldoObj['moeda'] ?? saldoObj['currency'] ?? r['moeda'] ?? 'EUR');
+        } else {
+            // Fallback
+            saldoVal = 0;
+            moeda = String(r['moeda'] ?? 'EUR');
+        }
+
         const dinheiroResult = Dinheiro.create(Number(saldoVal), moeda);
 
         const combined = Result.combine([nomeResult, iconResult, dinheiroResult]);
-        if (combined.isFailure) return null;
+        if (combined.isFailure) {
+            console.error('ContaMap.toDomain: Value object creation failed:', combined.errorValue(), { nome: nomeStr, icon: iconStr, saldo: saldoVal, moeda });
+            return null;
+        }
 
         const bancoId = r['bancoId'] ?? r['banco_id'];
+        const domainId = String(r['domainId'] ?? r['domain_id'] ?? '');
 
         const contaOrError = Conta.create({
             userId,
@@ -36,9 +65,14 @@ export class ContaMap extends Mapper<Conta> {
             icon: iconResult.getValue(),
             saldo: dinheiroResult.getValue(),
             bancoId: bancoId ? String(bancoId) : undefined
-        }, new UniqueEntityID(String(r['domainId'] ?? r['id'])));
+        }, domainId ? new UniqueEntityID(domainId) : undefined);
 
-        return contaOrError.isSuccess ? contaOrError.getValue() : null;
+        if (contaOrError.isFailure) {
+            console.error('ContaMap.toDomain: Conta.create failed:', contaOrError.errorValue());
+            return null;
+        }
+
+        return contaOrError.getValue();
     }
 
     /**

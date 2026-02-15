@@ -1,6 +1,7 @@
 import { Service, Inject } from 'typedi';
 import { Result } from '../core/logic/Result.js';
 import type { IUserDTO, IUserRegistrationDTO, IUserLoginDTO, IUserUpdateDTO } from '../dto/IUserDTO.js';
+import type IUserService from './IServices/IUserService.js';
 import type IUserRepo from '../repos/IRepos/IUserRepo.js';
 import { User } from '../domain/User/Entities/User.js';
 import { UserName } from '../domain/User/ValueObjects/UserName.js';
@@ -12,7 +13,7 @@ import { UserMap } from '../mappers/UserMap.js';
 import type * as jwt from 'jsonwebtoken';
 
 @Service()
-export default class AuthService {
+export default class AuthService implements IUserService {
     constructor(
         @Inject('UserRepo') private userRepo: IUserRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }

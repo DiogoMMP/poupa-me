@@ -6,6 +6,7 @@ export default interface ITransacaoRepo {
     delete(transacaoId: string): Promise<void>;
     findById(transacaoId: string): Promise<Transacao | null>;
 
+    findAll(userId: string): Promise<Transacao[]>;
 
     // Processes card payment: marks pending Crédito transactions as Concluído, creates a Saída transaction for payment, and updates card period.
     pagarCartao(cartaoCreditoId: string, valorPagamento: number, userId: string, periodo: { inicio: Date; fecho: Date }): Promise<Transacao>;

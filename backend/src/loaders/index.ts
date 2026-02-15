@@ -127,6 +127,18 @@ export default async ({expressApp}: { expressApp: Application }) => {
     };
 
 
+
+    const importService = {
+        name: config.services.import.name,
+        path: config.services.import.path
+    };
+
+    const importController = {
+        name: config.controllers.import.name,
+        path: config.controllers.import.path
+    };
+
+
     await dependencyInjectorLoader({
         dataSource: dataSource as any,
         schemas: [],
@@ -137,7 +149,8 @@ export default async ({expressApp}: { expressApp: Application }) => {
             contaController,
             cartaoController,
             bancoController,
-            despesaRecorrenteController
+            despesaRecorrenteController,
+            importController
         ],
         repos: [
             userRepo,
@@ -155,7 +168,8 @@ export default async ({expressApp}: { expressApp: Application }) => {
             contaService,
             cartaoService,
             bancoService,
-            despesaRecorrenteService
+            despesaRecorrenteService,
+            importService
         ]
     } as any);
     Logger.info('✌️ Entities, Controllers, Repositories, Services, etc. loaded');

@@ -862,5 +862,29 @@ export default class TransacaoRepo implements ITransacaoRepo {
             throw err;
         }
     }
+
+    public async findAll(userId: string): Promise<Transacao[]> {
+        try {
+            const rows = await this.repo.find({
+                where: {userDomainId: userId},
+                relations: ['categoria', 'conta', 'contaDestino', 'cartaoCredito'],
+                order: {id: 'DESC'}
+            });
+            const res: Transacao[] = [];
+            for (const r of rows) {
+                const rowEntity = r as TransacaoEntity;
+                const raw: Record<string, unknown> = {
+                    ...(r as unknown as Record<string, unknown>),
+                    user_domain_id: rowEntity.userDomainId
+                };
+                const d = await TransacaoMap.toDomain(raw);
+                if (d) res.push(d);
+            }
+            return res;
+        } catch (err) {
+            this.logger.error('TransacaoRepo.findAll error: %o', err);
+            throw err;
+        }
+    }
 }
 

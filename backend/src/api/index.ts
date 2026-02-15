@@ -6,6 +6,7 @@ import contaRoute from "./routes/ContaRouter.js";
 import cartaoCreditoRoute from "./routes/CartaoCreditoRoute.js";
 import bancoRoute from "./routes/BancoRoute.js";
 import despesaRecorrenteRoute from "./routes/DespesaRecorrenteRoute.js";
+import importRoute from "./routes/ImportRoute.js";
 
 export default () => {
 	const app = Router();
@@ -30,6 +31,9 @@ export default () => {
 
 	// Register DespesaRecorrente routes
 	despesaRecorrenteRoute(app);
+
+	// Register Import routes
+	importRoute(app);
 
 	return app
 }

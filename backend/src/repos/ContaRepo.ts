@@ -90,7 +90,13 @@ export default class ContaRepo implements IContaRepo {
 
                         const savedRow = await this.repo.findOne({ where: { id: existingByName.id } });
                         if (!savedRow) throw new Error('Failed to find updated conta after duplicate-name update');
-                        const savedRaw: Record<string, unknown> = { ...(savedRow as unknown as Record<string, unknown>), user_domain_id: (savedRow as ContaEntity).userDomainId };
+                        const savedRaw: Record<string, unknown> = {
+                            ...(savedRow as unknown as Record<string, unknown>),
+                            user_domain_id: (savedRow as ContaEntity).userDomainId,
+                            domain_id: (savedRow as ContaEntity).domainId,
+                            saldo: (savedRow as ContaEntity).saldo,
+                            moeda: (savedRow as ContaEntity).moeda
+                        };
                         const domain = await ContaMap.toDomain(savedRaw);
                         if (!domain) throw new Error('Failed to map updated conta to domain');
                         return domain;
@@ -105,7 +111,13 @@ export default class ContaRepo implements IContaRepo {
             const saved = await this.repo.save(entity);
             if (!saved) throw new Error('Failed to save conta');
 
-            const savedRaw: Record<string, unknown> = { ...(saved as unknown as Record<string, unknown>), user_domain_id: (saved as ContaEntity).userDomainId };
+            const savedRaw: Record<string, unknown> = {
+                ...(saved as unknown as Record<string, unknown>),
+                user_domain_id: (saved as ContaEntity).userDomainId,
+                domain_id: (saved as ContaEntity).domainId,
+                saldo: (saved as ContaEntity).saldo,
+                moeda: (saved as ContaEntity).moeda
+            };
             const domain = await ContaMap.toDomain(savedRaw);
             if (!domain) throw new Error('Failed to map saved conta to domain');
             return domain;
