@@ -106,9 +106,11 @@ export default class CartaoCreditoController implements ICartaoCreditoController
     }
 
     /**
-     * Handles the retrieval of all CartaoCredito entities for the current authenticated user. Delegates the retrieval
-     * logic to the service layer and returns an array of CartaoCredito DTOs. If a user ID is not available from the authentication context, it will return an error.
-     * @param req - Express request object, expected to have the current authenticated user's ID available in the authentication context.
+     * Handles the retrieval of all CartaoCredito entities for the current authenticated user. Optionally filters by banco ID.
+     * Delegates the retrieval logic to the service layer and returns an array of CartaoCredito DTOs. If a user ID is not
+     * available from the authentication context, it will return an error.
+     * @param req - Express request object, expected to have the current authenticated user's ID available in the authentication
+     * context. Optionally accepts a bancoId query parameter to filter results by banco.
      * @param res - Express response object, used to send back the result of the operation.
      * @param next - Express next function, used for error handling.
      * @returns A JSON response with an array of CartaoCredito DTOs on success, or an error message on failure.
@@ -116,7 +118,8 @@ export default class CartaoCreditoController implements ICartaoCreditoController
     public async getAllCartoes(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const userId = (req as AuthenticatedRequest).currentUser?.id as string | undefined;
-            const result = await this.cartaoService.findAllCartoes(userId);
+            const bancoId = req.query.bancoId as string | undefined;
+            const result = await this.cartaoService.findAllCartoes(userId, bancoId);
             if (result.isFailure) return res.status(400).json({error: result.error});
             return res.status(200).json(result.getValue());
         } catch (e) {

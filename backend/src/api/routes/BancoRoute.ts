@@ -26,6 +26,12 @@ export default (app: Router) => {
    *           type: string
    *         icon:
    *           type: string
+   *         contasCartoesSelecionados:
+   *           type: array
+   *           items:
+   *             type: string
+   *           description: IDs of selected contas/cartoes for dashboard calculation
+   *           example: ["CNT00000000001", "CRT00000000001"]
    *     BancoInput:
    *       type: object
    *       required: [nome, icon]
@@ -45,6 +51,12 @@ export default (app: Router) => {
    *         icon:
    *           type: string
    *           example: "novo_banco.png"
+   *         contasCartoesSelecionados:
+   *           type: array
+   *           items:
+   *             type: string
+   *           description: IDs of selected contas/cartoes for dashboard calculation
+   *           example: ["CNT00000000001", "CRT00000000001"]
    */
 
   /**

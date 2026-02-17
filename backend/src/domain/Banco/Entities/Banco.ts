@@ -12,6 +12,7 @@ interface BancoProps {
     userId: UniqueEntityID;
     nome: Nome;
     icon: Icon;
+    contasCartoesSelecionados?: string[];
 }
 
 /**
@@ -39,6 +40,13 @@ export class Banco extends AggregateRoot<BancoProps>{
      */
     get icon(): Icon {
         return this.props.icon;
+    }
+
+    /**
+     * Gets the list of selected contas/cartoes IDs for dashboard calculation
+     */
+    get contasCartoesSelecionados(): string[] | undefined {
+        return this.props.contasCartoesSelecionados;
     }
 
     /**
@@ -72,4 +80,3 @@ export class Banco extends AggregateRoot<BancoProps>{
         return Result.ok<Banco>(new Banco(props, id));
     }
 }
-

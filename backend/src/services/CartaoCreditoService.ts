@@ -177,15 +177,18 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
     }
 
     /**
-     * Finds all CartaoCredito entities, optionally filtered by user ID. This method retrieves CartaoCredito entities
+     * Finds all CartaoCredito entities, optionally filtered by user ID and banco ID. This method retrieves CartaoCredito entities
      * from the repository, maps them to DTOs, and returns them in a Result. If a user ID is provided, only CartaoCredito
-     * entities associated with that user will be returned. If no user ID is provided, all CartaoCredito entities will be returned.
+     * entities associated with that user will be returned. If a banco ID is provided, only CartaoCredito entities associated
+     * with that banco will be returned. If neither is provided, all CartaoCredito entities will be returned.
      * @param userId - Optional user ID to filter CartaoCredito entities by. If provided, only CartaoCredito entities
-     * with a matching user_domain_id will be returned. If not provided, all CartaoCredito entities will be returned.
+     * with a matching user_domain_id will be returned.
+     * @param bancoId - Optional banco ID to filter CartaoCredito entities by. If provided, only CartaoCredito entities
+     * with a matching banco_id will be returned.
      */
-    public async findAllCartoes(userId?: string): Promise<Result<ICartaoCreditoDTO[]>> {
+    public async findAllCartoes(userId?: string, bancoId?: string): Promise<Result<ICartaoCreditoDTO[]>> {
         try {
-            const cartoes = await this.cartaoRepo.findAll(userId);
+            const cartoes = await this.cartaoRepo.findAll(userId, bancoId);
             return Result.ok<ICartaoCreditoDTO[]>(cartoes.map(c => CartaoCreditoMap.toDTO(c)));
         } catch (err) {
             this.logger.error('CartaoCreditoService.findAllCartoes error: %o', err);

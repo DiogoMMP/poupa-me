@@ -7,6 +7,7 @@ export interface IBancoDTO {
     userId: string;
     nome: string;
     icon: string;
+    contasCartoesSelecionados?: string[];
 }
 
 /**
@@ -23,5 +24,6 @@ export interface ICreateBancoDTO {
 export interface IUpdateBancoDTO {
     nome?: string;
     icon?: string;
+    contasCartoesSelecionados?: string[];
 }
 

@@ -1,0 +1,84 @@
+/* === NOT AUTHORIZED SECTION LAYOUT === */
+.not_authorized {
+  position: fixed;
+  top: var(--header-height);
+  bottom: var(--footer-height);
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;          /* Center vertically */
+  justify-content: center;      /* Center horizontally */
+  text-align: center;
+  box-sizing: border-box;
+  overflow: visible;            /* Allow big title without clipping */
+  z-index: 1;
+  --title-size: 200px;
+  -ms-overflow-style: none;     /* Hide scrollbars (IE) */
+  scrollbar-width: none;        /* Hide scrollbars (Firefox) */
+}
+.not_authorized::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* === BACKGROUND IMAGE === */
+.not_authorized-bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 1;
+}
+
+/* === GRADIENT OVERLAY FOR READABILITY === */
+.not_authorized::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35));
+  z-index: 0;
+  pointer-events: none;
+}
+
+h1 {
+  margin: 0;
+  font-size: var(--title-size);
+}
+
+/* === LEAD TEXT (subtitle) === */
+.lead {
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 1);
+  font-size: 1.5rem;
+  margin-top: 0.5rem;
+  font-family: Momo Trust Display, sans-serif;
+}
+
+/* === CONTAINER FOR CENTERED CONTENT === */
+.container {
+  max-width: 90%;
+  margin: 0 1rem;
+}
+
+/* === RESPONSIVE ADJUSTMENTS === */
+@media (max-width: 800px) {
+  .not_authorized {
+    --title-size: 100px;
+  }
+
+  .lead {
+    font-size: 1.2rem;
+  }
+}
+@media (max-width: 500px) {
+  .not_authorized {
+    --title-size: 150px;
+  }
+
+  .lead {
+    font-size: 1rem;
+  }
+}

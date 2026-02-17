@@ -44,6 +44,7 @@ export default class BancoController implements IBancoController {
     public async updateBanco(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const userRole = (req as AuthenticatedRequest).currentUser?.role;
             if (!userId) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
@@ -53,7 +54,7 @@ export default class BancoController implements IBancoController {
                 return res.status(400).json({ error: 'Banco ID is required' });
             }
 
-            const result = await this.bancoService.updateBanco(bancoId, req.body, userId);
+            const result = await this.bancoService.updateBanco(bancoId, req.body, userId, userRole);
 
             if (result.isFailure) {
                 const error = result.error;
@@ -78,6 +79,7 @@ export default class BancoController implements IBancoController {
     public async deleteBanco(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const userRole = (req as AuthenticatedRequest).currentUser?.role;
             if (!userId) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
@@ -87,7 +89,7 @@ export default class BancoController implements IBancoController {
                 return res.status(400).json({ error: 'Banco ID is required' });
             }
 
-            const result = await this.bancoService.deleteBanco(bancoId, userId);
+            const result = await this.bancoService.deleteBanco(bancoId, userId, userRole);
 
             if (result.isFailure) {
                 const error = result.error;
@@ -112,6 +114,7 @@ export default class BancoController implements IBancoController {
     public async getBanco(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const userRole = (req as AuthenticatedRequest).currentUser?.role;
             if (!userId) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
@@ -121,7 +124,7 @@ export default class BancoController implements IBancoController {
                 return res.status(400).json({ error: 'Banco ID is required' });
             }
 
-            const result = await this.bancoService.getBanco(bancoId, userId);
+            const result = await this.bancoService.getBanco(bancoId, userId, userRole);
 
             if (result.isFailure) {
                 const error = result.error;
@@ -146,11 +149,12 @@ export default class BancoController implements IBancoController {
     public async getAllBancos(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const userRole = (req as AuthenticatedRequest).currentUser?.role;
             if (!userId) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const result = await this.bancoService.getAllBancos(userId);
+            const result = await this.bancoService.getAllBancos(userId, userRole);
 
             if (result.isFailure) {
                 return res.status(400).json({ error: result.error });
@@ -169,6 +173,7 @@ export default class BancoController implements IBancoController {
     public async getDashboard(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const userRole = (req as AuthenticatedRequest).currentUser?.role;
             if (!userId) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
@@ -185,7 +190,7 @@ export default class BancoController implements IBancoController {
             });
 
             // Continue with normal dashboard loading (doesn't wait for recurring processing)
-            const result = await this.bancoService.getDashboard(bancoId, userId);
+            const result = await this.bancoService.getDashboard(bancoId, userId, userRole);
 
             if (result.isFailure) {
                 const error = result.error;

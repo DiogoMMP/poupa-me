@@ -30,10 +30,16 @@ export class BancoMap extends Mapper<Banco> {
         const userDomainId = String(r['user_domain_id'] ?? r['userDomainId'] ?? '');
         if (!userDomainId) return null;
 
+        const contasCartoesSelecionados = r['contas_cartoes_selecionados'] || r['contasCartoesSelecionados'];
+        const contasCartoesList = Array.isArray(contasCartoesSelecionados)
+            ? contasCartoesSelecionados.map(String)
+            : undefined;
+
         const bancoOrError = Banco.create({
             userId: new UniqueEntityID(userDomainId),
             nome: nomeResult.getValue(),
-            icon: iconResult.getValue()
+            icon: iconResult.getValue(),
+            contasCartoesSelecionados: contasCartoesList
         }, new UniqueEntityID(String(r['domainId'] ?? r['domain_id'])));
 
         if (bancoOrError.isFailure) return null;
@@ -51,7 +57,8 @@ export class BancoMap extends Mapper<Banco> {
             domainId: banco.id.toString(),
             nome: banco.nome.value,
             icon: banco.icon.value,
-            user_domain_id: banco.userId.toString()
+            user_domain_id: banco.userId.toString(),
+            contas_cartoes_selecionados: banco.contasCartoesSelecionados || null
         };
     }
 
@@ -65,8 +72,8 @@ export class BancoMap extends Mapper<Banco> {
             id: banco.id.toString(),
             userId: banco.userId.toString(),
             nome: banco.nome.value,
-            icon: banco.icon.value
+            icon: banco.icon.value,
+            contasCartoesSelecionados: banco.contasCartoesSelecionados
         };
     }
 }
-

@@ -6,5 +6,5 @@ export default interface IContaService {
     updateConta(id: string, inputDTO: IContaUpdateDTO): Promise<Result<IContaDTO>>;
     deleteConta(id: string): Promise<Result<boolean>>;
     findContaById(id: string): Promise<Result<IContaDTO>>;
-    findAllContas(userId?: string): Promise<Result<IContaDTO[]>>;
+    findAllContas(userId?: string, bancoId?: string): Promise<Result<IContaDTO[]>>;
 }

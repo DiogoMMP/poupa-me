@@ -32,17 +32,72 @@ export default class AuthController implements IUserController {
     }
 
     /**
-     * Logs in a user with the provided credentials. Validates input and returns appropriate HTTP responses based on success or failure.
+     * Logs in a user with the provided credentials and creates a session.
      * @param req - Express request object containing user login data in the body.
-     * @param res - Express response object used to send back the result of the login process, such as a token or error message.
-     * @param next - Express next function for error handling. If an error occurs, it will be passed to the next middleware.
+     * @param res - Express response object used to send back the result of the login process.
+     * @param next - Express next function for error handling.
      */
     public async login(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const inputDTO = req.body as IUserLoginDTO;
             const result = await this.authService.login(inputDTO);
             if (result.isFailure) return res.status(401).json({ error: result.error });
-            return res.status(200).json(result.getValue());
+
+            const { user } = result.getValue();
+
+            // Store user in session (no token needed for session-based auth)
+            req.session.user = {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role
+            };
+
+            return res.status(200).json({ user });
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Gets the current logged-in user from the session.
+     * @param req - Express request object with session data.
+     * @param res - Express response object.
+     * @param next - Express next function for error handling.
+     */
+    public async getCurrentUser(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            if (!req.session.user) {
+                return res.status(401).json({ error: 'Not authenticated' });
+            }
+
+            // Return user from session
+            return res.status(200).json({
+                id: req.session.user.id,
+                name: req.session.user.name,
+                role: req.session.user.role,
+                locale: 'pt'
+            });
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Logs out the current user by destroying the session.
+     * @param req - Express request object with session data.
+     * @param res - Express response object.
+     * @param next - Express next function for error handling.
+     */
+    public async logout(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            req.session.destroy((err: Error | null) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Failed to logout' });
+                }
+                res.clearCookie('connect.sid'); // clear session cookie
+                return res.status(200).json({ success: true });
+            });
         } catch (e) {
             next(e);
         }

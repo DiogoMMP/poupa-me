@@ -1,0 +1,62 @@
+<section class="auth">
+
+  <div class="auth-overlay" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+
+    <div class="auth-card" role="document" id="authCard">
+
+      <h1 id="loginTitle" class="auth-title">{{ message() }}</h1>
+      <p class="auth-sub">Autentique-se para continuar</p>
+
+      <!-- Login Form -->
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth-actions">
+
+        <!-- Email field -->
+        <div class="form-group">
+          <label for="emailInput">Email</label>
+          <input
+            type="email"
+            id="emailInput"
+            formControlName="email"
+            placeholder="seu@email.com"
+            [class.invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+          />
+          <span class="error-hint" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+            Email inválido
+          </span>
+        </div>
+
+        <!-- Password field -->
+        <div class="form-group">
+          <label for="passwordInput">Password</label>
+          <input
+            type="password"
+            id="passwordInput"
+            formControlName="password"
+            placeholder="••••••••"
+            [class.invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+          />
+          <span class="error-hint" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+            Mínimo 6 caracteres
+          </span>
+        </div>
+
+        <!-- Error message -->
+        <div *ngIf="error()" class="error" role="alert">{{ error() }}</div>
+
+        <!-- Submit button -->
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="loading() || loginForm.invalid"
+        >
+          <span *ngIf="!loading()">Entrar</span>
+          <span *ngIf="loading()">A autenticar...</span>
+        </button>
+
+      </form>
+
+      <small class="auth-foot">© {{ year }} Diogo Pereira. Todos os direitos reservados.</small>
+    </div>
+
+  </div>
+</section>

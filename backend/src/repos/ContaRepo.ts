@@ -215,21 +215,26 @@ export default class ContaRepo implements IContaRepo {
     }
 
     /**
-     * Finds all Conta records, optionally filtering by user domain ID. Executes a query to retrieve the records and maps them back to domain objects.
+     * Finds all Conta records, optionally filtering by user domain ID and banco domain ID. Executes a query to retrieve the records and maps them back to domain objects.
      * @param userId Optional user domain ID to filter the Conta records. If provided, only Conta records associated with this user will be returned.
+     * @param bancoId Optional banco domain ID to filter the Conta records. If provided, only Conta records associated with this banco will be returned.
      * @returns An array of Conta domain objects matching the criteria.
      */
-    public async findAll(userId?: string): Promise<Conta[]> {
+    public async findAll(userId?: string, bancoId?: string): Promise<Conta[]> {
         try {
             let rows: ContaEntity[];
+            const qb = this.repo.createQueryBuilder('c')
+                .orderBy('c.id', 'ASC');
+
             if (userId) {
-                rows = await this.repo.createQueryBuilder('c')
-                    .where('c.user_domain_id = :userId', { userId })
-                    .orderBy('c.id', 'ASC')
-                    .getMany();
-            } else {
-                rows = await this.repo.find({ order: { id: 'ASC' } });
+                qb.andWhere('c.user_domain_id = :userId', { userId });
             }
+            if (bancoId) {
+                qb.andWhere('c.banco_id = :bancoId', { bancoId });
+            }
+
+            // eslint-disable-next-line prefer-const
+            rows = await qb.getMany();
 
             const res: Conta[] = [];
             for (const r of rows) {

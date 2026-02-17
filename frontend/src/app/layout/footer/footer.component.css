@@ -1,0 +1,190 @@
+/* Footer component styles - clean version with nav-matching hover effects */
+
+:host {
+  position: relative;
+  width: 100%;
+  display: flex;
+  margin-top: auto;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem 0;
+}
+
+.app-footer {
+  width: 100%;
+  background: transparent;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+}
+
+small {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+  text-align: center;
+  padding: 0 0.5rem;
+}
+
+/* Login / user area */
+.login_flags {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0 0.5rem;
+}
+
+.login_flags .user-info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+.login_flags .user {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+}
+
+/* Style login/logout buttons like nav links */
+.login_flags .login-link,
+.login_flags .logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  line-height: 1.2;
+  padding: 10px 14px;
+  border-radius: 6px;
+  color: #e2e8f0;
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'Macondo', 'Lavishly Yours', Georgia, serif;
+  font-size: 13px;
+}
+
+/* Hover effect matching nav links */
+.login_flags .login-link:hover,
+.login_flags .login-link:focus,
+.login_flags .logout-btn:hover,
+.login_flags .logout-btn:focus {
+  background: rgba(97, 237, 214, 0.18);
+  color: #61edd6;
+}
+
+/* Ensure inline svg inside the user link is smaller and uses brand text color by default */
+.login_flags .login-link.user svg {
+  width: 18px !important;
+  height: 18px !important;
+  display: inline-block;
+  vertical-align: middle;
+  color: #e2e8f0; /* sets currentColor */
+  stroke: #e2e8f0 !important;
+  fill: none !important;
+}
+
+/* Apply explicit stroke/fill to SVG shapes to override inline attributes that set colors */
+.login_flags .login-link.user svg path,
+.login_flags .login-link.user svg circle,
+.login_flags .login-link.user svg rect,
+.login_flags .login-link.user svg polygon,
+.login_flags .login-link.user svg ellipse {
+  stroke: #e2e8f0 !important;
+  fill: none !important;
+}
+
+/* Ensure stroke-width is reasonable at small size */
+.login_flags .login-link.user svg path,
+.login_flags .login-link.user svg circle {
+  stroke-width: 1.2 !important;
+}
+
+/* When hovered/focused, svg color follows the link hover color (set via color change) */
+.login_flags .login-link.user:hover svg,
+.login_flags .login-link.user:focus svg {
+  color: #61edd6;
+  stroke: #61edd6 !important;
+}
+
+/* Ensure child shapes (paths, circles, etc.) also change color on hover/focus */
+.login_flags .login-link.user:hover svg path,
+.login_flags .login-link.user:focus svg path,
+.login_flags .login-link.user:hover svg circle,
+.login_flags .login-link.user:focus svg circle,
+.login_flags .login-link.user:hover svg rect,
+.login_flags .login-link.user:focus svg rect,
+.login_flags .login-link.user:hover svg polygon,
+.login_flags .login-link.user:focus svg polygon,
+.login_flags .login-link.user:hover svg ellipse,
+.login_flags .login-link.user:focus svg ellipse {
+  stroke: #61edd6 !important;
+  fill: none !important;
+}
+
+/* User icon styling */
+.user-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  transition: filter 0.12s ease;
+}
+
+.login_flags .login-link:hover .user-icon,
+.login_flags .login-link:focus .user-icon,
+.login_flags .logout-btn:hover .user-icon,
+.login_flags .logout-btn:focus .user-icon {
+  filter: invert(97%) sepia(67%) saturate(2545%) hue-rotate(145deg) brightness(107%) contrast(86%);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  small {
+    font-size: 10px;
+  }
+  .login_flags .login-link,
+  .login_flags .logout-btn {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  small {
+    font-size: 9px;
+  }
+  .footer-content {
+    gap: 0.3rem;
+  }
+  .login_flags .login-link,
+  .login_flags .logout-btn {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+}

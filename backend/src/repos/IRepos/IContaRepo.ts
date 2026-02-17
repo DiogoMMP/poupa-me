@@ -5,6 +5,6 @@ export default interface IContaRepo {
     update(conta: Conta): Promise<Conta>;
     delete(contaId: string): Promise<void>;
     findById(contaId: string): Promise<Conta | null>;
-    findAll(userId?: string): Promise<Conta[]>;
+    findAll(userId?: string, bancoId?: string): Promise<Conta[]>;
 }
 

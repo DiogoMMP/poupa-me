@@ -1,0 +1,21 @@
+﻿﻿<div class="app-shell">
+
+  <!-- Sidebar esquerda com header, nav e footer -->
+  <aside class="sidebar">
+    <app-header></app-header>
+    <app-nav></app-nav>
+    <app-footer></app-footer>
+  </aside>
+
+  <!-- Conteúdo principal à direita -->
+  <div class="main-wrapper">
+    <!-- global notifications -->
+    <app-notifications></app-notifications>
+
+    <main class="content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+
+</div>

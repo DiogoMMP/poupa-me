@@ -195,9 +195,17 @@ export default (app: Router) => {
    *     tags:
    *       - Conta
    *     summary: Get all contas
-   *     description: Returns list of contas. Requires authentication.
+   *     description: Returns list of contas for the authenticated user. Optionally filter by banco.
    *     security:
    *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: bancoId
+   *         required: false
+   *         schema:
+   *           type: string
+   *         description: Optional banco domain ID to filter contas by banco
+   *         example: "BNC00000000001"
    *     responses:
    *       200:
    *         description: List of contas
@@ -208,6 +216,6 @@ export default (app: Router) => {
    *               items:
    *                 $ref: '#/components/schemas/Conta'
    */
-  // Get all contas (optionally filtered by userId query param)
+  // Get all contas (optionally filtered by bancoId query param)
   route.get('/', isAuth, (req, res, next) => ctrl.getAllContas(req as AuthenticatedRequest, res, next));
 };

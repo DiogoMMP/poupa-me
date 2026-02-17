@@ -12,7 +12,7 @@ export default interface ICartaoCreditoService {
     updateCartao(id: string, inputDTO: ICartaoCreditoUpdateDTO): Promise<Result<ICartaoCreditoDTO>>;
     deleteCartao(id: string): Promise<Result<boolean>>;
     findCartaoById(id: string): Promise<Result<ICartaoCreditoDTO>>;
-    findAllCartoes(userId?: string): Promise<Result<ICartaoCreditoDTO[]>>;
+    findAllCartoes(userId?: string, bancoId?: string): Promise<Result<ICartaoCreditoDTO[]>>;
     getExtrato(cartaoCreditoId: string, userId?: string): Promise<Result<{ transacoes: ITransacaoDTO[], saldoAtual: IDinheiroProps }>>;
     pagarCartao(cartaoCreditoId: string, userId: string, novoPeriodo: IPeriodoProps): Promise<Result<ITransacaoDTO>>;
 }

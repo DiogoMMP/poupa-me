@@ -34,11 +34,12 @@ export default interface ICartaoCreditoRepo {
     findById(cartaoId: string): Promise<CartaoCredito | null>;
 
     /**
-     * Finds all CartaoCredito entities, optionally filtered by user ID.
+     * Finds all CartaoCredito entities, optionally filtered by user ID and banco ID.
      * @param userId - Optional user domain ID to filter CartaoCredito records
+     * @param bancoId - Optional banco domain ID to filter CartaoCredito records
      * @returns An array of CartaoCredito entities
      */
-    findAll(userId?: string): Promise<CartaoCredito[]>;
+    findAll(userId?: string, bancoId?: string): Promise<CartaoCredito[]>;
 
     /**
      * Gets the extrato (transaction history and current balance) for a specific CartaoCredito, optionally filtered by user ID for access control.

@@ -96,9 +96,9 @@ export default class ContaController implements IContaController {
     }
 
     /**
-     * Handles retrieving all contas for the authenticated user. Optionally accepts a userId query parameter to specify
-     * a different user. Returns an array of contas or an error message.
-     * @param req - expects authenticated request with currentUser.id or optional query with userId
+     * Handles retrieving all contas for the authenticated user. Optionally accepts a bancoId query parameter to filter
+     * results by banco. Returns an array of contas or an error message.
+     * @param req - expects authenticated request with currentUser.id and optional query parameter bancoId
      * @param res - returns 200 with array of contas or 400 with error message
      * @param next - passes errors to error handling middleware
      */
@@ -106,7 +106,8 @@ export default class ContaController implements IContaController {
         try {
             // Always use the authenticated user's id from the session/JWT. Do not accept userId from query.
             const userId = (req as AuthenticatedRequest).currentUser?.id as string | undefined;
-            const result = await this.contaService.findAllContas(userId);
+            const bancoId = req.query.bancoId as string | undefined;
+            const result = await this.contaService.findAllContas(userId, bancoId);
             if (result.isFailure) return res.status(400).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {

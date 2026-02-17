@@ -63,6 +63,35 @@ export default (app: Router) => {
 
   /**
    * @openapi
+   * /me:
+   *   get:
+   *     tags:
+   *       - Auth
+   *     summary: Get current logged-in user
+   *     description: Returns the current user from session. Requires active session.
+   *     responses:
+   *       200:
+   *         description: Current user
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 id:
+   *                   type: string
+   *                 name:
+   *                   type: string
+   *                 role:
+   *                   type: string
+   *                 locale:
+   *                   type: string
+   *       401:
+   *         description: Not authenticated
+   */
+  app.get('/me', (req, res, next) => ctrl.getCurrentUser(req, res, next));
+
+  /**
+   * @openapi
    * /auth/register:
    *   post:
    *     tags:
@@ -117,6 +146,29 @@ export default (app: Router) => {
    *         description: Invalid credentials
    */
   route.post('/login', (req, res, next) => ctrl.login(req, res, next));
+
+  /**
+   * @openapi
+   * /auth/logout:
+   *   post:
+   *     tags:
+   *       - Auth
+   *     summary: Logout current user
+   *     description: Destroys the current session and clears the session cookie.
+   *     responses:
+   *       200:
+   *         description: Logout successful
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *       500:
+   *         description: Logout failed
+   */
+  route.post('/logout', (req, res, next) => ctrl.logout(req, res, next));
 
   /**
    * @openapi
