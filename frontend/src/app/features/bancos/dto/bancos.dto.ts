@@ -1,7 +1,7 @@
 /**
  * Data Transfer Object for banco
  */
-export interface BancosDto {
+export interface BancosDTO {
     id?: string;
     userId?: string;
     nome: string;

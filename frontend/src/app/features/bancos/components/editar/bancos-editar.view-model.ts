@@ -5,6 +5,7 @@ import { BancosService } from '../../services/bancos.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { BancosModel } from '../../models/bancos.model';
 import { BancosMapper } from '../../mappers/bancos.mapper';
+import {BancosUpdateDTO} from '../../dto/bancos.dto';
 
 /**
  * ViewModel for the Bancos Editar component. Handles the logic for loading bank data and submitting updates.
@@ -45,7 +46,7 @@ export class BancosEditarViewModel {
    * @param id - The ID of the bank being updated.
    * @param formData - The updated bank data from the form.
    */
-  submit(id: string, formData: { nome: string; icon: string }): void {
+  submit(id: string, formData: BancosUpdateDTO): void {
     this.isLoading$.next(true);
 
     this.service.update(id, formData).subscribe({

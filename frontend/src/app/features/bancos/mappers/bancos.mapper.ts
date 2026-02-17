@@ -1,4 +1,4 @@
-import { BancosDto } from '../dto/bancos.dto';
+import { BancosDTO } from '../dto/bancos.dto';
 import { BancosModel } from '../models/bancos.model';
 
 /**
@@ -8,7 +8,7 @@ export class BancosMapper {
   /**
    * Convert DTO to Model
    */
-  static toModel(dto: BancosDto): BancosModel {
+  static toModel(dto: BancosDTO): BancosModel {
     return {
       id: dto.id || '',
       userId: dto.userId || undefined,
@@ -20,7 +20,7 @@ export class BancosMapper {
   /**
    * Convert Model to DTO
    */
-  static toDto(model: BancosModel): BancosDto {
+  static toDto(model: BancosModel): BancosDTO {
     return {
       id: model.id,
       nome: model.nome,
@@ -31,7 +31,7 @@ export class BancosMapper {
   /**
    * Convert array of DTOs to array of Models
    */
-  static toModelArray(dtos: BancosDto[]): BancosModel[] {
+  static toModelArray(dtos: BancosDTO[]): BancosModel[] {
     return dtos.map(dto => BancosMapper.toModel(dto));
   }
 }

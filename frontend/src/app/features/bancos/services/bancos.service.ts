@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {BancosDto, BancosInputDTO, BancosUpdateDTO} from '../dto/bancos.dto';
+import {BancosDTO, BancosInputDTO, BancosUpdateDTO} from '../dto/bancos.dto';
 import {DashboardDTO} from '../dto/dashboard.dto';
 
 @Injectable({providedIn: 'root'})
@@ -12,24 +12,24 @@ export class BancosService {
   constructor(private http: HttpClient) {
   }
 
-  getAll(): Observable<BancosDto[]> {
-    return this.http.get<BancosDto[]>(this.apiUrl, {withCredentials: true});
+  getAll(): Observable<BancosDTO[]> {
+    return this.http.get<BancosDTO[]>(this.apiUrl, {withCredentials: true});
   }
 
-  getById(id: string): Observable<BancosDto> {
-    return this.http.get<BancosDto>(`${this.apiUrl}/${id}`, {withCredentials: true});
+  getById(id: string): Observable<BancosDTO> {
+    return this.http.get<BancosDTO>(`${this.apiUrl}/${id}`, {withCredentials: true});
   }
 
   getDashboardData(id: string): Observable<DashboardDTO> {
     return this.http.get<DashboardDTO>(`${this.apiUrl}/${id}/dashboard`, {withCredentials: true});
   }
 
-  create(dto: BancosInputDTO): Observable<BancosDto> {
-    return this.http.post<BancosDto>(this.apiUrl, dto, {withCredentials: true});
+  create(dto: BancosInputDTO): Observable<BancosDTO> {
+    return this.http.post<BancosDTO>(this.apiUrl, dto, {withCredentials: true});
   }
 
-  update(id: string, dto: BancosUpdateDTO): Observable<BancosDto> {
-    return this.http.patch<BancosDto>(`${this.apiUrl}/${id}`, dto, {withCredentials: true});
+  update(id: string, dto: BancosUpdateDTO): Observable<BancosDTO> {
+    return this.http.patch<BancosDTO>(`${this.apiUrl}/${id}`, dto, {withCredentials: true});
   }
 
   delete(id: string): Observable<any> {

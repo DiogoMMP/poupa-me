@@ -5,12 +5,12 @@ export const routes: Routes = [
     path: '',
     loadComponent: () => import('./components/listar/bancos-listar.component').then(m => m.BancosListComponent)
   },
-  /**
+
   {
     path: 'criar',
-    loadComponent: () => import('./components/criar/banco-criar.component').then(m => m.IncidentTypesCreateComponent)
+    loadComponent: () => import('./components/criar/bancos-criar.component').then(m => m.BancosCriarComponent)
   },
-    */
+
   // redirect bare 'update' to list to avoid intermediate pages
   { path: 'editar', redirectTo: '', pathMatch: 'full' },
   {
