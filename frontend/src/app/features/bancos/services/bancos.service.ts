@@ -29,7 +29,7 @@ export class BancosService {
   }
 
   update(id: string, dto: BancosUpdateDTO): Observable<BancosDto> {
-    return this.http.put<BancosDto>(`${this.apiUrl}/${id}`, dto, {withCredentials: true});
+    return this.http.patch<BancosDto>(`${this.apiUrl}/${id}`, dto, {withCredentials: true});
   }
 
   delete(id: string): Observable<any> {

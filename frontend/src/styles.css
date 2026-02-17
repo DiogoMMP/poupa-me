@@ -406,6 +406,372 @@ select option {
 /* Ensure svg color inherits */
 .cards-grid .card svg { color: inherit; }
 
+/* === EMPTY STATE === */
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1rem;
+  color: var(--brand-text);
+}
+
+.empty-state button {
+  margin-left: 0.5rem;
+}
+
+/* === FORM STYLES === */
+.form-card {
+  background: rgba(11, 37, 58, 0.7);
+  border: 1px solid rgba(11, 37, 58, 0.1);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
+  backdrop-filter: blur(10px);
+}
+
+.form-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.form-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--brand-text);
+  font-family: 'Archivo Black', sans-serif;
+  margin: 0 0 0.5rem 0;
+}
+
+.form-subtitle {
+  font-size: 0.95rem;
+  color: rgba(226, 232, 240, 0.7);
+  margin: 0;
+}
+
+.form-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.form-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--brand-text);
+}
+
+.form-input,
+input[type="text"],
+input[type="email"],
+input[type="number"],
+textarea {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--brand-text);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  outline: none;
+}
+
+.form-input:hover,
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="number"]:hover,
+textarea:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--brand-accent);
+}
+
+.form-input:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 2px rgba(97, 237, 214, 0.15);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.form-input::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: rgba(226, 232, 240, 0.4);
+}
+
+/* === EMOJI PICKER STYLES (PICMO) === */
+
+/* Emoji input group with button */
+.emoji-input-group {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.emoji-input-group .form-input {
+  flex: 1;
+}
+
+/* Emoji button */
+.emoji-btn {
+  min-width: 50px !important;
+  padding: 0.5rem !important;
+  background: rgba(11, 37, 58, 0.7) !important;
+  border: 2px solid var(--brand-accent) !important;
+  box-shadow: 0 2px 8px rgba(97, 237, 214, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.emoji-btn:hover:not(:disabled) {
+  background: rgba(97, 237, 214, 0.15) !important;
+  border-color: #4dd4c0 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 16px rgba(97, 237, 214, 0.5) !important;
+}
+
+.emoji-btn-icon {
+  font-size: 1.5rem;
+  display: block;
+  line-height: 1;
+}
+
+/* Modal backdrop with blur */
+.emoji-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 21, 40, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: backdropFadeIn 0.3s ease;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal container */
+.emoji-modal {
+  background: linear-gradient(145deg, rgba(11, 37, 58, 0.98) 0%, rgba(15, 50, 75, 0.98) 100%);
+  border: 2px solid var(--brand-accent);
+  border-radius: 20px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 100px rgba(97, 237, 214, 0.2);
+  max-width: 450px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Modal header */
+.emoji-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background: rgba(0, 21, 40, 0.8);
+  border-bottom: 2px solid var(--brand-accent);
+  flex-shrink: 0;
+}
+
+.emoji-modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--brand-accent);
+  font-family: 'Archivo Black', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.emoji-modal-close {
+  background: rgba(255, 107, 107, 0.2) !important;
+  color: #ff6b6b !important;
+  border: 2px solid #ff6b6b !important;
+  box-shadow: none !important;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.5rem 0.75rem !important;
+  min-width: auto !important;
+  border-radius: 8px !important;
+  font-weight: bold;
+  transition: all 0.2s ease !important;
+}
+
+.emoji-modal-close:hover {
+  background: #ff6b6b !important;
+  color: #001528 !important;
+  border-color: #ff6b6b !important;
+  transform: scale(1.1) !important;
+}
+
+/* Modal body */
+.emoji-modal-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+/* Picmo container */
+.picmo-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Picmo dark theme customization */
+.picmo-container ::ng-deep .picmo__picker {
+  --background-color: transparent !important;
+  --border-color: transparent !important;
+  --category-name-background-color: rgba(11, 37, 58, 0.95) !important;
+  --category-name-text-color: var(--brand-accent) !important;
+  --category-tab-background-color: rgba(0, 21, 40, 0.7) !important;
+  --category-tab-highlight-background-color: rgba(97, 237, 214, 0.2) !important;
+  --category-tab-color: rgba(226, 232, 240, 0.6) !important;
+  --category-tab-highlight-color: var(--brand-accent) !important;
+  --emoji-hover-background-color: rgba(97, 237, 214, 0.25) !important;
+  --focus-indicator-background-color: rgba(97, 237, 214, 0.3) !important;
+  --focus-indicator-color: var(--brand-accent) !important;
+  --search-background-color: rgba(255, 255, 255, 0.08) !important;
+  --search-focus-background-color: rgba(255, 255, 255, 0.12) !important;
+  --search-focus-border-color: var(--brand-accent) !important;
+  --search-placeholder-color: rgba(226, 232, 240, 0.4) !important;
+  --search-icon-color: rgba(226, 232, 240, 0.6) !important;
+  --text-color: var(--brand-text) !important;
+  --secondary-text-color: rgba(226, 232, 240, 0.7) !important;
+  border: none !important;
+  background: transparent !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* Picmo scrollbar */
+.picmo-container ::ng-deep .picmo__picker ::-webkit-scrollbar {
+  width: 12px !important;
+}
+
+.picmo-container ::ng-deep .picmo__picker ::-webkit-scrollbar-track {
+  background: rgba(0, 21, 40, 0.8) !important;
+  border-radius: 10px !important;
+}
+
+.picmo-container ::ng-deep .picmo__picker ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--brand-accent) 0%, #4dd4c0 100%) !important;
+  border-radius: 10px !important;
+  border: 2px solid rgba(11, 37, 58, 0.8) !important;
+  transition: all 0.3s ease !important;
+}
+
+.picmo-container ::ng-deep .picmo__picker ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #4dd4c0 0%, var(--brand-accent) 100%) !important;
+  box-shadow: 0 0 15px rgba(97, 237, 214, 0.6) !important;
+}
+
+/* Picmo search input */
+.picmo-container ::ng-deep .picmo__searchContainer input {
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  border: 2px solid rgba(255, 255, 255, 0.12) !important;
+  transition: all 0.3s ease !important;
+}
+
+.picmo-container ::ng-deep .picmo__searchContainer input:focus {
+  box-shadow: 0 0 0 3px rgba(97, 237, 214, 0.2) !important;
+  outline: none !important;
+}
+
+/* Picmo category tabs */
+.picmo-container ::ng-deep .picmo__categoryTabs {
+  border-bottom: 1px solid rgba(97, 237, 214, 0.2) !important;
+  padding: 8px 0 !important;
+}
+
+.picmo-container ::ng-deep .picmo__categoryTab {
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+}
+
+/* Picmo emojis */
+.picmo-container ::ng-deep .picmo__emoji {
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.picmo-container ::ng-deep .picmo__emoji:hover {
+  transform: scale(1.2) !important;
+}
+
+/* Picmo category labels */
+.picmo-container ::ng-deep .picmo__categoryName {
+  font-weight: 700 !important;
+  font-size: 0.8rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+}
+
+
+.form-input[readonly] {
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.form-input[readonly]:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.btn-secondary {
+  background: transparent !important;
+  color: var(--brand-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: none !important;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--brand-accent) !important;
+}
+
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
   .page-container {

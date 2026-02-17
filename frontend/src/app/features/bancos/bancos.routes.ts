@@ -10,11 +10,11 @@ export const routes: Routes = [
     path: 'criar',
     loadComponent: () => import('./components/criar/banco-criar.component').then(m => m.IncidentTypesCreateComponent)
   },
+    */
   // redirect bare 'update' to list to avoid intermediate pages
   { path: 'editar', redirectTo: '', pathMatch: 'full' },
   {
     path: 'editar/:id',
-    loadComponent: () => import('./components/editar/banco-editar.component').then(m => m.IncidentTypesUpdateComponent)
+    loadComponent: () => import('./components/editar/bancos-editar.component').then(m => m.BancosEditarComponent)
   }
-    */
 ];
