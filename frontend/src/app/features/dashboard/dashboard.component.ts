@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import {RouterModule, Routes} from '@angular/router';
 import {AuthService} from '../../services/auth.service';
 import { signal } from '@angular/core';
+import { DashboardViewModel } from './dashboard.view-model';
 
 /**
  * Dashboard component displaying the dashboard page content.
@@ -13,7 +14,8 @@ import { signal } from '@angular/core';
   imports: [CommonModule, RouterModule],
   templateUrl: 'dashboard.component.html',
   styleUrls: ['dashboard.component.css'],
-  host: { class: 'page-dashboard' }
+  host: { class: 'page-dashboard' },
+  providers: [DashboardViewModel]
 })
 
 /**
@@ -26,8 +28,16 @@ export class DashboardComponent implements OnInit {
   // greeting signal (Bom dia / Boa tarde / Boa noite)
   greeting = signal('');
 
+  // ViewModel
+  vm = inject(DashboardViewModel);
+
+  bancos$ = this.vm.bancos$;
+  dashboard$ = this.vm.dashboard$;
+  isLoading$ = this.vm.isLoading$;
+
   ngOnInit(): void {
     this.greeting.set(this.computeGreeting());
+    this.vm.loadBancos();
   }
 
   private computeGreeting(): string {
@@ -35,6 +45,10 @@ export class DashboardComponent implements OnInit {
     if (h >= 5 && h < 12) return 'Bom dia';
     if (h >= 12 && h < 18) return 'Boa tarde';
     return 'Boa noite';
+  }
+
+  onBancoChange(id: string | null) {
+    this.vm.selectBanco(id);
   }
 }
 

@@ -8,11 +8,11 @@
 
     <div class="actions-header">
 
-      <select class="select-banco">
+      <select #bankSel class="select-banco" (change)="onBancoChange(bankSel.value)">
         <option value="" disabled selected>Selecionar Banco</option>
-        <option value="banco1">Banco 1</option>
-        <option value="banco2">Banco 2</option>
-        <option value="banco3">Banco 3</option>
+        <ng-container *ngIf="bancos$ | async as bancos">
+          <option *ngFor="let b of bancos" [value]="b.id">{{ b.icon }} {{ b.nome }}</option>
+        </ng-container>
       </select>
 
       <button class="action-button">
@@ -36,8 +36,13 @@
         </svg>
 
         <div class="resumo-financeiro">
-          <p class="resumo-label">Saldo Real</p>
-          <span class="resumo-value">5.000,00 €</span>
+          <p class="resumo-label">Saldo Atual</p>
+          <span class="resumo-value">
+            <ng-container *ngIf="dashboard$ | async as db; else noSaldo">
+              {{ db.saldoGlobal | number:'1.2-2' }} €
+            </ng-container>
+            <ng-template #noSaldo>-</ng-template>
+          </span>
         </div>
       </div>
 
