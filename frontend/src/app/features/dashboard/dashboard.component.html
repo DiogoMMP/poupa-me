@@ -3,10 +3,10 @@
 
     <div class="boas-vindas" *ngIf="user() as u">
       <h1 class="dashboard_title">{{ greeting() }}, {{ u.name }} 👋</h1>
-      <p>Aqui está como se encontram as suas finanças hoje.</p>
+      <p *ngIf="hasBancoSelected$ | async">Aqui está como se encontram as suas finanças hoje.</p>
     </div>
 
-    <div class="actions-header">
+    <div class="actions-header" *ngIf="hasBancoSelected$ | async">
       <button class="action-button">
         <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nova-transacao-icon">
           <path d="M12 5V19M5 12H19" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -15,7 +15,7 @@
       </button>
     </div>
   </div>
-  <div class="dashboard_content">
+  <div class="dashboard_content" *ngIf="hasBancoSelected$ | async">
 
     <div class="first-row">
       <div class="dashboard_section card">
@@ -57,6 +57,26 @@
         <div class="resumo-financeiro">
           <p class="resumo-label">Saídas</p>
           <span class="resumo-value">5.000,00 €</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contas Section - New Row -->
+    <div class="contas-row" *ngIf="(contas$ | async) as contas">
+      <div class="section-header">
+        <h3 class="section-title">Minhas Contas</h3>
+        <a class="link" href="/contas">Ver todas</a>
+      </div>
+
+      <div class="contas-grid">
+        <div *ngFor="let conta of contas" class="conta-card card card--hover">
+          <div class="conta-icon-wrapper">
+            <div class="conta-icon">{{ conta.icon }}</div>
+          </div>
+          <div class="conta-info">
+            <h4 class="conta-nome">{{ conta.nome }}</h4>
+            <p class="conta-valor">{{ conta.saldo.valor | number:'1.2-2' }} {{ conta.saldo.moeda === 'EUR' ? '€' : conta.saldo.moeda }}</p>
+          </div>
         </div>
       </div>
     </div>

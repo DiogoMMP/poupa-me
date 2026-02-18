@@ -10,11 +10,10 @@
     <select
       #bankSel
       class="select-banco"
-      [value]="selectedBancoId()"
       (change)="onBancoChange(bankSel.value)"
     >
-      <option value="">Selecionar Banco</option>
-      <option *ngFor="let banco of bancos()" [value]="banco.id">
+      <option value="" [selected]="!selectedBancoId()">Selecionar Banco</option>
+      <option *ngFor="let banco of bancos()" [value]="banco.id" [selected]="banco.id === selectedBancoId()">
         {{ banco.icon }} {{ banco.nome }}
       </option>
     </select>

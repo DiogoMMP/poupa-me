@@ -29,7 +29,7 @@
           <div class="card-content">
             <h3 class="card-title">{{ conta.nome }}</h3>
 
-            <p class="card-value">{{ conta.saldo.valor | number:'1.2-2' }} {{ conta.saldo.moeda || '€' }}</p>
+            <p class="card-value">{{ conta.saldo.valor | number:'1.2-2' }} {{ conta.saldo.moeda === 'EUR' ? '€' : conta.saldo.moeda }}</p>
           </div>
 
           <div class="card-actions">

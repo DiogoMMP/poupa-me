@@ -32,6 +32,8 @@ export class DashboardComponent implements OnInit {
   vm = inject(DashboardViewModel);
 
   dashboard$ = this.vm.dashboard$;
+  contas$ = this.vm.contas$;
+  hasBancoSelected$ = this.vm.hasBancoSelected$;
 
   ngOnInit(): void {
     this.greeting.set(this.computeGreeting());

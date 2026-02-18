@@ -30,6 +30,9 @@ export class HeaderComponent implements OnInit {
   selectedBancoId = signal<string | null>(null);
 
   ngOnInit(): void {
+    // Initialize with current value from service (may be loaded from localStorage)
+    this.selectedBancoId.set(this.selectedBancoService.currentBancoId);
+
     this.loadBancos();
 
     // Subscribe to selected banco changes
