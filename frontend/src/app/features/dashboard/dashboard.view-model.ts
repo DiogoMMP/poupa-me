@@ -39,8 +39,14 @@ export class DashboardViewModel {
         const models = BancosMapper.toModelArray(dtos);
         this.bancos$.next(models);
       },
-      error: (err) => {
-        console.error('[FRONTEND] DashboardViewModel.loadBancos -', err);
+      error: (err: any) => {
+        // suppress verbose logging for unauthenticated users
+        if (err?.status === 401) {
+          this.bancos$.next([]);
+          return;
+        }
+
+        console.error('[FRONTEND] DashboardViewModel.loadBancos -', err?.message || err);
         this.notification.error('Falha ao carregar bancos');
         this.bancos$.next([]);
       }

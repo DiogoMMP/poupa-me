@@ -767,9 +767,20 @@ textarea::placeholder {
   box-shadow: none !important;
 }
 
-.btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: var(--brand-accent) !important;
+/* Inline small secondary inputs for form fields (saldo group) */
+.form-field[formGroupName="saldo"] .row-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.form-field[formGroupName="saldo"] .row-controls .form-input:first-child {
+  flex: 1;
+}
+
+.form-field[formGroupName="saldo"] .row-controls .form-input:last-child {
+  min-width: 80px;
+  flex: 0 0 auto;
 }
 
 /* === RESPONSIVE === */

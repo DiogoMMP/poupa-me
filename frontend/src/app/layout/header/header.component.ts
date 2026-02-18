@@ -43,8 +43,15 @@ export class HeaderComponent implements OnInit {
       next: (bancos) => {
         this.bancos.set(bancos);
       },
-      error: (err) => {
-        console.error('[FRONTEND] HeaderComponent.loadBancos -', err);
+      error: (err: any) => {
+        // If not authenticated, skip noisy logging (user may be on public pages)
+        if (err?.status === 401) {
+          // optional: keep empty state
+          this.bancos.set([]);
+          return;
+        }
+
+        console.error('[FRONTEND] HeaderComponent.loadBancos -', err?.message || err);
         this.notificationService.error('Falha ao carregar bancos');
       }
     });
