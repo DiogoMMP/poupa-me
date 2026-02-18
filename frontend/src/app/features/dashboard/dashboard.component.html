@@ -7,14 +7,6 @@
     </div>
 
     <div class="actions-header">
-
-      <select #bankSel class="select-banco" (change)="onBancoChange(bankSel.value)">
-        <option value="" disabled selected>Selecionar Banco</option>
-        <ng-container *ngIf="bancos$ | async as bancos">
-          <option *ngFor="let b of bancos" [value]="b.id">{{ b.icon }} {{ b.nome }}</option>
-        </ng-container>
-      </select>
-
       <button class="action-button">
         <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nova-transacao-icon">
           <path d="M12 5V19M5 12H19" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>

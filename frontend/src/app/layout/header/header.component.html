@@ -5,4 +5,19 @@
     <h1>Poupa-Me</h1>
   </a>
 
+  <!-- Banco Selector -->
+  <div class="banco-selector">
+    <select
+      #bankSel
+      class="select-banco"
+      [value]="selectedBancoId()"
+      (change)="onBancoChange(bankSel.value)"
+    >
+      <option value="">Selecionar Banco</option>
+      <option *ngFor="let banco of bancos()" [value]="banco.id">
+        {{ banco.icon }} {{ banco.nome }}
+      </option>
+    </select>
+  </div>
+
 </header>

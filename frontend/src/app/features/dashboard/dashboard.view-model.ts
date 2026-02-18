@@ -5,6 +5,7 @@ import { BancosMapper } from '../bancos/mappers/bancos.mapper';
 import { BancosModel } from '../bancos/models/bancos.model';
 import { DashboardDTO } from '../bancos/dto/dashboard.dto';
 import { NotificationService } from '../../services/notification.service';
+import { SelectedBancoService } from '../../services/selected-banco.service';
 
 /**
  * Lightweight ViewModel for the Dashboard component.
@@ -17,12 +18,20 @@ import { NotificationService } from '../../services/notification.service';
 export class DashboardViewModel {
   private bancosService = inject(BancosService);
   private notification = inject(NotificationService);
+  private selectedBancoService = inject(SelectedBancoService);
 
   readonly bancos$ = new BehaviorSubject<BancosModel[]>([]);
   readonly dashboard$ = new BehaviorSubject<DashboardDTO | null>(null);
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
 
   private selectedBancoId: string | null = null;
+
+  constructor() {
+    // Subscribe to global banco selection changes
+    this.selectedBancoService.selectedBancoId$.subscribe(id => {
+      this.selectBanco(id);
+    });
+  }
 
   loadBancos(): void {
     this.bancosService.getAll().subscribe({

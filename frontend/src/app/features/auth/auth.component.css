@@ -119,26 +119,6 @@
   font-family: "Inter", sans-serif;
 }
 
-.form-group input {
-  width: 100%;
-  padding: 0.7rem 0.9rem;
-  border: 1px solid rgba(7, 59, 76, 0.2);
-  border-radius: 6px;
-  font-size: 0.95rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  box-sizing: border-box;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: #1a73e8;
-  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
-}
-
-.form-group input.invalid {
-  border-color: #b91c1c;
-}
-
 .error-hint {
   font-size: 0.8rem;
   color: #b91c1c;

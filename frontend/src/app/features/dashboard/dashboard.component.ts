@@ -31,9 +31,7 @@ export class DashboardComponent implements OnInit {
   // ViewModel
   vm = inject(DashboardViewModel);
 
-  bancos$ = this.vm.bancos$;
   dashboard$ = this.vm.dashboard$;
-  isLoading$ = this.vm.isLoading$;
 
   ngOnInit(): void {
     this.greeting.set(this.computeGreeting());
@@ -45,10 +43,6 @@ export class DashboardComponent implements OnInit {
     if (h >= 5 && h < 12) return 'Bom dia';
     if (h >= 12 && h < 18) return 'Boa tarde';
     return 'Boa noite';
-  }
-
-  onBancoChange(id: string | null) {
-    this.vm.selectBanco(id);
   }
 }
 
