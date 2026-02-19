@@ -293,13 +293,19 @@
 }
 
 .cartao-icon {
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 8px;
-  object-fit: contain;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(97, 237, 214, 0.15);
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.cartao-item:hover .cartao-icon {
+  transform: scale(1.1);
 }
 
 .cartao-nome {

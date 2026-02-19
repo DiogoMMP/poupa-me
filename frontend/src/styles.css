@@ -198,6 +198,26 @@ select option {
   font-family: 'Oswald', sans-serif;
 }
 
+/* Section header (title + action/link) - align title and link horizontally */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem; /* space between header and content */
+}
+
+/* If a section-title appears inside a .section-header, remove its bottom margin so it aligns vertically with the link */
+.section-header > .section-title {
+  margin: 0;
+}
+
+/* Tweak link inside header to align nicely */
+.section-header > .link {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 /* === GLOBAL LINK STYLES === */
 .link {
   color: var(--brand-accent);

@@ -33,6 +33,7 @@ export class DashboardComponent implements OnInit {
 
   dashboard$ = this.vm.dashboard$;
   contas$ = this.vm.contas$;
+  cartoes$ = this.vm.cartoes$;
   hasBancoSelected$ = this.vm.hasBancoSelected$;
 
   ngOnInit(): void {

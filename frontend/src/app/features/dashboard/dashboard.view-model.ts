@@ -9,6 +9,9 @@ import { SelectedBancoService } from '../../services/selected-banco.service';
 import { ContasService } from '../contas/services/contas.service';
 import { ContasMapper } from '../contas/mappers/contas.mapper';
 import { ContasModel } from '../contas/models/contas.model';
+import { CartoesCreditoService } from '../cartoes-credito/services/cartoes-credito.service';
+import { CartoesCreditoMapper } from '../cartoes-credito/mappers/cartoes-credito.mapper';
+import { CartoesCreditoModel } from '../cartoes-credito/models/cartoes-credito.model';
 
 /**
  * Lightweight ViewModel for the Dashboard component.
@@ -22,12 +25,14 @@ import { ContasModel } from '../contas/models/contas.model';
 export class DashboardViewModel {
   private bancosService = inject(BancosService);
   private contasService = inject(ContasService);
+  private cartoesService = inject(CartoesCreditoService);
   private notification = inject(NotificationService);
   private selectedBancoService = inject(SelectedBancoService);
 
   readonly bancos$ = new BehaviorSubject<BancosModel[]>([]);
   readonly dashboard$ = new BehaviorSubject<DashboardDTO | null>(null);
   readonly contas$ = new BehaviorSubject<ContasModel[]>([]);
+  readonly cartoes$ = new BehaviorSubject<CartoesCreditoModel[]>([]);
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
 
   private selectedBancoId: string | null = null;
@@ -71,6 +76,7 @@ export class DashboardViewModel {
     if (!id) {
       this.dashboard$.next(null);
       this.contas$.next([]);
+      this.cartoes$.next([]);
       return;
     }
 
@@ -91,6 +97,9 @@ export class DashboardViewModel {
 
     // Load contas for the selected banco
     this.loadContas(id);
+
+    // Load cartoes for the selected banco
+    this.loadCartoes(id);
   }
 
   private loadContas(bancoId: string): void {
@@ -104,5 +113,34 @@ export class DashboardViewModel {
         this.contas$.next([]);
       }
     });
+  }
+
+  private loadCartoes(bancoId: string): void {
+    this.cartoesService.getAll(bancoId).subscribe({
+      next: (dtos) => {
+        const models = CartoesCreditoMapper.toModelArray(dtos);
+        this.cartoes$.next(models);
+      },
+      error: (err) => {
+        console.error('[FRONTEND] DashboardViewModel.loadCartoes -', err);
+        this.cartoes$.next([]);
+      }
+    });
+  }
+
+  /**
+   * Compute percentage of credit limit used for a cartao.
+   * Returns integer 0..100.
+   */
+  getPercentagemUtilizada(cartao: CartoesCreditoModel): number {
+    if (!cartao) return 0;
+    const limite = cartao.limiteCredito?.valor ?? 0;
+    const saldo = cartao.saldoUtilizado?.valor ?? 0;
+    if (!limite || limite === 0) return 0;
+    let percent = (saldo / limite) * 100;
+    if (!isFinite(percent) || isNaN(percent)) return 0;
+    if (percent < 0) percent = 0;
+    if (percent > 100) percent = 100;
+    return Math.round(percent);
   }
 }

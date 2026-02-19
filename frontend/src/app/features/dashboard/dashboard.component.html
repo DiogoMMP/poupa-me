@@ -61,7 +61,7 @@
       </div>
     </div>
 
-    <!-- Contas Section - New Row -->
+    <!-- Contas Section -->
     <div class="contas-row" *ngIf="(contas$ | async) as contas">
       <div class="section-header">
         <h3 class="section-title">Minhas Contas</h3>
@@ -147,50 +147,32 @@
       <div class="cartoes-section">
         <div class="section-header">
           <h3 class="section-title">Cartões de Crédito</h3>
+          <a class="link" href="/cartoes-credito">Ver mais</a>
         </div>
 
         <div class="cartoes-list">
-          <!-- Cartão 1 -->
-          <div class="cartao-item card">
-            <div class="cartao-header">
-              <img src="/icons/credit-card-placeholder.svg" alt="Cartão" class="cartao-icon" />
-              <h4 class="cartao-nome">Santander Visa Gold</h4>
-            </div>
-
-            <div class="cartao-info">
-              <div class="cartao-limite">
-                <span class="text-muted text-small">Limite utilizado</span>
-                <span class="text-large">850,00 € / 3.000,00 €</span>
+          <!-- dynamic cards from service (limit to first 2 to match current layout) -->
+          <ng-container *ngIf="(cartoes$ | async) as cartoes">
+            <div *ngFor="let cartao of cartoes" class="cartao-item card">
+              <div class="cartao-header">
+                <div class="cartao-icon">{{ cartao.icon }}</div>
+                <h4 class="cartao-nome">{{ cartao.nome }}</h4>
               </div>
 
-              <div class="progress-bar">
-                <div class="progress-bar__fill" style="width: 28%;"></div>
+              <div class="cartao-info">
+                <div class="cartao-limite">
+                  <span class="text-muted text-small">Limite utilizado</span>
+                  <span class="text-large">{{ cartao.saldoUtilizado.valor | number:'1.2-2' }} € / {{ cartao.limiteCredito.valor | number:'1.2-2' }} €</span>
+                </div>
+
+                <div class="progress-bar">
+                  <div class="progress-bar__fill" [ngStyle]="{ width: vm.getPercentagemUtilizada(cartao) + '%' }"></div>
+                </div>
+
+                <span class="text-muted text-small">{{ vm.getPercentagemUtilizada(cartao) | number:'1.0-0' }}% utilizado</span>
               </div>
-
-              <span class="text-muted text-small">28% utilizado</span>
             </div>
-          </div>
-
-          <!-- Cartão 2 -->
-          <div class="cartao-item card">
-            <div class="cartao-header">
-              <img src="/icons/credit-card-placeholder.svg" alt="Cartão" class="cartao-icon" />
-              <h4 class="cartao-nome">Millennium Mastercard</h4>
-            </div>
-
-            <div class="cartao-info">
-              <div class="cartao-limite">
-                <span class="text-muted text-small">Limite utilizado</span>
-                <span class="text-large">1.800,00 € / 2.000,00 €</span>
-              </div>
-
-              <div class="progress-bar">
-                <div class="progress-bar__fill progress-bar__fill--danger" style="width: 90%;"></div>
-              </div>
-
-              <span class="text-muted text-small">90% utilizado</span>
-            </div>
-          </div>
+          </ng-container>
         </div>
       </div>
     </div>
