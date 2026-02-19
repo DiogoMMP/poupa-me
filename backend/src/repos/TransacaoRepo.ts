@@ -462,7 +462,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds all Entrada and Saída transactions (conta-based) for a specific account.
+     * Finds all Entrada, Saída, and Reembolso transactions (conta-based) for a specific account.
      * Returns an array of Transacao mapped to domain format, ordered by ID descending.
      * @param contaId - The domain ID of the Conta to filter transactions by.
      * @param userId - Optional user ID to scope the search to a specific user's transactions.
@@ -472,7 +472,8 @@ export default class TransacaoRepo implements ITransacaoRepo {
             const qb = this.repo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
                 .leftJoinAndSelect('t.conta', 'co')
-                .where('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] })
+                .leftJoinAndSelect('t.cartaoCredito', 'cc')
+                .where('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída', 'Reembolso'] })
                 .andWhere('co.domain_id = :contaId', { contaId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.id', 'DESC').getMany();
@@ -553,7 +554,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds Entrada/Saída transactions by categoria for a specific account.
+     * Finds Entrada/Saída/Reembolso transactions by categoria for a specific account.
      * Returns an array of Transacao mapped to domain format, ordered by ID descending.
      * @param contaId - The domain ID of the Conta to filter transactions by.
      * @param categoriaId - The domain ID of the Categoria to filter Transacao records by.
@@ -564,8 +565,9 @@ export default class TransacaoRepo implements ITransacaoRepo {
              const qb = this.repo.createQueryBuilder('t')
                  .leftJoinAndSelect('t.categoria', 'c')
                  .leftJoinAndSelect('t.conta', 'co')
+                 .leftJoinAndSelect('t.cartaoCredito', 'cc')
                  .where('c.domain_id = :domainId', { domainId: categoriaId })
-                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] })
+                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída', 'Reembolso'] })
                  .andWhere('co.domain_id = :contaId', { contaId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.id', 'DESC').getMany();
@@ -713,7 +715,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds Entrada/Saída transactions by predefined period for a specific account.
+     * Finds Entrada/Saída/Reembolso transactions by predefined period for a specific account.
      * Accepts: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'.
      * Returns an array of Transacao mapped to domain format, ordered by ID descending.
      * @param contaId - The domain ID of the Conta to filter transactions by.
@@ -742,8 +744,9 @@ export default class TransacaoRepo implements ITransacaoRepo {
             const qb = this.repo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
                 .leftJoinAndSelect('t.conta', 'co')
+                .leftJoinAndSelect('t.cartaoCredito', 'cc')
                 .where('t.created_at >= :start', { start: startDate })
-                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída', 'Reembolso'] })
                 .andWhere('co.domain_id = :contaId', { contaId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.id', 'DESC').getMany();

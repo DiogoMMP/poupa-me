@@ -51,7 +51,7 @@ export class MenuService {
       id: 'Cartões de Crédito',
       labelKey: 'Cartões de Crédito',
       icon: '/icons/cartoes.svg',
-      route: '/cartoes',
+      route: '/cartoes-credito',
       roles: ['Admin', 'User']
     },
 

@@ -47,6 +47,11 @@ export class SelectedBancoService {
    * Load the selected banco ID from localStorage on service initialization.
    */
   private loadFromStorage(): string | null {
+    // avoid accessing localStorage in non-browser or SSR environments
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
+    }
+
     try {
       return localStorage.getItem(this.STORAGE_KEY);
     } catch (error) {
@@ -59,6 +64,9 @@ export class SelectedBancoService {
    * Save the selected banco ID to localStorage.
    */
   private saveToStorage(bancoId: string | null): void {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
     try {
       if (bancoId) {
         localStorage.setItem(this.STORAGE_KEY, bancoId);
@@ -74,6 +82,9 @@ export class SelectedBancoService {
    * Remove the selected banco ID from localStorage.
    */
   private removeFromStorage(): void {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
     try {
       localStorage.removeItem(this.STORAGE_KEY);
     } catch (error) {

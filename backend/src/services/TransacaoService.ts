@@ -253,7 +253,8 @@ export default class TransacaoService implements ITransacaoService {
                 data: dataResult.getValue(),
                 valor: dinheiroResult.getValue(),
                 categoria: categoria,
-                cartaoCredito: cartaoCredito
+                cartaoCredito: cartaoCredito,
+                conta: conta
             });
 
             if (transacaoOrError.isFailure) return Result.fail<ITransacaoDTO>(String(transacaoOrError.error));

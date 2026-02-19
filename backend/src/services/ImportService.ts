@@ -269,11 +269,33 @@ export default class ImportService implements IImportService {
 
                 // Detect if it's a card or account
                 const isCard = contaStr.toLowerCase().includes('cartão') || contaStr.toLowerCase().includes('cartao');
-                const conta = existingContas.find(c => c.nome.value.toLowerCase().includes(contaStr.toLowerCase()));
-                const cartao = existingCartoes.find(c => c.nome.value.toLowerCase().includes(contaStr.toLowerCase()));
 
-                if (!isCard && !conta) continue;
-                if (isCard && !cartao) continue;
+                // Extract the actual account/card name from the HTML-like string
+                const extractedName = (contaStr.split('(')[0] ?? contaStr).trim();
+
+                // Find matching account or card by checking if the CSV string contains the entity name
+                const conta = existingContas.find(c => {
+                    const entityName = c.nome.value.toLowerCase();
+                    const searchStr = extractedName.toLowerCase();
+                    // Check both directions: entity name in CSV string OR CSV string in entity name
+                    return searchStr.includes(entityName) || entityName.includes(searchStr);
+                });
+
+                const cartao = existingCartoes.find(c => {
+                    const entityName = c.nome.value.toLowerCase();
+                    const searchStr = extractedName.toLowerCase();
+                    // Check both directions: entity name in CSV string OR CSV string in entity name
+                    return searchStr.includes(entityName) || entityName.includes(searchStr);
+                });
+
+                if (!isCard && !conta) {
+                    this.logger.info(`Account not found for: ${extractedName}`);
+                    continue;
+                }
+                if (isCard && !cartao) {
+                    this.logger.info(`Card not found for: ${extractedName}`);
+                    continue;
+                }
 
                 // Determine transaction type based on file type and other factors
                 let tipo: 'Entrada' | 'Saída' | 'Crédito' | 'Reembolso';
@@ -340,6 +362,43 @@ export default class ImportService implements IImportService {
                     status = (saiuStr === 'yes' || saiuStr === 'sim') ? 'Concluído' : 'Pendente';
                 }
 
+                // For Reembolso, we need to find the original Crédito/Saída transaction to get the cartao
+                let contaForTransaction = conta;
+                let cartaoForTransaction = cartao;
+
+                if (tipo === 'Reembolso') {
+                    // Search for matching Crédito or Saída transaction with similar name/category
+                    const matchingTransacao = allTransacoes.find(t => {
+                        // Look for transactions with similar description or same category
+                        const sameCategory = t.categoria.id.toString() === categoria!.id.toString();
+                        const similarDescription = t.descricao.value.toLowerCase().includes(nome.toLowerCase()) ||
+                                                   nome.toLowerCase().includes(t.descricao.value.toLowerCase());
+
+                        // Must be a Crédito or Saída type (not another Reembolso)
+                        const isExpenseType = t.tipo.value === 'Crédito' || t.tipo.value === 'Saída';
+
+                        return isExpenseType && (sameCategory || similarDescription);
+                    });
+
+                    if (matchingTransacao && matchingTransacao.cartaoCredito) {
+                        // Found a matching card transaction, use that card
+                        cartaoForTransaction = matchingTransacao.cartaoCredito;
+
+                        // Get the payment account from the card
+                        const contaPagamentoId = matchingTransacao.cartaoCredito.contaPagamentoId;
+                        if (contaPagamentoId) {
+                            const contaPagamento = existingContas.find(c => c.id.toString() === contaPagamentoId.toString());
+                            if (contaPagamento) {
+                                contaForTransaction = contaPagamento;
+                            }
+                        }
+                    } else {
+                        // Fallback: if no matching transaction found, skip this reembolso
+                        this.logger.info(`Skipping reembolso without matching card transaction: ${nome}`);
+                        continue;
+                    }
+                }
+
                 const props = {
                     descricao: Descricao.create(nome).getValue(),
                     valor: Dinheiro.create(valor, 'EUR').getValue(),
@@ -347,8 +406,8 @@ export default class ImportService implements IImportService {
                     tipo: Tipo.create(tipo).getValue(),
                     status: Status.create(status).getValue(),
                     categoria: categoria!,
-                    conta: isCard ? undefined : conta,
-                    cartaoCredito: isCard ? cartao : undefined
+                    conta: tipo === 'Reembolso' ? contaForTransaction : (isCard ? undefined : conta),
+                    cartaoCredito: tipo === 'Reembolso' ? cartaoForTransaction : (isCard ? cartao : undefined)
                 };
 
                 const transacaoOrError = Transacao.create(props);

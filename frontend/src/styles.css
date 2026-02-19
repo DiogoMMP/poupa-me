@@ -767,20 +767,66 @@ textarea::placeholder {
   box-shadow: none !important;
 }
 
-/* Inline small secondary inputs for form fields (saldo group) */
-.form-field[formGroupName="saldo"] .row-controls {
+/* Ensure row-controls take full width and inputs expand by default */
+.form-field .row-controls {
+  width: 100%;
   display: flex;
   gap: 0.75rem;
-  align-items: stretch;
+  align-items: center;
+  box-sizing: border-box;
 }
 
-.form-field[formGroupName="saldo"] .row-controls .form-input:first-child {
-  flex: 1;
+/* Default: inputs inside row-controls should expand to fill available space */
+.form-field .row-controls .form-input {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
 }
 
-.form-field[formGroupName="saldo"] .row-controls .form-input:last-child {
-  min-width: 80px;
-  flex: 0 0 auto;
+/* Force first input 80% and second 20% for most row-controls, except periodo and emoji groups */
+.form-field:not([formGroupName="periodo"]) > .row-controls > .form-input:first-child {
+  flex: 0 0 80% !important;
+  width: 80% !important;
+  max-width: 80% !important;
+  box-sizing: border-box;
+}
+
+.form-field:not([formGroupName="periodo"]) > .row-controls > .form-input:last-child {
+  flex: 0 0 20% !important;
+  width: 20% !important;
+  max-width: 20% !important;
+  box-sizing: border-box;
+}
+
+/* Ensure emoji groups remain with small button and flexible input */
+.form-field .row-controls .emoji-input-group .form-input {
+  flex: 1 1 auto !important;
+  width: auto !important;
+}
+
+.form-field .row-controls .emoji-input-group .emoji-btn {
+  flex: 0 0 48px !important;
+  width: 48px !important;
+}
+
+/* Period group: larger spacing and equal-width inputs */
+.form-field[formGroupName="periodo"] .row-controls {
+  display: flex;
+  gap: 1.5rem; /* increased spacing between the two date inputs */
+  align-items: center;
+}
+
+.form-field[formGroupName="periodo"] .row-controls .form-input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.form-field[formGroupName="periodo"] .row-controls .form-input:first-child {
+  margin-right: 0;
+}
+
+.form-field[formGroupName="periodo"] .row-controls .form-input:last-child {
+  margin-left: 0;
 }
 
 /* === RESPONSIVE === */

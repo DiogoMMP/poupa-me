@@ -1,0 +1,78 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title">Cartões de Crédito</h1>
+
+    <div class="page-actions" *ngIf="hasBancoSelected">
+      <button routerLink="/cartoes-credito/criar">
+        <svg width="16" height="16" viewBox="0 0 24 24">
+          <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
+        </svg>
+        <span>Criar Cartão</span>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading$ | async" class="loading-state">A carregar...</div>
+
+  <div *ngIf="!(isLoading$ | async)" class="content-container">
+    <ng-container *ngIf="(cartoes$ | async) as cartoes">
+      <div *ngIf="cartoes.length === 0" class="empty-state">
+        <p>Não existem cartões para o banco selecionado.</p>
+      </div>
+
+      <div *ngIf="cartoes.length > 0" class="cards-grid">
+        <div *ngFor="let cartao of cartoes" class="card card--hover">
+          <div class="card-icon-wrapper">
+            <div class="card-icon card-icon--circle">{{ cartao.icon }}</div>
+          </div>
+
+          <div class="card-content">
+            <h3 class="card-title">{{ cartao.nome }}</h3>
+
+            <!-- Credit limit and used amount -->
+            <p class="card-value">{{ cartao.saldoUtilizado.valor | number:'1.2-2' }} {{ cartao.saldoUtilizado.moeda === 'EUR' ? '€' : cartao.saldoUtilizado.moeda }}</p>
+
+            <!-- Progress bar showing credit usage -->
+            <div class="progress-bar">
+              <div class="progress-bar__fill"
+                   [class.progress-bar__fill--warning]="vm.getPercentagemUtilizada(cartao) >= 70 && vm.getPercentagemUtilizada(cartao) < 90"
+                   [class.progress-bar__fill--danger]="vm.getPercentagemUtilizada(cartao) >= 90"
+                   [style.width.%]="vm.getPercentagemUtilizada(cartao)"></div>
+            </div>
+            <small class="text-muted">{{ vm.getPercentagemUtilizada(cartao) | number:'1.0-0' }}% utilizado</small>
+
+            <!-- Card details: period and payment account -->
+            <div class="card-details">
+              <small><b>Período:</b> {{ vm.formatDate(cartao.periodo.dataInicio) }} - {{ vm.formatDate(cartao.periodo.dataFim) }}</small>
+              <small><b>Conta de Pagamento:</b> {{ vm.getContaNome(cartao.contaPagamentoId) }}</small>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button [routerLink]="['/cartoes-credito/editar', cartao.id]" class="btn-action">
+              <svg width="16" height="16" viewBox="0 0 24 24">
+                <path
+                  d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"
+                  fill="currentColor"/>
+              </svg>
+              <span>Editar</span>
+            </button>
+
+            <!-- Admin-only info and actions placed under the edit button -->
+            <ng-container *ngIf="auth.user()?.role === 'Admin'">
+              <div class="card-details admin-section">
+                <small><b>User ID:</b> {{ cartao.userId }}</small>
+                <small><b>Banco:</b> {{ cartao.bancoId }}</small>
+              </div>
+              <button (click)="vm.deleteCartao(cartao.id)" class="btn-delete">
+                <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24"><path d="M6 7h12v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3-4h6l1 1H8l1-1z" fill="currentColor"/></svg>
+                <span>Eliminar</span>
+              </button>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+</div>

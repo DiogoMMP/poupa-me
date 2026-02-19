@@ -80,15 +80,17 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
         }
 
         // Validate that either conta or cartaoCredito is present, but never both or none
+        // Exception: Reembolso can have both conta and cartaoCredito
         const hasConta = props.conta !== undefined && props.conta !== null;
         const hasCartao = props.cartaoCredito !== undefined && props.cartaoCredito !== null;
+        const isReembolso = props.tipo.value === 'Reembolso';
 
         if (!hasConta && !hasCartao) {
             return Result.fail<Transacao>('Transacao must have either conta or cartaoCredito');
         }
 
-        if (hasConta && hasCartao) {
-            return Result.fail<Transacao>('Transacao cannot have both conta and cartaoCredito');
+        if (hasConta && hasCartao && !isReembolso) {
+            return Result.fail<Transacao>('Transacao cannot have both conta and cartaoCredito (except for Reembolso)');
         }
 
         const transacao = new Transacao(props, id);

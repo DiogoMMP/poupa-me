@@ -26,6 +26,8 @@ export const routes: Routes = [
 
       { path: 'contas', loadChildren: () => import('./features/contas/contas.routes').then(m => m.routes), data: { allowedRoles: ['Admin','User'] } },
 
+      { path: 'cartoes-credito', loadChildren: () => import('./features/cartoes-credito/cartoes-credito.routes').then(m => m.routes), data: { allowedRoles: ['Admin','User'] } },
+
       //{ path: 'profile', loadChildren: () => import('./features/profile/profile.routes').then(m => m.routes), data: { allowedRoles: ['Admin'] } },
 
       // Admin user creation (lazy-loaded feature)

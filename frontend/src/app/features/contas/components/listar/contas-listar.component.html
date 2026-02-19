@@ -45,8 +45,8 @@
             <!-- Admin-only info and actions placed under the edit button -->
             <ng-container *ngIf="auth.user()?.role === 'Admin'">
               <div class="card-details admin-section">
-                <small>User ID: {{ conta.userId }}</small>
-                <small>Banco: {{ conta.bancoId }}</small>
+                <small><b>User ID:</b> {{ conta.userId }}</small>
+                <small><b>Banco:</b> {{ conta.bancoId }}</small>
               </div>
               <button (click)="deleteConta(conta.id)" class="btn-delete">
                 <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24"><path d="M6 7h12v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3-4h6l1 1H8l1-1z" fill="currentColor"/></svg>
