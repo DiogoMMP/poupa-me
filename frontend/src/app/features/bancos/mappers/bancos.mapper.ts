@@ -1,4 +1,4 @@
-import { BancosDTO } from '../dto/bancos.dto';
+ import { BancosDTO } from '../dto/bancos.dto';
 import { BancosModel } from '../models/bancos.model';
 
 /**
@@ -13,7 +13,8 @@ export class BancosMapper {
       id: dto.id || '',
       userId: dto.userId || undefined,
       nome: dto.nome,
-      icon: dto.icon
+      icon: dto.icon,
+      contasCartoesSelecionados: dto.contasCartoesSelecionados || []
     };
   }
 
@@ -24,7 +25,8 @@ export class BancosMapper {
     return {
       id: model.id,
       nome: model.nome,
-      icon: model.icon
+      icon: model.icon,
+      contasCartoesSelecionados: model.contasCartoesSelecionados
     };
   }
 

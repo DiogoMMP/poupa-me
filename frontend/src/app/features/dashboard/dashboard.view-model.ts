@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, map } from 'rxjs';
+import { BehaviorSubject, map, forkJoin } from 'rxjs';
 import { BancosService } from '../bancos/services/bancos.service';
 import { BancosMapper } from '../bancos/mappers/bancos.mapper';
 import { BancosModel } from '../bancos/models/bancos.model';
@@ -119,7 +119,34 @@ export class DashboardViewModel {
     this.cartoesService.getAll(bancoId).subscribe({
       next: (dtos) => {
         const models = CartoesCreditoMapper.toModelArray(dtos);
+        // Emit initial card list
         this.cartoes$.next(models);
+
+        // Load extrato for each card to get saldoAtual (used for percent calculation)
+        try {
+          const extratoRequests = models.map(c => this.cartoesService.getExtrato(c.id));
+          forkJoin(extratoRequests).subscribe({
+            next: (extratos) => {
+              extratos.forEach((extrato, index) => {
+                const cartao = models[index];
+                const saldoAtual = extrato?.saldoAtual?.valor;
+                const moeda = extrato?.saldoAtual?.moeda;
+                if (typeof saldoAtual === 'number') {
+                  // update the model's saldoUtilizado to reflect the extrato.saldoAtual
+                  cartao.saldoUtilizado = { valor: saldoAtual, moeda: moeda || cartao.saldoUtilizado.moeda };
+                }
+              });
+              // emit updated models
+              this.cartoes$.next([...models]);
+            },
+            error: (err) => {
+              // If extrato loading fails, still show cartões with existing saldoUtilizado
+              console.error('[FRONTEND] DashboardViewModel.loadCartoes - extrato fetch failed', err);
+            }
+          });
+        } catch (e) {
+          // ignore
+        }
       },
       error: (err) => {
         console.error('[FRONTEND] DashboardViewModel.loadCartoes -', err);

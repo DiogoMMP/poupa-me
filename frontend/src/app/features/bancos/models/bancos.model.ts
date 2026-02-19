@@ -3,4 +3,5 @@ export interface BancosModel {
   userId?: string;
   nome: string;
   icon: string;
+  contasCartoesSelecionados?: string[];
 }

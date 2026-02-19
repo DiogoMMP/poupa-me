@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { createPicker } from 'picmo';
 import { BancosEditarViewModel } from './bancos-editar.view-model';
@@ -32,8 +32,9 @@ export class BancosEditarComponent implements OnInit, OnDestroy {
 
   constructor() {
     this.form = this.fb.group({
-      nome: ['', Validators.required],
-      icon: ['', Validators.required]
+      nome: [''],
+      icon: [''],
+      contasCartoesSelecionados: [[]]
     });
   }
 
@@ -51,10 +52,15 @@ export class BancosEditarComponent implements OnInit, OnDestroy {
         if (banco) {
           this.form.patchValue({
             nome: banco.nome,
-            icon: banco.icon
+            icon: banco.icon,
+            contasCartoesSelecionados: banco.contasCartoesSelecionados || []
           });
         }
       });
+
+      // Populate selection lists
+      this.vm.contas$.subscribe();
+      this.vm.cartoes$.subscribe();
     }
   }
 
@@ -124,6 +130,24 @@ export class BancosEditarComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Helpers to manage selection array in the form
+  isSelected(id: string): boolean {
+    const arr: string[] = this.form.get('contasCartoesSelecionados')?.value || [];
+    return arr.includes(id);
+  }
+
+  toggleSelection(id: string): void {
+    const control = this.form.get('contasCartoesSelecionados');
+    const arr: string[] = control?.value || [];
+    const idx = arr.indexOf(id);
+    if (idx >= 0) {
+      arr.splice(idx, 1);
+    } else {
+      arr.push(id);
+    }
+    control?.setValue([...arr]);
+  }
+
   /**
    * Handles the form submission. We first check if the form is valid, and if it is, we call the submit method on the
    * view model, passing the bank ID and the form values.
@@ -132,8 +156,8 @@ export class BancosEditarComponent implements OnInit, OnDestroy {
    * the business logic and state management.
    */
   onSubmit() {
-    if (this.form.valid) {
-      this.vm.submit(this.id, this.form.value);
-    }
+    // patch will be partial; do not require fields for a PATCH
+    const payload = this.form.value;
+    this.vm.submit(this.id, payload);
   }
 }

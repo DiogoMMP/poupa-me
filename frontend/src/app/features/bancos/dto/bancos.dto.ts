@@ -2,10 +2,11 @@
  * Data Transfer Object for banco
  */
 export interface BancosDTO {
-    id?: string;
-    userId?: string;
-    nome: string;
-    icon: string;
+  id?: string;
+  userId?: string;
+  nome: string;
+  icon: string;
+  contasCartoesSelecionados?: string[];
 }
 
 /**
@@ -13,14 +14,15 @@ export interface BancosDTO {
  * Used when creating
  */
 export interface BancosInputDTO {
-    nome: string;
-    icon: string;
+  nome: string;
+  icon: string;
 }
 
 /**
  * Data Transfer Object for Banco Update (Input)
  */
 export interface BancosUpdateDTO {
-    nome?: string;
-    icon?: string;
+  nome?: string;
+  icon?: string;
+  contasCartoesSelecionados?: string[];
 }

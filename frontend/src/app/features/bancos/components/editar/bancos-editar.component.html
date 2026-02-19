@@ -47,6 +47,35 @@
         </div>
       </div>
 
+      <!-- Selection lists for contas and cartoes -->
+      <div class="form-field">
+        <label class="form-label">Selecionar Contas</label>
+        <div class="selection-list">
+          <div *ngIf="vm.contas$ | async as contas">
+            <div *ngFor="let conta of contas" class="selection-row">
+              <label>
+                <input type="checkbox" [checked]="isSelected(conta.id)" (change)="toggleSelection(conta.id)" />
+                <span class="selection-label">{{ conta.icon }} {{ conta.nome }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Selecionar Cartões</label>
+        <div class="selection-list">
+          <div *ngIf="vm.cartoes$ | async as cartoes">
+            <div *ngFor="let cartao of cartoes" class="selection-row">
+              <label>
+                <input type="checkbox" [checked]="isSelected(cartao.id)" (change)="toggleSelection(cartao.id)" />
+                <span class="selection-label">{{ cartao.icon }} {{ cartao.nome }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="form-actions">
         <button type="submit" [disabled]="form.invalid || (vm.isLoading$ | async)">
           <svg width="16" height="16" viewBox="0 0 24 24">
