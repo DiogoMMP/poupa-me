@@ -35,32 +35,12 @@ export default class CategoriaService implements ICategoriaService {
             });
 
             if (categoriaOrError.isFailure) return Result.fail<ICategoriaDTO>(categoriaOrError.errorValue() as unknown as string);
-            const categoria = categoriaOrError.getValue();
 
-            const saved = await this.categoriaRepo.save(categoria);
-            const dto = CategoriaMap.toDTO(saved) as ICategoriaDTO;
-            return Result.ok<ICategoriaDTO>(dto);
+            const saved = await this.categoriaRepo.save(categoriaOrError.getValue());
+            return Result.ok<ICategoriaDTO>(CategoriaMap.toDTO(saved) as ICategoriaDTO);
         } catch (e) {
             this.logger.error('CategoriaService.createCategoria error: %o', e);
-            const message = e instanceof Error ? e.message : 'Error creating categoria';
-            return Result.fail<ICategoriaDTO>(message);
-        }
-    }
-
-    /**
-     * Retrieves Categorias by name.
-     */
-    public async getCategoriaByNome(nome: string): Promise<Result<ICategoriaDTO[]>> {
-        try {
-            if (!nome) return Result.fail<ICategoriaDTO[]>('Name is required');
-            const categoria = await this.categoriaRepo.findByName(nome);
-            if (!categoria) return Result.ok<ICategoriaDTO[]>([]);
-            const dto = CategoriaMap.toDTO(categoria) as ICategoriaDTO;
-            return Result.ok<ICategoriaDTO[]>([dto]);
-        } catch (e) {
-            this.logger.error('CategoriaService.getCategoriaByNome error: %o', e);
-            const message = e instanceof Error ? e.message : 'Error getting categoria by nome';
-            return Result.fail<ICategoriaDTO[]>(message);
+            return Result.fail<ICategoriaDTO>(e instanceof Error ? e.message : 'Error creating categoria');
         }
     }
 
@@ -70,12 +50,10 @@ export default class CategoriaService implements ICategoriaService {
     public async getAllCategorias(): Promise<Result<ICategoriaDTO[]>> {
         try {
             const categorias = await this.categoriaRepo.findAll();
-            const dtos = categorias.map(c => CategoriaMap.toDTO(c) as ICategoriaDTO);
-            return Result.ok<ICategoriaDTO[]>(dtos);
+            return Result.ok<ICategoriaDTO[]>(categorias.map(c => CategoriaMap.toDTO(c) as ICategoriaDTO));
         } catch (e) {
             this.logger.error('CategoriaService.getAllCategorias error: %o', e);
-            const message = e instanceof Error ? e.message : 'Error getting all categorias';
-            return Result.fail<ICategoriaDTO[]>(message);
+            return Result.fail<ICategoriaDTO[]>(e instanceof Error ? e.message : 'Error getting all categorias');
         }
     }
 
@@ -87,28 +65,23 @@ export default class CategoriaService implements ICategoriaService {
             if (!id) return Result.fail<ICategoriaDTO>('ID is required');
             const categoria = await this.categoriaRepo.findById(id);
             if (!categoria) return Result.fail<ICategoriaDTO>(`Categoria not found with id=${id}`);
-            const dto = CategoriaMap.toDTO(categoria) as ICategoriaDTO;
-            return Result.ok<ICategoriaDTO>(dto);
+            return Result.ok<ICategoriaDTO>(CategoriaMap.toDTO(categoria) as ICategoriaDTO);
         } catch (e) {
             this.logger.error('CategoriaService.getCategoriaById error: %o', e);
-            const message = e instanceof Error ? e.message : 'Error getting categoria by id';
-            return Result.fail<ICategoriaDTO>(message);
+            return Result.fail<ICategoriaDTO>(e instanceof Error ? e.message : 'Error getting categoria by id');
         }
     }
 
     /**
-     * Updates a Categoria. This method first checks if the update data and the name of the Categoria to update are
-     * provided. It then attempts to find the existing Categoria by its name.
+     * Updates an existing Categoria identified by its domain ID.
      */
-    public async updateCategoria(updateDTO: IInputCategoriaDTO, nome: string): Promise<Result<ICategoriaDTO>> {
+    public async updateCategoria(updateDTO: IInputCategoriaDTO, id: string): Promise<Result<ICategoriaDTO>> {
         try {
             if (!updateDTO) return Result.fail<ICategoriaDTO>('No update data provided');
-            if (!nome) return Result.fail<ICategoriaDTO>('Name is required to locate categoria');
+            if (!id) return Result.fail<ICategoriaDTO>('ID is required to locate categoria');
 
-            // find existing by provided nome
-            const existing = await this.categoriaRepo.findByName(nome);
-
-            if (!existing) return Result.fail<ICategoriaDTO>('Categoria not found to update');
+            const existing = await this.categoriaRepo.findById(id);
+            if (!existing) return Result.fail<ICategoriaDTO>(`Categoria not found with id=${id}`);
 
             const name = updateDTO.nome ? Nome.create(updateDTO.nome) : CoreResult.ok(existing.nome);
             const icon = updateDTO.icon ? Icon.create(updateDTO.icon) : CoreResult.ok(existing.icon);
@@ -117,41 +90,32 @@ export default class CategoriaService implements ICategoriaService {
             if (combine.isFailure) return Result.fail<ICategoriaDTO>(combine.error || 'Invalid update data');
 
             const categoriaOrError = Categoria.create(
-                {
-                    nome: name.getValue(),
-                    icon: icon.getValue()
-                },
-                // preserve the existing domain id so update keeps same id
+                { nome: name.getValue(), icon: icon.getValue() },
                 existing.id
             );
-
             if (categoriaOrError.isFailure) return Result.fail<ICategoriaDTO>(categoriaOrError.errorValue() as unknown as string);
 
-            const updatedDomain = categoriaOrError.getValue();
-            const updated = await this.categoriaRepo.update(updatedDomain, nome);
-            const dto = CategoriaMap.toDTO(updated) as ICategoriaDTO;
-            return Result.ok<ICategoriaDTO>(dto);
+            const updated = await this.categoriaRepo.update(categoriaOrError.getValue(), id);
+            return Result.ok<ICategoriaDTO>(CategoriaMap.toDTO(updated) as ICategoriaDTO);
         } catch (e) {
             this.logger.error('CategoriaService.updateCategoria error: %o', e);
-            const message = e instanceof Error ? e.message : 'Error updating categoria';
-            return Result.fail<ICategoriaDTO>(message);
+            return Result.fail<ICategoriaDTO>(e instanceof Error ? e.message : 'Error updating categoria');
         }
     }
 
     /**
-     * Deletes a Categoria by its name. This method checks if the name is provided, verifies that a Categoria with the given name exists,
+     * Deletes a Categoria by its domain ID.
      */
-    public async deleteCategoriaByNome(name: string): Promise<Result<boolean>> {
+    public async deleteCategoriaById(id: string): Promise<Result<boolean>> {
         try {
-            if (!name) return Result.fail<boolean>('Name is required');
-            const exists = await this.categoriaRepo.findByName(name);
-            if (!exists) return Result.fail<boolean>(`Categoria not found with nome=${name}`);
-            await this.categoriaRepo.deleteByName(name);
+            if (!id) return Result.fail<boolean>('ID is required');
+            const exists = await this.categoriaRepo.findById(id);
+            if (!exists) return Result.fail<boolean>(`Categoria not found with id=${id}`);
+            await this.categoriaRepo.deleteById(id);
             return Result.ok<boolean>(true);
         } catch (e) {
-            this.logger.error('CategoriaService.deleteCategoriaByNome error: %o', e);
-            const message = e instanceof Error ? e.message : 'Error deleting categoria';
-            return Result.fail<boolean>(message);
+            this.logger.error('CategoriaService.deleteCategoriaById error: %o', e);
+            return Result.fail<boolean>(e instanceof Error ? e.message : 'Error deleting categoria');
         }
     }
 }

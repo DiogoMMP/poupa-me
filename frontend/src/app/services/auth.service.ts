@@ -10,6 +10,7 @@ import { firstValueFrom, Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { UsersService } from './users.service';
+import { SelectedBancoService } from './selected-banco.service';
 
 export type Role = 'Admin' | 'Guest' | 'User'
 
@@ -27,6 +28,7 @@ export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
   private users = inject(UsersService);
+  private selectedBanco = inject(SelectedBancoService);
 
   user = signal<User | null>(null);
 
@@ -55,6 +57,9 @@ export class AuthService {
   logout(): void {
     // Clear client state immediately so UI updates without waiting for network
     this.user.set(null);
+
+    // Clear selected banco from localStorage so next user starts fresh
+    this.selectedBanco.clearSelection();
 
     // Notify backend to clear session cookie via UsersService; ignore errors
     firstValueFrom(this.users.logout()).catch(() => {

@@ -56,6 +56,14 @@ export class DashboardViewModel {
       next: (dtos) => {
         const models = BancosMapper.toModelArray(dtos);
         this.bancos$.next(models);
+
+        // Validate that the stored banco ID belongs to the loaded list.
+        // If not (e.g. different user logged in), clear the stale selection
+        // so the dashboard stays empty until the user manually picks a banco.
+        const storedId = this.selectedBancoService.currentBancoId;
+        if (storedId && !models.some(b => b.id === storedId)) {
+          this.selectedBancoService.clearSelection();
+        }
       },
       error: (err: any) => {
         // suppress verbose logging for unauthenticated users

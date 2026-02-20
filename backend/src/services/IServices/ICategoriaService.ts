@@ -34,24 +34,17 @@ export default interface ICategoriaService {
     getAllCategorias(): Promise<Result<ICategoriaDTO[]>>;
 
     /**
-     * Retrieves Categorias that match the provided name.
-     * @param nome - Name (or part of the name) of the Categoria.
-     * @returns Result containing an array of Categoria DTOs.
-     */
-    getCategoriaByNome(nome: string): Promise<Result<ICategoriaDTO[]>>;
-
-    /**
      * Updates an existing Categoria.
      * @param updateDTO - Input data for updating the Categoria.
-     * @param nome - The current name of the Categoria to find in the DB before updating.
+     * @param id - The current id of the Categoria to find in the DB before updating.
      * @returns Result containing the updated Categoria DTO.
      */
-    updateCategoria(updateDTO: IInputCategoriaDTO, nome: string): Promise<Result<ICategoriaDTO>>;
+    updateCategoria(updateDTO: IInputCategoriaDTO, id: string): Promise<Result<ICategoriaDTO>>;
 
     /**
-     * Deletes a Categoria by its name.
-     * @param nome - Name of the Categoria to delete.
+     * Deletes a Categoria by its ID.
+     * @param id - ID of the Categoria to delete.
      * @returns Result indicating success (true) or failure.
      */
-    deleteCategoriaByNome(nome: string): Promise<Result<boolean>>;
+    deleteCategoriaById(id: string): Promise<Result<boolean>>;
 }

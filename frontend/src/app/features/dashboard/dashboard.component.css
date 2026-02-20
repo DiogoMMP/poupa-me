@@ -190,6 +190,19 @@
   }
 }
 
+/* When there are no cartoes, make transactions occupy full width */
+.second-row--single {
+  grid-template-columns: 1fr !important;
+}
+
+.second-row--single .transacoes-section {
+  width: 100%;
+}
+
+.second-row--single .cartoes-section {
+  display: none;
+}
+
 /* === SECOND ROW - TRANSAÇÕES E CARTÕES === */
 .second-row {
   display: grid;

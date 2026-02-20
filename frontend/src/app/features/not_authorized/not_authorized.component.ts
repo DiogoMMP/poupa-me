@@ -19,7 +19,7 @@ import {RouterModule, Routes} from '@angular/router';
 export class NotAuthorizedComponent {}
 
 /**
- * Routes for the not found feature module.
+ * Routes for the not authorized feature module.
  */
 export const routes: Routes = [
   { path: '', component: NotAuthorizedComponent }

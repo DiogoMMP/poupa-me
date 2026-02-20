@@ -88,34 +88,6 @@ export default (app: Router) => {
 
   /**
    * @openapi
-   * /categoria/by-nome:
-   *   get:
-   *     tags:
-   *       - Categoria
-   *     summary: Get categoria by name
-   *     description: Search categoria by name. Requires authentication.
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: query
-   *         name: nome
-   *         required: true
-   *         schema:
-   *           type: string
-   *     responses:
-   *       200:
-   *         description: Matching categorias
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/Categoria'
-   */
-  route.get('/by-nome', isAuth, (req, res, next) => ctrl.getCategoriaByNome(req as AuthenticatedRequest, res, next));
-
-  /**
-   * @openapi
    * /categoria/{id}:
    *   get:
    *     tags:
@@ -144,17 +116,17 @@ export default (app: Router) => {
 
   /**
    * @openapi
-   * /categoria/{nome}:
+   * /categoria/{id}:
    *   put:
    *     tags:
    *       - Categoria
    *     summary: Update a categoria
-   *     description: Update categoria fields. Admin only. The category to update is identified by the `nome` path parameter.
+   *     description: Update categoria fields by ID. Admin only.
    *     security:
    *       - bearerAuth: []
    *     parameters:
    *       - in: path
-   *         name: nome
+   *         name: id
    *         required: true
    *         schema:
    *           type: string
@@ -173,22 +145,24 @@ export default (app: Router) => {
    *               $ref: '#/components/schemas/Categoria'
    *       400:
    *         description: Validation or update error
+   *       404:
+   *         description: Categoria not found
    */
-  route.put('/:nome', isAuth, authorize([Role.Admin]), (req, res, next) => ctrl.updateCategoria(req as AuthenticatedRequest, res, next));
+  route.put('/:id', isAuth, authorize([Role.Admin]), (req, res, next) => ctrl.updateCategoria(req as AuthenticatedRequest, res, next));
 
   /**
    * @openapi
-   * /categoria/{nome}:
+   * /categoria/{id}:
    *   delete:
    *     tags:
    *       - Categoria
-   *     summary: Delete a categoria by name
-   *     description: Removes a categoria identified by its name. Admin only.
+   *     summary: Delete a categoria by ID
+   *     description: Removes a categoria identified by its domain ID. Admin only.
    *     security:
    *       - bearerAuth: []
    *     parameters:
    *       - in: path
-   *         name: nome
+   *         name: id
    *         required: true
    *         schema:
    *           type: string
@@ -197,7 +171,8 @@ export default (app: Router) => {
    *         description: Deletion successful
    *       400:
    *         description: Deletion failed
+   *       404:
+   *         description: Categoria not found
    */
-  route.delete('/:nome', isAuth, authorize([Role.Admin]), (req, res, next) => ctrl.deleteCategoriaByDomainId(req as AuthenticatedRequest, res, next));
+  route.delete('/:id', isAuth, authorize([Role.Admin]), (req, res, next) => ctrl.deleteCategoriaByDomainId(req as AuthenticatedRequest, res, next));
 };
-

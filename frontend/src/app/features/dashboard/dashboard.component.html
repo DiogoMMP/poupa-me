@@ -81,78 +81,78 @@
       </div>
     </div>
 
-    <div class="second-row">
-      <!-- Transações Recentes - Esquerda -->
-      <div class="transacoes-section">
-        <div class="section-header">
-          <h3 class="section-title">Transações Recentes</h3>
-          <a class="link" href="/transacoes">Ver todas</a>
-        </div>
+    <ng-container *ngIf="cartoes$ | async as cartoes">
+      <div class="second-row" [class.second-row--single]="!cartoes || cartoes.length === 0">
 
-        <div class="transacoes-list">
-          <!-- Transação 1 - Saída -->
-          <div class="transacao-item card card--clickable">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transacao-icon saidas-icon">
-              <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-
-            <div class="transacao-details">
-              <p class="transacao-descricao text-large">Compra no Supermercado</p>
-              <span class="transacao-meta text-muted text-small">Supermercado • Conta Principal</span>
-            </div>
-
-            <div class="transacao-values">
-              <p class="transacao-valor text-large text-negative">- 150,00 €</p>
-              <span class="transacao-data text-muted text-small">10 Fev</span>
-            </div>
+        <!-- Transações Recentes - Esquerda -->
+        <div class="transacoes-section">
+          <div class="section-header">
+            <h3 class="section-title">Transações Recentes</h3>
+            <a class="link" href="/transacoes">Ver todas</a>
           </div>
 
-          <!-- Transação 2 - Entrada -->
-          <div class="transacao-item card card--clickable">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transacao-icon entradas-icon">
-              <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+          <div class="transacoes-list">
+            <!-- Transação 1 - Saída -->
+            <div class="transacao-item card card--clickable">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transacao-icon saidas-icon">
+                <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
 
-            <div class="transacao-details">
-              <p class="transacao-descricao text-large">Salário Mensal</p>
-              <span class="transacao-meta text-muted text-small">Ordenado • Conta Principal</span>
+              <div class="transacao-details">
+                <p class="transacao-descricao text-large">Compra no Supermercado</p>
+                <span class="transacao-meta text-muted text-small">Supermercado • Conta Principal</span>
+              </div>
+
+              <div class="transacao-values">
+                <p class="transacao-valor text-large text-negative">- 150,00 €</p>
+                <span class="transacao-data text-muted text-small">10 Fev</span>
+              </div>
             </div>
 
-            <div class="transacao-values">
-              <p class="transacao-valor text-large text-positive">+ 2.500,00 €</p>
-              <span class="transacao-data text-muted text-small">01 Fev</span>
+            <!-- Transação 2 - Entrada -->
+            <div class="transacao-item card card--clickable">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transacao-icon entradas-icon">
+                <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+
+              <div class="transacao-details">
+                <p class="transacao-descricao text-large">Salário Mensal</p>
+                <span class="transacao-meta text-muted text-small">Ordenado • Conta Principal</span>
+              </div>
+
+              <div class="transacao-values">
+                <p class="transacao-valor text-large text-positive">+ 2.500,00 €</p>
+                <span class="transacao-data text-muted text-small">01 Fev</span>
+              </div>
             </div>
-          </div>
 
-          <!-- Transação 3 - Saída -->
-          <div class="transacao-item card card--clickable">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transacao-icon saidas-icon">
-              <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <!-- Transação 3 - Saída -->
+            <div class="transacao-item card card--clickable">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transacao-icon saidas-icon">
+                <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
 
-            <div class="transacao-details">
-              <p class="transacao-descricao text-large">Restaurante</p>
-              <span class="transacao-meta text-muted text-small">Alimentação • Cartão Crédito</span>
-            </div>
+              <div class="transacao-details">
+                <p class="transacao-descricao text-large">Restaurante</p>
+                <span class="transacao-meta text-muted text-small">Alimentação • Cartão Crédito</span>
+              </div>
 
-            <div class="transacao-values">
-              <p class="transacao-valor text-large text-negative">- 45,00 €</p>
-              <span class="transacao-data text-muted text-small">08 Fev</span>
+              <div class="transacao-values">
+                <p class="transacao-valor text-large text-negative">- 45,00 €</p>
+                <span class="transacao-data text-muted text-small">08 Fev</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Cartões - Direita -->
-      <div class="cartoes-section">
-        <div class="section-header">
-          <h3 class="section-title">Cartões de Crédito</h3>
-          <a class="link" href="/cartoes-credito">Ver mais</a>
-        </div>
+        <!-- Cartões - Direita (only when we have cartoes) -->
+        <div class="cartoes-section" *ngIf="cartoes && cartoes.length > 0">
+          <div class="section-header">
+            <h3 class="section-title">Cartões de Crédito</h3>
+            <a class="link" href="/cartoes-credito">Ver mais</a>
+          </div>
 
-        <div class="cartoes-list">
-          <!-- dynamic cards from service (limit to first 2 to match current layout) -->
-          <ng-container *ngIf="(cartoes$ | async) as cartoes">
+          <div class="cartoes-list">
             <div *ngFor="let cartao of cartoes" class="cartao-item card">
               <div class="cartao-header">
                 <div class="cartao-icon">{{ cartao.icon }}</div>
@@ -172,9 +172,10 @@
                 <span class="text-muted text-small">{{ vm.getPercentagemUtilizada(cartao) | number:'1.0-0' }}% utilizado</span>
               </div>
             </div>
-          </ng-container>
+          </div>
         </div>
+
       </div>
-    </div>
+    </ng-container>
   </div>
 </section>
