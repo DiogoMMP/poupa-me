@@ -207,6 +207,76 @@ export default (app: Router) => {
 
   /**
    * @openapi
+   * /transacao/poupanca:
+   *   post:
+   *     tags:
+   *       - Transacao
+   *     summary: Create a Poupança (savings) transfer
+   *     description: |
+   *       Creates a new "Poupança" transaction which represents moving money into a savings account.
+   *       Requires authentication. The request body should contain the transaction data and the target savings account (contaPoupancaId).
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/TransacaoInput'
+   *           example:
+   *             data:
+   *               dia: 11
+   *               mes: 02
+   *               ano: 2026
+   *             descricao: "Transfer to savings"
+   *             valor:
+   *               valor: 200.00
+   *               moeda: "EUR"
+   *             categoriaId: "CAT00000000001"
+   *             contaId: "CNT00000000001"
+   *             contaPoupancaId: "CNT00000000002"
+   *     responses:
+   *       201:
+   *         description: Poupança created
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Transacao'
+   *       400:
+   *         description: Validation failed
+   */
+  route.post('/poupanca', isAuth, (req, res, next) => ctrl.createPoupanca(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
+   * /transacao/poupanca/concluir/{id}:
+   *   post:
+   *     tags:
+   *       - Transacao
+   *     summary: Conclude a Poupança transaction
+   *     description: |-
+   *       Concludes a savings transfer by changing status from "Pendente" to "Concluído"
+   *       and adding the amount to the savings account (contaPoupanca).
+   *       Requires authentication.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Domain ID of the Poupança transaction
+   *     responses:
+   *       200:
+   *         description: Poupança concluded successfully
+   *       400:
+   *         description: Invalid transaction or already concluded
+   */
+  route.post('/poupanca/concluir/:id', isAuth, (req, res, next) => ctrl.concluirPoupanca(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
    * /transacao/saida:
    *   post:
    *     tags:
@@ -409,6 +479,50 @@ export default (app: Router) => {
 
   /**
    * @openapi
+   * /transacao/all-conta:
+   *   get:
+   *     tags:
+   *       - Transacao
+   *     summary: Get ALL Entrada/Saída transactions across every account
+   *     description: Returns every conta-based transaction (Entrada and Saída) for the authenticated user, regardless of account. Requires authentication.
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of all conta transactions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Transacao'
+   */
+  route.get('/all-conta', isAuth, (req, res, next) => ctrl.getAllContaTransactions(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
+   * /transacao/all-cartao:
+   *   get:
+   *     tags:
+   *       - Transacao
+   *     summary: Get ALL Crédito/Reembolso transactions across every credit card
+   *     description: Returns every cartão-based transaction (Crédito and Reembolso) for the authenticated user, regardless of credit card. Requires authentication.
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of all cartão transactions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Transacao'
+   */
+  route.get('/all-cartao', isAuth, (req, res, next) => ctrl.getAllCartaoTransactions(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
    * /transacao/conta:
    *   get:
    *     tags:
@@ -502,17 +616,11 @@ export default (app: Router) => {
    *   get:
    *     tags:
    *       - Transacao
-   *     summary: Get Entrada/Saída transactions by category for a specific account
-   *     description: Returns conta transactions filtered by category for a specific account. Requires authentication.
+   *     summary: Get Entrada/Saída transactions by category across all accounts
+   *     description: Returns conta transactions filtered by category across all accounts of the user. Requires authentication.
    *     security:
    *       - bearerAuth: []
    *     parameters:
-   *       - in: query
-   *         name: contaId
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Domain ID of the Conta
    *       - in: query
    *         name: categoriaId
    *         required: true
@@ -537,17 +645,11 @@ export default (app: Router) => {
    *   get:
    *     tags:
    *       - Transacao
-   *     summary: Get Crédito/Reembolso transactions by category for a specific credit card
-   *     description: Returns cartão transactions filtered by category for a specific credit card. Requires authentication.
+   *     summary: Get Crédito/Reembolso transactions by category across all credit cards
+   *     description: Returns cartão transactions filtered by category across all credit cards of the user. Requires authentication.
    *     security:
    *       - bearerAuth: []
    *     parameters:
-   *       - in: query
-   *         name: cartaoCreditoId
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Domain ID of the CartaoCredito
    *       - in: query
    *         name: categoriaId
    *         required: true
@@ -609,17 +711,11 @@ export default (app: Router) => {
    *   get:
    *     tags:
    *       - Transacao
-   *     summary: Get Crédito/Reembolso transactions by status for a specific credit card
-   *     description: Returns Crédito and Reembolso transactions filtered by status for a specific credit card. Requires authentication.
+   *     summary: Get Crédito/Reembolso transactions by status across all credit cards
+   *     description: Returns Crédito and Reembolso transactions filtered by status across all credit cards of the user. Requires authentication.
    *     security:
    *       - bearerAuth: []
    *     parameters:
-   *       - in: query
-   *         name: cartaoCreditoId
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Domain ID of the CartaoCredito
    *       - in: query
    *         name: status
    *         required: true
@@ -681,19 +777,13 @@ export default (app: Router) => {
    *   get:
    *     tags:
    *       - Transacao
-   *     summary: Get Entrada/Saída transactions by predefined period for a specific account
+   *     summary: Get Entrada/Saída transactions by predefined period across all accounts
    *     description: |-
-   *       Returns conta transactions within a predefined period for a specific account. Requires authentication.
+   *       Returns conta transactions within a predefined period across all accounts of the user. Requires authentication.
    *       Valid periods: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
    *     security:
    *       - bearerAuth: []
    *     parameters:
-   *       - in: query
-   *         name: contaId
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Domain ID of the Conta
    *       - in: query
    *         name: period
    *         required: true
@@ -718,19 +808,13 @@ export default (app: Router) => {
    *   get:
    *     tags:
    *       - Transacao
-   *     summary: Get Crédito/Reembolso transactions by predefined period for a specific credit card
+   *     summary: Get Crédito/Reembolso transactions by predefined period across all credit cards
    *     description: |-
-   *       Returns cartão transactions within a predefined period for a specific credit card. Requires authentication.
+   *       Returns cartão transactions within a predefined period across all credit cards of the user. Requires authentication.
    *       Valid periods: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
    *     security:
    *       - bearerAuth: []
    *     parameters:
-   *       - in: query
-   *         name: cartaoCreditoId
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Domain ID of the CartaoCredito
    *       - in: query
    *         name: period
    *         required: true

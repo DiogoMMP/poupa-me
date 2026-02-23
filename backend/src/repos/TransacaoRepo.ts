@@ -109,6 +109,15 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 entityObj['contaDestinoId'] = contaDestinoRow.id;
             }
 
+            // If domain object contains contaPoupanca (for Poupança), resolve it
+            if ((transacao as unknown as Record<string, unknown>).contaPoupanca) {
+                const contaPoupancaDomain = (transacao as unknown as Record<string, unknown>).contaPoupanca as { id: { toString(): string } };
+                const contaRepo = this.dataSource.getRepository(ContaEntity);
+                const contaPoupancaRow = await contaRepo.findOne({ where: { domainId: contaPoupancaDomain.id.toString() } });
+                if (!contaPoupancaRow) throw new Error('ContaPoupanca (from domain) not found for transacao');
+                entityObj['contaPoupancaId'] = contaPoupancaRow.id;
+            }
+
             // determine userDomainId: prefer explicit value from mapped raw, otherwise derive from contaRow.userDomainId if available
             const userDomainIdVal = userDomainId ?? (contaRow ? contaRow.userDomainId : undefined) ?? (raw['user_domain_id'] ?? raw['userId'] ?? raw['userDomainId']);
 
@@ -140,7 +149,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
             if (!saved) throw new Error('Failed to save transacao');
 
             // Re-fetch with relations to ensure categoria relation is present and DB types are accurate
-            const persisted = await this.repo.findOne({ where: { id: (saved as TransacaoEntity).id }, relations: ['categoria', 'conta', 'cartaoCredito'] });
+            const persisted = await this.repo.findOne({ where: { id: (saved as TransacaoEntity).id }, relations: ['categoria', 'conta', 'contaDestino', 'contaPoupanca', 'cartaoCredito'] });
             if (!persisted) throw new Error('Failed to re-fetch saved transacao');
 
             // map persisted entity to domain; include userDomainId explicitly
@@ -149,6 +158,8 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 user_domain_id: (persisted as TransacaoEntity).userDomainId,
                 categoria: (persisted as TransacaoEntity).categoria ?? categoriaRow,
                 conta: (persisted as TransacaoEntity).conta ?? undefined,
+                contaDestino: (persisted as TransacaoEntity).contaDestino ?? undefined,
+                contaPoupanca: (persisted as TransacaoEntity).contaPoupanca ?? undefined,
                 cartaoCredito: (persisted as TransacaoEntity).cartaoCredito ?? undefined
             };
 
@@ -222,6 +233,15 @@ export default class TransacaoRepo implements ITransacaoRepo {
                     if (!contaDestinoRowForUpdate) throw new Error('Conta destino not found for transacao');
                 }
 
+                // Resolve contaPoupanca if provided (for Poupança)
+                let contaPoupancaRowForUpdate: ContaEntity | null = null;
+                const contaPoupancaDomainIdForUpdate = raw['contaPoupancaId'] ?? raw['conta_poupanca_id'] ?? null;
+                if (contaPoupancaDomainIdForUpdate) {
+                    const contaRepo = this.dataSource.getRepository(ContaEntity);
+                    contaPoupancaRowForUpdate = await contaRepo.findOne({ where: { domainId: String(contaPoupancaDomainIdForUpdate) } });
+                    if (!contaPoupancaRowForUpdate) throw new Error('Conta poupanca not found for transacao');
+                }
+
                 // Resolve cartaoCredito if provided
                 let cartaoRowForUpdate = null;
                 const cartaoDomainIdForUpdate = raw['cartaoCreditoId'] ?? raw['cartao_credito_id'] ?? raw['cartaoCredito'] ?? null;
@@ -246,6 +266,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 // Only update foreign keys if they were provided (to avoid overwriting with null)
                 if (contaRowForUpdate !== null) updateSet['contaId'] = contaRowForUpdate.id;
                 if (contaDestinoRowForUpdate !== null) updateSet['contaDestinoId'] = contaDestinoRowForUpdate.id;
+                if (contaPoupancaRowForUpdate !== null) updateSet['contaPoupancaId'] = contaPoupancaRowForUpdate.id;
                 if (cartaoRowForUpdate !== null) updateSet['cartaoCreditoId'] = cartaoRowForUpdate.id;
 
                 await this.repo.createQueryBuilder()
@@ -256,7 +277,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
 
                 const saved = await this.repo.findOne({
                     where: { domainId: raw['domainId'] as string },
-                    relations: ['categoria', 'conta', 'contaDestino', 'cartaoCredito']
+                    relations: ['categoria', 'conta', 'contaDestino', 'contaPoupanca', 'cartaoCredito']
                 });
                 if (!saved) throw new Error('Failed to find updated transacao by domainId');
                 const savedRaw: Record<string, unknown> = {
@@ -265,6 +286,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                     categoria: (saved as TransacaoEntity).categoria ?? categoriaRow,
                     conta: (saved as TransacaoEntity).conta ?? undefined,
                     contaDestino: (saved as TransacaoEntity).contaDestino ?? undefined,
+                    contaPoupanca: (saved as TransacaoEntity).contaPoupanca ?? undefined,
                     cartaoCredito: (saved as TransacaoEntity).cartaoCredito ?? undefined
                 };
                 const domain = await TransacaoMap.toDomain(savedRaw);
@@ -473,10 +495,10 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 .leftJoinAndSelect('t.categoria', 'c')
                 .leftJoinAndSelect('t.conta', 'co')
                 .leftJoinAndSelect('t.cartaoCredito', 'cc')
-                .where('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída', 'Reembolso'] })
+                .where('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] })
                 .andWhere('co.domain_id = :contaId', { contaId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
             const res: Transacao[] = [];
             for (const r of rows) {
@@ -506,7 +528,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 .where('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] })
                 .andWhere('cc.domain_id = :cartaoCreditoId', { cartaoCreditoId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
             const res: Transacao[] = [];
             for (const r of rows) {
@@ -534,10 +556,11 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 .leftJoinAndSelect('t.categoria', 'c')
                 .leftJoinAndSelect('t.conta', 'co')
                 .leftJoinAndSelect('t.contaDestino', 'cd')
-                .where('t.tipo = :tipo', { tipo: 'Despesa Mensal' })
+                .leftJoinAndSelect('t.contaPoupanca', 'cp')
+                .where('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
                 .andWhere('co.domain_id = :contaId', { contaId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
             const res: Transacao[] = [];
             for (const r of rows) {
@@ -554,32 +577,86 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds Entrada/Saída/Reembolso transactions by categoria for a specific account.
-     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
-     * @param contaId - The domain ID of the Conta to filter transactions by.
-     * @param categoriaId - The domain ID of the Categoria to filter Transacao records by.
-     * @param userId - Optional user ID to scope the search to a specific user's transactions.
+     * Finds ALL Entrada and Saída transactions across every account belonging to the user.
+     * @param userId - Optional user ID to scope the search.
      */
-    public async findContaTransactionsByCategoria(contaId: string, categoriaId: string, userId?: string): Promise<Transacao[]> {
+    public async findAllContaTransactions(userId?: string, bancoId?: string): Promise<Transacao[]> {
         try {
-             const qb = this.repo.createQueryBuilder('t')
-                 .leftJoinAndSelect('t.categoria', 'c')
-                 .leftJoinAndSelect('t.conta', 'co')
-                 .leftJoinAndSelect('t.cartaoCredito', 'cc')
-                 .where('c.domain_id = :domainId', { domainId: categoriaId })
-                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída', 'Reembolso'] })
-                 .andWhere('co.domain_id = :contaId', { contaId });
+            const qb = this.repo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.conta', 'co')
+                .where('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            if (bancoId) qb.andWhere('co.banco_id = :bancoId', { bancoId });
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
-             const res: Transacao[] = [];
-             for (const r of rows) {
+            const res: Transacao[] = [];
+            for (const r of rows) {
                 const rowEntity = r as TransacaoEntity;
                 const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
                 const d = await TransacaoMap.toDomain(raw);
-                 if (d) res.push(d);
-             }
-             return res;
+                if (d) res.push(d);
+            }
+            return res;
+        } catch (err) {
+            this.logger.error('TransacaoRepo.findAllContaTransactions error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Finds ALL Crédito and Reembolso transactions across every credit card belonging to the user.
+     * @param userId - Optional user ID to scope the search.
+     */
+    public async findAllCartaoTransactions(userId?: string, bancoId?: string): Promise<Transacao[]> {
+        try {
+            const qb = this.repo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.cartaoCredito', 'cc')
+                .where('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] });
+            if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
+            if (bancoId) qb.andWhere('cc.banco_id = :bancoId', { bancoId });
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
+
+            const res: Transacao[] = [];
+            for (const r of rows) {
+                const rowEntity = r as TransacaoEntity;
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
+                const d = await TransacaoMap.toDomain(raw);
+                if (d) res.push(d);
+            }
+            return res;
+        } catch (err) {
+            this.logger.error('TransacaoRepo.findAllCartaoTransactions error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Finds Entrada/Saída transactions by categoria across all accounts.
+     * @param categoriaId - The domain ID of the Categoria to filter Transacao records by.
+     * @param userId - Optional user ID to scope the search to a specific user's transactions.
+     */
+    public async findContaTransactionsByCategoria(categoriaId: string, userId?: string, bancoId?: string): Promise<Transacao[]> {
+        try {
+            const qb = this.repo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.conta', 'co')
+                .leftJoinAndSelect('t.cartaoCredito', 'cc')
+                .where('c.domain_id = :domainId', { domainId: categoriaId })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] });
+            if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
+            if (bancoId) qb.andWhere('co.banco_id = :bancoId', { bancoId });
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
+
+            const res: Transacao[] = [];
+            for (const r of rows) {
+                const rowEntity = r as TransacaoEntity;
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
+                const d = await TransacaoMap.toDomain(raw);
+                if (d) res.push(d);
+            }
+            return res;
         } catch (err) {
             this.logger.error('TransacaoRepo.findContaTransactionsByCategoria error: %o', err);
             throw err;
@@ -587,22 +664,20 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds Crédito/Reembolso transactions by categoria for a specific credit card.
-     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
-     * @param cartaoCreditoId - The domain ID of the CartaoCredito to filter transactions by.
+     * Finds Crédito/Reembolso transactions by categoria across all credit cards.
      * @param categoriaId - The domain ID of the Categoria to filter Transacao records by.
      * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findCartaoTransactionsByCategoria(cartaoCreditoId: string, categoriaId: string, userId?: string): Promise<Transacao[]> {
+    public async findCartaoTransactionsByCategoria(categoriaId: string, userId?: string, bancoId?: string): Promise<Transacao[]> {
         try {
              const qb = this.repo.createQueryBuilder('t')
                  .leftJoinAndSelect('t.categoria', 'c')
                  .leftJoinAndSelect('t.cartaoCredito', 'cc')
                  .where('c.domain_id = :domainId', { domainId: categoriaId })
-                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] })
-                 .andWhere('cc.domain_id = :cartaoCreditoId', { cartaoCreditoId });
+                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            if (bancoId) qb.andWhere('cc.banco_id = :bancoId', { bancoId });
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
              const res: Transacao[] = [];
              for (const r of rows) {
@@ -631,11 +706,12 @@ export default class TransacaoRepo implements ITransacaoRepo {
                  .leftJoinAndSelect('t.categoria', 'c')
                  .leftJoinAndSelect('t.conta', 'co')
                  .leftJoinAndSelect('t.contaDestino', 'cd')
+                 .leftJoinAndSelect('t.contaPoupanca', 'cp')
                  .where('c.domain_id = :domainId', { domainId: categoriaId })
-                 .andWhere('t.tipo = :tipo', { tipo: 'Despesa Mensal' })
+                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
                  .andWhere('co.domain_id = :contaId', { contaId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
              const res: Transacao[] = [];
              for (const r of rows) {
@@ -652,22 +728,20 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds Crédito and Reembolso transactions by status for a specific credit card.
-     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
-     * @param cartaoCreditoId - The domain ID of the CartaoCredito to filter transactions by.
+     * Finds Crédito and Reembolso transactions by status across all credit cards.
      * @param status - The status value to filter Transacao records by (e.g., "Concluído", "Pendente").
      * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findCartaoTransactionsByStatus(cartaoCreditoId: string, status: string, userId?: string): Promise<Transacao[]> {
+    public async findCartaoTransactionsByStatus(status: string, userId?: string, bancoId?: string): Promise<Transacao[]> {
         try {
             const qb = this.repo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
                 .leftJoinAndSelect('t.cartaoCredito', 'cc')
                 .where('t.status = :status', { status })
-                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] })
-                .andWhere('cc.domain_id = :cartaoCreditoId', { cartaoCreditoId });
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            if (bancoId) qb.andWhere('cc.banco_id = :bancoId', { bancoId });
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
             const res: Transacao[] = [];
             for (const r of rows) {
                 const rowEntity = r as TransacaoEntity;
@@ -695,11 +769,12 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 .leftJoinAndSelect('t.categoria', 'c')
                 .leftJoinAndSelect('t.conta', 'co')
                 .leftJoinAndSelect('t.contaDestino', 'cd')
+                .leftJoinAndSelect('t.contaPoupanca', 'cp')
                 .where('t.status = :status', { status })
-                .andWhere('t.tipo = :tipo', { tipo: 'Despesa Mensal' })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
                 .andWhere('co.domain_id = :contaId', { contaId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
             const res: Transacao[] = [];
             for (const r of rows) {
                 const rowEntity = r as TransacaoEntity;
@@ -715,14 +790,11 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds Entrada/Saída/Reembolso transactions by predefined period for a specific account.
-     * Accepts: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'.
-     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
-     * @param contaId - The domain ID of the Conta to filter transactions by.
+     * Finds Entrada/Saída transactions by predefined period across all accounts.
      * @param period - The period to filter by
      * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findContaTransactionsByPeriod(contaId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Transacao[]> {
+    public async findContaTransactionsByPeriod(period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string, bancoId?: string): Promise<Transacao[]> {
         try {
             const now = new Date();
             let startDate: Date;
@@ -741,15 +813,18 @@ export default class TransacaoRepo implements ITransacaoRepo {
                     startDate = new Date(now.getFullYear(), now.getMonth(), 1);
             }
 
+            const startInt = startDate.getFullYear() * 10000 + (startDate.getMonth() + 1) * 100 + startDate.getDate();
+            const endInt = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+
             const qb = this.repo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
                 .leftJoinAndSelect('t.conta', 'co')
                 .leftJoinAndSelect('t.cartaoCredito', 'cc')
-                .where('t.created_at >= :start', { start: startDate })
-                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída', 'Reembolso'] })
-                .andWhere('co.domain_id = :contaId', { contaId });
+                .where('(t.ano * 10000 + t.mes * 100 + t.dia) >= :startInt AND (t.ano * 10000 + t.mes * 100 + t.dia) <= :endInt', { startInt, endInt })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            if (bancoId) qb.andWhere('co.banco_id = :bancoId', { bancoId });
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
             const res: Transacao[] = [];
             for (const r of rows) {
@@ -766,14 +841,11 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds Crédito/Reembolso transactions by predefined period for a specific credit card.
-     * Accepts: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'.
-     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
-     * @param cartaoCreditoId - The domain ID of the CartaoCredito to filter transactions by.
+     * Finds Crédito/Reembolso transactions by predefined period across all credit cards.
      * @param period - The period to filter by
      * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findCartaoTransactionsByPeriod(cartaoCreditoId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Transacao[]> {
+    public async findCartaoTransactionsByPeriod(period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string, bancoId?: string): Promise<Transacao[]> {
         try {
             const now = new Date();
             let startDate: Date;
@@ -792,14 +864,17 @@ export default class TransacaoRepo implements ITransacaoRepo {
                     startDate = new Date(now.getFullYear(), now.getMonth(), 1);
             }
 
+            const startInt = startDate.getFullYear() * 10000 + (startDate.getMonth() + 1) * 100 + startDate.getDate();
+            const endInt = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+
             const qb = this.repo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
                 .leftJoinAndSelect('t.cartaoCredito', 'cc')
-                .where('t.created_at >= :start', { start: startDate })
-                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] })
-                .andWhere('cc.domain_id = :cartaoCreditoId', { cartaoCreditoId });
+                .where('(t.ano * 10000 + t.mes * 100 + t.dia) >= :startInt AND (t.ano * 10000 + t.mes * 100 + t.dia) <= :endInt', { startInt, endInt })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            if (bancoId) qb.andWhere('cc.banco_id = :bancoId', { bancoId });
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
             const res: Transacao[] = [];
             for (const r of rows) {
@@ -842,15 +917,19 @@ export default class TransacaoRepo implements ITransacaoRepo {
                     startDate = new Date(now.getFullYear(), now.getMonth(), 1);
             }
 
+            const startInt = startDate.getFullYear() * 10000 + (startDate.getMonth() + 1) * 100 + startDate.getDate();
+            const endInt = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+
             const qb = this.repo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
                 .leftJoinAndSelect('t.conta', 'co')
                 .leftJoinAndSelect('t.contaDestino', 'cd')
-                .where('t.created_at >= :start', { start: startDate })
-                .andWhere('t.tipo = :tipo', { tipo: 'Despesa Mensal' })
+                .leftJoinAndSelect('t.contaPoupanca', 'cp')
+                .where('(t.ano * 10000 + t.mes * 100 + t.dia) >= :startInt AND (t.ano * 10000 + t.mes * 100 + t.dia) <= :endInt', { startInt, endInt })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
                 .andWhere('co.domain_id = :contaId', { contaId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
-            const rows = await qb.orderBy('t.id', 'DESC').getMany();
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
             const res: Transacao[] = [];
             for (const r of rows) {
@@ -870,7 +949,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
         try {
             const rows = await this.repo.find({
                 where: {userDomainId: userId},
-                relations: ['categoria', 'conta', 'contaDestino', 'cartaoCredito'],
+                relations: ['categoria', 'conta', 'contaDestino', 'contaPoupanca', 'cartaoCredito'],
                 order: {id: 'DESC'}
             });
             const res: Transacao[] = [];

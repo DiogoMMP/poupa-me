@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import type { AuthenticatedRequest } from '../api/middlewares/isAuth.js';
+import { type AuthenticatedRequest, getEffectiveUserId } from '../api/middlewares/isAuth.js';
 import { Service, Inject } from 'typedi';
 import type IContaController from './IControllers/IContaController.js';
 import type IContaService from '../services/IServices/IContaService.js';
@@ -104,8 +104,8 @@ export default class ContaController implements IContaController {
      */
     public async getAllContas(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            // Always use the authenticated user's id from the session/JWT. Do not accept userId from query.
-            const userId = (req as AuthenticatedRequest).currentUser?.id as string | undefined;
+            // Admins get undefined so no userId filter is applied (see all contas)
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
             const bancoId = req.query.bancoId as string | undefined;
             const result = await this.contaService.findAllContas(userId, bancoId);
             if (result.isFailure) return res.status(400).json({ error: result.error });

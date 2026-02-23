@@ -16,6 +16,8 @@ interface DespesaRecorrenteProps {
     categoriaId: UniqueEntityID;
     contaOrigemId: UniqueEntityID;      // De onde sai o dinheiro (Saldo Real)
     contaDestinoId: UniqueEntityID;     // Para onde vai (Conta de Despesas Mensais)
+    contaPoupancaId?: UniqueEntityID;   // Only for Poupança type recurrences
+    tipo?: 'Despesa Mensal' | 'Poupança'; // default: 'Despesa Mensal'
     ultimoProcessamento: Date | null;
     ativo: boolean;
 }
@@ -52,6 +54,14 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
 
     get contaDestinoId(): UniqueEntityID {
         return this.props.contaDestinoId;
+    }
+
+    get contaPoupancaId(): UniqueEntityID | undefined {
+        return this.props.contaPoupancaId;
+    }
+
+    get tipo(): 'Despesa Mensal' | 'Poupança' {
+        return this.props.tipo ?? 'Despesa Mensal';
     }
 
     get ultimoProcessamento(): Date | null {
@@ -111,9 +121,15 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
             return Result.fail<DespesaRecorrente>('diaDoMes must be between 1 and 31');
         }
 
+        // Poupança requires contaPoupancaId
+        if (props.tipo === 'Poupança' && !props.contaPoupancaId) {
+            return Result.fail<DespesaRecorrente>('contaPoupancaId is required for Poupança recurrence');
+        }
+
         // Default values
         const defaultProps: DespesaRecorrenteProps = {
             ...props,
+            tipo: props.tipo ?? 'Despesa Mensal',
             ultimoProcessamento: props.ultimoProcessamento ?? null,
             ativo: props.ativo ?? true
         };

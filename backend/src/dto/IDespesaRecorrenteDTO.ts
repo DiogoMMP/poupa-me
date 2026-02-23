@@ -12,27 +12,25 @@ export interface IDespesaRecorrenteDTO {
     categoriaId: string;
     contaOrigemId: string;
     contaDestinoId: string;
+    contaPoupancaId?: string;
+    tipo: 'Despesa Mensal' | 'Poupança';
     ultimoProcessamento: Date | null;
     ativo: boolean;
 }
 
-/**
- * DTO para criar DespesaRecorrente
- */
 export interface ICreateDespesaRecorrenteDTO {
-    userId?: string; // Optional - filled from authenticated user
+    userId?: string;
     nome: string;
     valor: IDinheiroProps;
     diaDoMes: number;
     categoriaId: string;
     contaOrigemId: string;
     contaDestinoId: string;
+    contaPoupancaId?: string;
+    tipo?: 'Despesa Mensal' | 'Poupança';
     ativo?: boolean;
 }
 
-/**
- * DTO para atualizar DespesaRecorrente
- */
 export interface IUpdateDespesaRecorrenteDTO {
     nome?: string;
     valor?: IDinheiroProps;
@@ -40,6 +38,8 @@ export interface IUpdateDespesaRecorrenteDTO {
     categoriaId?: string;
     contaOrigemId?: string;
     contaDestinoId?: string;
+    contaPoupancaId?: string;
+    tipo?: 'Despesa Mensal' | 'Poupança';
     ativo?: boolean;
 }
 

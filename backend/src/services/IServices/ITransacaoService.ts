@@ -52,6 +52,19 @@ export default interface ITransacaoService {
     concluirDespesaMensal(transacaoId: string): Promise<Result<ITransacaoDTO>>;
 
     /**
+     * Create and persist a Savings transfer transaction (Poupança).
+     * Transfers money from origin account to a savings account (contaPoupanca).
+     * @param inputDTO - Input data (requires contaId origin and contaPoupancaId destination).
+     */
+    createPoupanca(inputDTO: ITransacaoInputDTO): Promise<Result<ITransacaoDTO>>;
+
+    /**
+     * Conclude a Poupança transaction (change from Pendente to Concluído and add to savings account).
+     * @param transacaoId - The domain ID of the Poupança transaction to conclude.
+     */
+    concluirPoupanca(transacaoId: string): Promise<Result<ITransacaoDTO>>;
+
+    /**
      * Update an existing Transacao identified by its domain id.
      * @param id - The domain id of the transaction to update.
      * @param updateDTO - Partial properties to update on the transaction.
@@ -93,23 +106,37 @@ export default interface ITransacaoService {
      */
     findDespesaMensal(contaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
 
+    /**
+     * Find ALL Entrada/Saída transactions across every account (no contaId filter).
+     * @param userId - Optional user id to scope the search to a specific user's transactions.
+     * @param bancoId - Optional banco domain id to filter by bank.
+     */
+    findAllContaTransactions(userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>>;
+
+    /**
+     * Find ALL Crédito/Reembolso transactions across every credit card (no cartaoCreditoId filter).
+     * @param userId - Optional user id to scope the search to a specific user's transactions.
+     * @param bancoId - Optional banco domain id to filter by bank.
+     */
+    findAllCartaoTransactions(userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>>;
+
     // --- Filter by categoria (one per type) ---
 
     /**
-     * Find Entrada/Saída transactions by category for a specific account.
-     * @param contaId - The domain id of the Conta to filter transactions by.
+     * Find Entrada/Saída transactions by category across all accounts.
      * @param categoriaId - Category domain id used to filter transactions.
      * @param userId - Optional user id to scope the search to a specific user's transactions.
+     * @param bancoId - Optional banco domain id to filter by bank.
      */
-    findContaTransactionsByCategoria(contaId: string, categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findContaTransactionsByCategoria(categoriaId: string, userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
-     * Find Crédito/Reembolso transactions by category for a specific credit card.
-     * @param cartaoCreditoId - The domain id of the CartaoCredito to filter transactions by.
+     * Find Crédito/Reembolso transactions by category across all credit cards.
      * @param categoriaId - Category domain id used to filter transactions.
      * @param userId - Optional user id to scope the search to a specific user's transactions.
+     * @param bancoId - Optional banco domain id to filter by bank.
      */
-    findCartaoTransactionsByCategoria(cartaoCreditoId: string, categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findCartaoTransactionsByCategoria(categoriaId: string, userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
      * Find Despesa Mensal transactions by category for a specific account.
@@ -122,12 +149,12 @@ export default interface ITransacaoService {
     // --- Filter by status (one for cartão, one for despesa mensal) ---
 
     /**
-     * Find Crédito and Reembolso transactions by status for a specific credit card.
-     * @param cartaoCreditoId - The domain id of the CartaoCredito to filter transactions by.
+     * Find Crédito and Reembolso transactions by status across all credit cards.
      * @param status - The status value used to filter transactions (e.g., "Pendente", "Concluído").
      * @param userId - Optional user id to scope the search to a specific user's transactions.
+     * @param bancoId - Optional banco domain id to filter by bank.
      */
-    findCartaoTransactionsByStatus(cartaoCreditoId: string, status: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findCartaoTransactionsByStatus(status: string, userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
      * Find Despesa Mensal transactions by status for a specific account.
@@ -140,20 +167,20 @@ export default interface ITransacaoService {
     // --- Filter by period (one per type) ---
 
     /**
-     * Find Entrada/Saída transactions by predefined period for a specific account.
-     * @param contaId - The domain id of the Conta to filter transactions by.
+     * Find Entrada/Saída transactions by predefined period across all accounts.
      * @param period - Predefined period: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
      * @param userId - Optional user id to scope the search to a specific user's transactions.
+     * @param bancoId - Optional banco domain id to filter by bank.
      */
-    findContaTransactionsByPeriod(contaId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findContaTransactionsByPeriod(period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
-     * Find Crédito/Reembolso transactions by predefined period for a specific credit card.
-     * @param cartaoCreditoId - The domain id of the CartaoCredito to filter transactions by.
+     * Find Crédito/Reembolso transactions by predefined period across all credit cards.
      * @param period - Predefined period: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
      * @param userId - Optional user id to scope the search to a specific user's transactions.
+     * @param bancoId - Optional banco domain id to filter by bank.
      */
-    findCartaoTransactionsByPeriod(cartaoCreditoId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findCartaoTransactionsByPeriod(period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
      * Find Despesa Mensal transactions by predefined period for a specific account.

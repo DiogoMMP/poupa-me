@@ -1,0 +1,10 @@
+.field-error {
+  color: #b00020;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.form-field .form-input.ng-touched.ng-invalid {
+  border-color: #b00020;
+}
+

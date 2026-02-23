@@ -29,6 +29,8 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
             if (nomeOrError.isFailure) return Result.fail<IDespesaRecorrenteDTO>(String(nomeOrError.error));
             if (valorOrError.isFailure) return Result.fail<IDespesaRecorrenteDTO>(String(valorOrError.error));
 
+            const tipo = dto.tipo ?? 'Despesa Mensal';
+
             const props = {
                 userId: new UniqueEntityID(userId),
                 nome: nomeOrError.getValue(),
@@ -37,6 +39,8 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
                 categoriaId: new UniqueEntityID(dto.categoriaId),
                 contaOrigemId: new UniqueEntityID(dto.contaOrigemId),
                 contaDestinoId: new UniqueEntityID(dto.contaDestinoId),
+                contaPoupancaId: dto.contaPoupancaId ? new UniqueEntityID(dto.contaPoupancaId) : undefined,
+                tipo,
                 ultimoProcessamento: null,
                 ativo: dto.ativo ?? true
             };
@@ -57,7 +61,6 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
             const existing = await this.despesaRepo.findById(despesaId);
             if (!existing) return Result.fail<IDespesaRecorrenteDTO>('Despesa not found');
 
-            // Authorization
             if (existing.userId.toString() !== userId) return Result.fail<IDespesaRecorrenteDTO>('Unauthorized');
 
             const nomeOrError = dto.nome ? Nome.create(dto.nome) : Result.ok<Nome>(existing.nome);
@@ -76,6 +79,8 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
                 categoriaId: dto.categoriaId ? new UniqueEntityID(dto.categoriaId) : existing.categoriaId,
                 contaOrigemId: dto.contaOrigemId ? new UniqueEntityID(dto.contaOrigemId) : existing.contaOrigemId,
                 contaDestinoId: dto.contaDestinoId ? new UniqueEntityID(dto.contaDestinoId) : existing.contaDestinoId,
+                contaPoupancaId: dto.contaPoupancaId ? new UniqueEntityID(dto.contaPoupancaId) : existing.contaPoupancaId,
+                tipo: dto.tipo ?? existing.tipo,
                 ultimoProcessamento: existing.ultimoProcessamento,
                 ativo: dto.ativo !== undefined ? dto.ativo : existing.ativo
             };
@@ -179,8 +184,7 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
      */
     private async gerarTransacao(regra: DespesaRecorrente, _mes: number, _ano: number, hoje: Date): Promise<void> {
         try {
-            // Prepare DTO for createDespesaMensal
-            const despesaMensalDTO = {
+            const baseDTO = {
                 data: {
                     dia: hoje.getDate(),
                     mes: hoje.getMonth() + 1,
@@ -192,16 +196,29 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
                     moeda: regra.valor.moeda
                 },
                 categoriaId: regra.categoriaId.toString(),
-                contaId: regra.contaOrigemId.toString(),           // Origem (saldo real)
-                contaDestinoId: regra.contaDestinoId.toString(),   // Destino (despesas mensais)
+                contaId: regra.contaOrigemId.toString(),
                 userId: regra.userId.toString()
             };
 
-            // Call the existing TransacaoService method to create Despesa Mensal
-            const result = await this.transacaoService.createDespesaMensal(despesaMensalDTO);
+            let result;
+            if (regra.tipo === 'Poupança') {
+                if (!regra.contaPoupancaId) {
+                    this.logger.error('DespesaRecorrenteService.gerarTransacao: Poupança regra missing contaPoupancaId');
+                    return;
+                }
+                result = await this.transacaoService.createPoupanca({
+                    ...baseDTO,
+                    contaPoupancaId: regra.contaPoupancaId.toString()
+                });
+            } else {
+                result = await this.transacaoService.createDespesaMensal({
+                    ...baseDTO,
+                    contaDestinoId: regra.contaDestinoId.toString()
+                });
+            }
 
             if (result.isFailure) {
-                this.logger.error('DespesaRecorrenteService.gerarTransacao: TransacaoService.createDespesaMensal failed: %s', result.error);
+                this.logger.error('DespesaRecorrenteService.gerarTransacao: failed: %s', result.error);
                 return;
             }
 

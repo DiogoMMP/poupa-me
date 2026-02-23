@@ -68,7 +68,7 @@ export default class ImportService implements IImportService {
 
     private cleanName(name: string): string {
         if (!name) return '';
-        let cleaned = name.replace(/<[^>]*>/g, '');
+        let cleaned = name.normalize('NFC').replace(/<[^>]*>/g, '');
         cleaned = cleaned.replace(/\([^)]*\)/g, '');
         return cleaned.trim();
     }
@@ -92,6 +92,31 @@ export default class ImportService implements IImportService {
             result.push(row);
         }
         return result;
+    }
+
+    // --- CONSTANTS ---
+
+    /** Names that are always treated as Monthly Expense (one per month, Exit + Entry pair) */
+    private readonly DESPESA_MENSAL_NAMES = [
+        'vodafone', 'luz', 'água', 'agua', 'gás', 'gas',
+        'seguro multirriscos', 'seguro de recheio', 'prestação da casa', 'prestacao da casa',
+        'nos pais', 'associação vencedora', 'associacao vencedora', 'associacao', 'associação', 'seguro vida'
+    ];
+
+    private isDespesaMensalName(name: string): boolean {
+        const lower = name.normalize('NFC').toLowerCase().trim();
+        return this.DESPESA_MENSAL_NAMES.some(dm => {
+            const dmNorm = dm.normalize('NFC');
+            return lower === dmNorm || lower.startsWith(dmNorm);
+        });
+    }
+
+    /** Names that are always treated as Savings (savings transfer, one per month) */
+    private readonly POUPANCA_NAMES = ['conta poupança', 'conta poupanca'];
+
+    private isPoupancaName(name: string): boolean {
+        const lower = name.toLowerCase().trim();
+        return this.POUPANCA_NAMES.some(p => lower === p || lower.startsWith(p));
     }
 
     // --- IMPORT METHODS ---
@@ -123,16 +148,7 @@ export default class ImportService implements IImportService {
                         c.nome.value.toLowerCase() === contaName.toLowerCase()
                     );
 
-                    if (existingCartao) {
-                        // Update used balance if needed
-                        const diferenca = balance - existingCartao.saldoUtilizado.value;
-                        if (diferenca !== 0) {
-                            const diffDinheiro = Dinheiro.create(Math.abs(diferenca), 'EUR').getValue();
-                            if (diferenca > 0) existingCartao.adicionarUtilizacao(diffDinheiro);
-                            else existingCartao.reduzirUtilizacao(diffDinheiro);
-                            await this.cartaoRepo.save(existingCartao);
-                        }
-                    } else {
+                    if (!existingCartao) {
                         // Create new CartaoCredito
                         // Default: credit limit = balance * 2 (or reasonable default)
                         const limiteCredito = Dinheiro.create(Math.max(balance * 2, 1000), 'EUR');
@@ -169,15 +185,7 @@ export default class ImportService implements IImportService {
                         c.nome.value.toLowerCase() === contaName.toLowerCase()
                     );
 
-                    if (existingConta) {
-                        const diferenca = balance - existingConta.saldo.value;
-                        if (diferenca !== 0) {
-                            const diffDinheiro = Dinheiro.create(Math.abs(diferenca), 'EUR').getValue();
-                            if (diferenca > 0) existingConta.adicionarSaldo(diffDinheiro);
-                            else existingConta.subtrairSaldo(diffDinheiro);
-                            await this.contaRepo.save(existingConta);
-                        }
-                    } else {
+                    if (!existingConta) {
                         const novoSaldo = Dinheiro.create(balance, 'EUR');
                         const nome = Nome.create(contaName);
                         const icon = Icon.create(iconName);
@@ -206,24 +214,51 @@ export default class ImportService implements IImportService {
     }
 
     public async importEntradas(csvContent: string, userId: string, periodo?: { inicio: Date; fim: Date }): Promise<Result<void>> {
-        // Delegate to unified import method with 'entradas' type
         return this.importTransacoes(csvContent, userId, 'entradas', periodo);
     }
 
-    public async importSaidas(csvContent: string, userId: string): Promise<Result<void>> {
-        // Delegate to unified import method with 'saidas' type
-        return this.importTransacoes(csvContent, userId, 'saidas');
+    public async importSaidas(csvContent: string, userId: string, entradasVistas?: Set<string>): Promise<Result<void>> {
+        return this.importTransacoes(csvContent, userId, 'saidas', undefined, entradasVistas);
     }
 
     /**
-     * Unified method to import transactions (entradas or saidas)
-     * Automatically detects origin and destination accounts based on transaction type
+     * Imports entries and exits together, sharing session state for correct status detection.
+     * This method processes entries first, then exits using the collected session state.
+     */
+    public async importTransacoesCompleto(
+        entradasCsv: string | undefined,
+        saidasCsv: string | undefined,
+        userId: string,
+        periodo?: { inicio: Date; fim: Date }
+    ): Promise<Result<string[]>> {
+        const entradasVistas = new Set<string>();
+        const results: string[] = [];
+
+        if (entradasCsv) {
+            const r = await this.importTransacoes(entradasCsv, userId, 'entradas', periodo, entradasVistas);
+            if (r.isFailure) return Result.fail<string[]>(`Entradas: ${r.error}`);
+            results.push('entradas');
+        }
+
+        if (saidasCsv) {
+            const r = await this.importTransacoes(saidasCsv, userId, 'saidas', undefined, entradasVistas);
+            if (r.isFailure) return Result.fail<string[]>(`Saídas: ${r.error}`);
+            results.push('saídas');
+        }
+
+        return Result.ok<string[]>(results);
+    }
+
+    /**
+     * Unified method to import transactions (entries or exits).
+     * 'entradasVistas' is a session-level set of keys used to match entries when processing exits.
      */
     private async importTransacoes(
         csvContent: string,
         userId: string,
         fileType: 'entradas' | 'saidas',
-        periodo?: { inicio: Date; fim: Date }
+        periodo?: { inicio: Date; fim: Date },
+        entradasVistas?: Set<string>
     ): Promise<Result<void>> {
         try {
             const rows = this.parseCSV(csvContent);
@@ -234,6 +269,32 @@ export default class ImportService implements IImportService {
             const existingCartoes = await this.cartaoRepo.findAll(userId);
             const allTransacoes = await this.transacaoRepo.findAll(userId);
 
+            // Session set to accumulate seen entries/exits for status matching
+            const entradasVistasSessao: Set<string> = entradasVistas ?? new Set<string>();
+
+            // Pre-scan of the 'saidas' CSV to collect monthly-expense exits from the "Despesas Mensais" account.
+            // When such exits are present, the corresponding Saldo Real exit + Despesas Mensais exit pair should be
+            // considered completed (status = 'Concluído'). The pre-scan collects keys of those expenses.
+            const saidasDespesasMensaisVistas = new Set<string>();
+            if (fileType === 'saidas') {
+                const dataRowsPreScan = rows.slice(1);
+                for (const row of dataRowsPreScan) {
+                    const nomeRow = this.cleanName(row[0] || '');
+                    const contaRow = this.cleanName(row[2] || '');
+                    const dataRow = row[3] || '';
+                    if (!nomeRow || !contaRow) continue;
+                    if (!this.isDespesaMensalName(nomeRow)) continue;
+                    const dateRow = this.parseDate(dataRow);
+                    if (!dateRow) continue;
+                    const extractedContaName = (contaRow.split('(')[0] ?? contaRow).trim().toLowerCase();
+                    // If this line references the "Despesas Mensais" account, mark the expense as having an exit there
+                    if (extractedContaName.includes('despesas mensais')) {
+                        const key = `${nomeRow.toLowerCase()}|${dateRow.getMonth() + 1}|${dateRow.getFullYear()}`;
+                        saidasDespesasMensaisVistas.add(key);
+                    }
+                }
+            }
+
             const dataRows = rows.slice(1);
 
             for (const row of dataRows) {
@@ -242,7 +303,7 @@ export default class ImportService implements IImportService {
                 const contaStr = this.cleanName(row[2] || '');
                 const dataStr = row[3] || '';
 
-                // Different column positions for entradas vs saidas
+                // Different column positions for entries vs exits
                 const reembolsoCol = fileType === 'entradas' ? (row[5] || '').toLowerCase() : '';
                 const saiuStr = fileType === 'entradas' ? (row[6] || '').toLowerCase() : '';
                 const valorStr = fileType === 'entradas' ? (row[7] || '') : (row[5] || '');
@@ -295,6 +356,291 @@ export default class ImportService implements IImportService {
                 if (isCard && !cartao) {
                     this.logger.info(`Card not found for: ${extractedName}`);
                     continue;
+                }
+
+                // --- Monthly Expense (Despesa Mensal) detection by name ---
+                const isSaidaConta = fileType === 'saidas' && !isCard;
+                const isMensal = isSaidaConta && this.isDespesaMensalName(nome);
+
+                // Exit lines that are from the "Despesas Mensais" account for a known monthly expense
+                // have already been recorded in the pre-scan; skip creating a duplicate transaction for them
+                const isSaidaDespesasMensais = isSaidaConta && this.isDespesaMensalName(nome) &&
+                    conta != null && conta.nome.value.toLowerCase() === 'despesas mensais';
+                if (isSaidaDespesasMensais) {
+                    this.logger.info(`Skipping Saída from Despesas Mensais account: ${nome}`);
+                    continue;
+                }
+
+                // Entry with a savings name in the "Conta Poupança" account -> conclude pending Poupança
+                // Entry with a savings name in another account -> ignore
+                const isEntradaPoupanca = fileType === 'entradas' && !isCard && this.isPoupancaName(nome);
+
+                if (isEntradaPoupanca) {
+                    // Always register this key in the session set regardless of account — used when matching exits
+                    const key = `${nome.toLowerCase()}|${date.getMonth() + 1}|${date.getFullYear()}|${valor}`;
+                    entradasVistasSessao.add(key);
+
+                    if (conta != null && this.isPoupancaName(conta.nome.value)) {
+                        // Find pending Poupança with same name/month/amount
+                        const poupancaPendente = allTransacoes.find(t =>
+                            t.descricao.value.toLowerCase() === nome.toLowerCase() &&
+                            t.tipo.value === 'Poupança' &&
+                            t.status.value === 'Pendente' &&
+                            t.data.month === (date.getMonth() + 1) &&
+                            t.data.year === date.getFullYear() &&
+                            Math.abs(t.valor.value - valor) < 0.01
+                        );
+                        if (poupancaPendente) {
+                            this.logger.info(`Concluding Poupança: ${nome} (${date.getMonth() + 1}/${date.getFullYear()})`);
+                            const statusResult = Status.create('Concluído');
+                            const novaData = Data.createFromParts(date.getDate(), date.getMonth() + 1, date.getFullYear(), true);
+                            if (statusResult.isSuccess && novaData.isSuccess) {
+                                const updatedOrError = Transacao.create({
+                                    descricao: poupancaPendente.descricao,
+                                    data: novaData.getValue(),
+                                    valor: poupancaPendente.valor,
+                                    tipo: poupancaPendente.tipo,
+                                    categoria: poupancaPendente.categoria,
+                                    status: statusResult.getValue(),
+                                    conta: poupancaPendente.conta,
+                                    contaDestino: poupancaPendente.contaDestino,
+                                    contaPoupanca: poupancaPendente.contaPoupanca,
+                                    cartaoCredito: poupancaPendente.cartaoCredito
+                                }, poupancaPendente.id);
+                                if (updatedOrError.isSuccess) {
+                                    const updated = updatedOrError.getValue();
+                                    (updated as unknown as Record<string, unknown>)['userDomainId'] = userId;
+                                    await this.transacaoRepo.update(updated);
+                                    const idx = allTransacoes.indexOf(poupancaPendente);
+                                    if (idx >= 0) allTransacoes[idx] = updated;
+                                }
+                            }
+                        } else {
+                            this.logger.info(`No pending Poupança found for Entrada in conta poupança: ${nome}, skipping`);
+                        }
+                    } else {
+                        this.logger.info(`Skipping Entrada with poupança name in non-poupança account: ${nome}`);
+                    }
+                    continue; // never create a normal Entry for savings names
+                }
+
+                // ---- Entry with a monthly-expense name ----
+                const isEntradaDespesaMensal = fileType === 'entradas' && !isCard && this.isDespesaMensalName(nome);
+
+                if (isEntradaDespesaMensal) {
+                    // Always register this key in the session set regardless of account — used when matching exits
+                    const key = `${nome.toLowerCase()}|${date.getMonth() + 1}|${date.getFullYear()}|${valor}`;
+                    entradasVistasSessao.add(key);
+
+                    if (conta != null && conta.nome.value.toLowerCase() === 'despesas mensais') {
+                        const despesaPendente = allTransacoes.find(t =>
+                            t.descricao.value.toLowerCase() === nome.toLowerCase() &&
+                            t.tipo.value === 'Despesa Mensal' &&
+                            t.status.value === 'Pendente' &&
+                            t.data.month === (date.getMonth() + 1) &&
+                            t.data.year === date.getFullYear() &&
+                            Math.abs(t.valor.value - valor) < 0.01
+                        );
+                        if (despesaPendente) {
+                            this.logger.info(`Concluding Despesa Mensal: ${nome} (${date.getMonth() + 1}/${date.getFullYear()})`);
+                            const statusResult = Status.create('Concluído');
+                            const novaData = Data.createFromParts(date.getDate(), date.getMonth() + 1, date.getFullYear(), true);
+                            if (statusResult.isSuccess && novaData.isSuccess) {
+                                const updatedOrError = Transacao.create({
+                                    descricao: despesaPendente.descricao,
+                                    data: novaData.getValue(),
+                                    valor: despesaPendente.valor,
+                                    tipo: despesaPendente.tipo,
+                                    categoria: despesaPendente.categoria,
+                                    status: statusResult.getValue(),
+                                    conta: despesaPendente.conta,
+                                    contaDestino: despesaPendente.contaDestino,
+                                    cartaoCredito: despesaPendente.cartaoCredito
+                                }, despesaPendente.id);
+                                if (updatedOrError.isSuccess) {
+                                    const updated = updatedOrError.getValue();
+                                    (updated as unknown as Record<string, unknown>)['userDomainId'] = userId;
+                                    await this.transacaoRepo.update(updated);
+                                    const idx = allTransacoes.indexOf(despesaPendente);
+                                    if (idx >= 0) allTransacoes[idx] = updated;
+                                }
+                            }
+                        } else {
+                            this.logger.info(`No pending Despesa Mensal found for Entrada: ${nome}, skipping`);
+                        }
+                    } else {
+                        this.logger.info(`Skipping Entrada with despesa mensal name in non-despesas-mensais account: ${nome}`);
+                    }
+                    continue; // never create a normal Entry for monthly-expense names
+                }
+
+                if (isMensal) {
+                    // Only one Despesa Mensal per name per month
+                    const existsThisMonth = allTransacoes.find(t =>
+                        t.descricao.value.toLowerCase() === nome.toLowerCase() &&
+                        t.tipo.value === 'Despesa Mensal' &&
+                        t.data.month === (date.getMonth() + 1) &&
+                        t.data.year === date.getFullYear()
+                    );
+                    if (existsThisMonth) {
+                        this.logger.info(`Skipping duplicate Despesa Mensal: ${nome} (${date.getMonth() + 1}/${date.getFullYear()})`);
+                        continue;
+                    }
+
+                    // Completed if a Despesas Mensais exit with same name/month exists (collected during pre-scan)
+                    const despesaKey = `${nome.toLowerCase()}|${date.getMonth() + 1}|${date.getFullYear()}`;
+                    const despesaStatus = saidasDespesasMensaisVistas.has(despesaKey) ? 'Concluído' : 'Pendente';
+
+                    // Find or create Despesas Mensais destination account
+                    let contaDestino = existingContas.find(c => c.nome.value.toLowerCase() === 'despesas mensais');
+                    if (!contaDestino) {
+                        const nomeRes = Nome.create('Despesas Mensais');
+                        const iconRes = Icon.create('Despesas Mensais.jpg');
+                        const saldoRes = Dinheiro.create(0, 'EUR');
+                        if (nomeRes.isSuccess && iconRes.isSuccess && saldoRes.isSuccess) {
+                            const contaRes = Conta.create({
+                                userId: new UniqueEntityID(userId),
+                                nome: nomeRes.getValue(),
+                                icon: iconRes.getValue(),
+                                saldo: saldoRes.getValue()
+                            });
+                            if (contaRes.isSuccess) {
+                                contaDestino = await this.contaRepo.save(contaRes.getValue());
+                                existingContas.push(contaDestino);
+                            }
+                        }
+                    }
+
+                    if (!conta || !contaDestino) {
+                        this.logger.info(`Skipping Despesa Mensal ${nome}: conta or contaDestino not found`);
+                        continue;
+                    }
+
+                    // Find/create category for Despesa Mensal
+                    let catDespesa = existingCategorias.find(c => c.nome.value.toLowerCase() === 'despesas mensais');
+                    if (!catDespesa) {
+                        const catResult = Categoria.create({
+                            nome: Nome.create('Despesas Mensais').getValue(),
+                            icon: Icon.create('📅').getValue()
+                        });
+                        if (catResult.isSuccess) {
+                            catDespesa = await this.categoriaRepo.save(catResult.getValue());
+                            existingCategorias.push(catDespesa);
+                        }
+                    }
+
+                    const propsDm = {
+                        descricao: Descricao.create(nome).getValue(),
+                        valor: Dinheiro.create(valor, 'EUR').getValue(),
+                        data: Data.createFromParts(date.getDate(), date.getMonth() + 1, date.getFullYear(), true).getValue(),
+                        tipo: Tipo.create('Despesa Mensal').getValue(),
+                        status: Status.create(despesaStatus).getValue(),
+                        categoria: catDespesa ?? categoria!,
+                        conta: conta,
+                        contaDestino: contaDestino
+                    };
+
+                    const dmOrError = Transacao.create(propsDm);
+                    if (dmOrError.isSuccess) {
+                        const dm = dmOrError.getValue();
+                        (dm as unknown as Record<string, unknown>)['userDomainId'] = userId;
+                        const saved = await this.transacaoRepo.save(dm);
+                        allTransacoes.push(saved);
+                    }
+                    continue; // skip normal flow
+                }
+
+                // --- Poupança detection by name ---
+
+                // Saída com nome de poupança → criar transação do tipo Poupança
+                const isPoupanca = isSaidaConta && this.isPoupancaName(nome);
+
+                if (isPoupanca) {
+                    // Only one Poupança per name per month
+                    const existsThisMonth = allTransacoes.find(t =>
+                        t.descricao.value.toLowerCase() === nome.toLowerCase() &&
+                        t.tipo.value === 'Poupança' &&
+                        t.data.month === (date.getMonth() + 1) &&
+                        t.data.year === date.getFullYear()
+                    );
+                    if (existsThisMonth) {
+                        this.logger.info(`Skipping duplicate Poupança: ${nome} (${date.getMonth() + 1}/${date.getFullYear()})`);
+                        continue;
+                    }
+
+                    // contaDestino = conta Despesas Mensais (igual à DespesaMensal)
+                    let contaDestinoPoupanca = existingContas.find(c => c.nome.value.toLowerCase() === 'despesas mensais');
+                    if (!contaDestinoPoupanca) {
+                        const nomeRes = Nome.create('Despesas Mensais');
+                        const iconRes = Icon.create('Despesas Mensais.jpg');
+                        const saldoRes = Dinheiro.create(0, 'EUR');
+                        if (nomeRes.isSuccess && iconRes.isSuccess && saldoRes.isSuccess) {
+                            const contaRes = Conta.create({
+                                userId: new UniqueEntityID(userId),
+                                nome: nomeRes.getValue(),
+                                icon: iconRes.getValue(),
+                                saldo: saldoRes.getValue()
+                            });
+                            if (contaRes.isSuccess) {
+                                contaDestinoPoupanca = await this.contaRepo.save(contaRes.getValue());
+                                existingContas.push(contaDestinoPoupanca);
+                            }
+                        }
+                    }
+
+                    // contaPoupanca = conta real de poupança (pelo nome)
+                    const contaPoupanca = existingContas.find(c => this.isPoupancaName(c.nome.value));
+
+                    if (!conta || !contaDestinoPoupanca || !contaPoupanca) {
+                        this.logger.info(`Skipping Poupança ${nome}: missing conta (${!!conta}), contaDestino (${!!contaDestinoPoupanca}), or contaPoupanca (${!!contaPoupanca})`);
+                        continue;
+                    }
+
+                    // Concluído se já existe Entrada na conta poupança (isPoupancaName) no mesmo mês (DB ou sessão actual)
+                    const poupancaKey = `${nome.toLowerCase()}|${date.getMonth() + 1}|${date.getFullYear()}|${valor}`;
+                    const matchingEntradaPoupanca = entradasVistasSessao.has(poupancaKey) ||
+                        allTransacoes.some(t =>
+                            t.descricao.value.toLowerCase() === nome.toLowerCase() &&
+                            t.tipo.value === 'Entrada' &&
+                            t.data.month === (date.getMonth() + 1) &&
+                            t.data.year === date.getFullYear() &&
+                            Math.abs(t.valor.value - valor) < 0.01 &&
+                            t.conta != null &&
+                            this.isPoupancaName(t.conta.nome.value)
+                        );
+                    const poupancaStatus = matchingEntradaPoupanca ? 'Concluído' : 'Pendente';
+                    let catPoupanca = existingCategorias.find(c => c.nome.value.toLowerCase() === 'poupança' || c.nome.value.toLowerCase() === 'poupanca');
+                    if (!catPoupanca) {
+                        const catResult = Categoria.create({
+                            nome: Nome.create('Poupança').getValue(),
+                            icon: Icon.create('🐷').getValue()
+                        });
+                        if (catResult.isSuccess) {
+                            catPoupanca = await this.categoriaRepo.save(catResult.getValue());
+                            existingCategorias.push(catPoupanca);
+                        }
+                    }
+
+                    const propsPoupanca = {
+                        descricao: Descricao.create(nome).getValue(),
+                        valor: Dinheiro.create(valor, 'EUR').getValue(),
+                        data: Data.createFromParts(date.getDate(), date.getMonth() + 1, date.getFullYear(), true).getValue(),
+                        tipo: Tipo.create('Poupança').getValue(),
+                        status: Status.create(poupancaStatus).getValue(),
+                        categoria: catPoupanca ?? categoria!,
+                        conta: conta,
+                        contaDestino: contaDestinoPoupanca,
+                        contaPoupanca: contaPoupanca
+                    };
+
+                    const poupancaOrError = Transacao.create(propsPoupanca);
+                    if (poupancaOrError.isSuccess) {
+                        const p = poupancaOrError.getValue();
+                        (p as unknown as Record<string, unknown>)['userDomainId'] = userId;
+                        const saved = await this.transacaoRepo.save(p);
+                        allTransacoes.push(saved);
+                    }
+                    continue; // skip normal flow
                 }
 
                 // Determine transaction type based on file type and other factors
@@ -424,108 +770,5 @@ export default class ImportService implements IImportService {
             return Result.fail(`Error importing ${fileType}`);
         }
     }
-
-    public async importDespesasMensais(csvContent: string, userId: string, contaOrigemId: string): Promise<Result<void>> {
-        try {
-            const rows = this.parseCSV(csvContent);
-            if (rows.length < 2) return Result.fail<void>('Empty CSV');
-
-            const existingCategorias = await this.categoriaRepo.findAll();
-            const existingContas = await this.contaRepo.findAll(userId);
-            const allTransacoes = await this.transacaoRepo.findAll(userId);
-
-            // Find or create "Despesas Mensais" account (destination - where expenses are tracked)
-            let contaDestino = existingContas.find(c => c.nome.value.toLowerCase() === 'despesas mensais');
-            if (!contaDestino) {
-                const nomeResult = Nome.create('Despesas Mensais');
-                const iconResult = Icon.create('Despesas Mensais.jpg');
-                const saldoResult = Dinheiro.create(0, 'EUR');
-
-                if (nomeResult.isSuccess && iconResult.isSuccess && saldoResult.isSuccess) {
-                    const contaResult = Conta.create({
-                        userId: new UniqueEntityID(userId),
-                        nome: nomeResult.getValue(),
-                        icon: iconResult.getValue(),
-                        saldo: saldoResult.getValue()
-                    });
-
-                    if (contaResult.isSuccess) {
-                        contaDestino = await this.contaRepo.save(contaResult.getValue());
-                        existingContas.push(contaDestino);
-                    } else {
-                        return Result.fail<void>('Failed to create Despesas Mensais account');
-                    }
-                }
-            }
-
-            // Find origin account (where the money comes from - e.g., bank account)
-            const contaOrigem = existingContas.find(c => c.id.toString() === contaOrigemId);
-            if (!contaOrigem) {
-                return Result.fail<void>('Origin account not found');
-            }
-
-            // Find or create "Despesas Mensais" category
-            let categoria = existingCategorias.find(c => c.nome.value.toLowerCase() === 'despesas mensais');
-            if (!categoria) {
-                const catResult = Categoria.create({
-                    nome: Nome.create('Despesas Mensais').getValue(),
-                    icon: Icon.create('📅').getValue()
-                });
-                if (catResult.isSuccess) {
-                    categoria = await this.categoriaRepo.save(catResult.getValue());
-                    existingCategorias.push(categoria);
-                }
-            }
-
-            const dataRows = rows.slice(1);
-            const now = new Date();
-
-            for (const row of dataRows) {
-                const despesaName = this.cleanName(row[0] || '');
-                const valorStr = row[1] || '';
-
-                if (!despesaName || !valorStr) continue;
-
-                const valor = this.parseCurrency(valorStr);
-                if (valor <= 0) continue;
-
-                // Check for duplicates
-                const duplicate = allTransacoes.find(t =>
-                    t.descricao.value.toLowerCase() === despesaName.toLowerCase() &&
-                    t.tipo.value === 'Despesa Mensal' &&
-                    Math.abs(t.valor.value - valor) < 0.01
-                );
-
-                if (duplicate) {
-                    this.logger.info(`Skipping duplicate monthly expense: ${despesaName}`);
-                    continue;
-                }
-
-                // Despesa Mensal: Origin = bank account, Destination = Despesas Mensais tracking account
-                const props = {
-                    descricao: Descricao.create(despesaName).getValue(),
-                    valor: Dinheiro.create(valor, 'EUR').getValue(),
-                    data: Data.createFromParts(now.getDate(), now.getMonth() + 1, now.getFullYear(), true).getValue(),
-                    tipo: Tipo.create('Despesa Mensal').getValue(),
-                    status: Status.create('Concluído').getValue(),
-                    categoria: categoria!,
-                    conta: contaOrigem,           // Origin: where money comes from
-                    contaDestino: contaDestino     // Destination: Despesas Mensais tracking
-                };
-
-                const transacaoOrError = Transacao.create(props);
-                if (transacaoOrError.isSuccess) {
-                    const transacao = transacaoOrError.getValue();
-                    (transacao as unknown as Record<string, unknown>)['userDomainId'] = userId;
-                    const saved = await this.transacaoRepo.save(transacao);
-                    allTransacoes.push(saved);
-                }
-            }
-
-            return Result.ok<void>();
-        } catch (e) {
-            this.logger.error('ImportDespesasMensais error: %o', e);
-            return Result.fail('Error importing monthly expenses');
-        }
-    }
 }
+

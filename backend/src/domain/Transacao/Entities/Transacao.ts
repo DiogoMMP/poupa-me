@@ -21,6 +21,7 @@ interface TransacaoProps {
     conta?: Conta;
     cartaoCredito?: CartaoCredito;
     contaDestino?: Conta; // Only for Despesa Mensal - conta that will receive the monthly expense
+    contaPoupanca?: Conta; // Only for Poupança - the savings account that receives the transfer
 }
 
 export class Transacao extends AggregateRoot<TransacaoProps> {
@@ -58,6 +59,10 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
 
     get contaDestino(): Conta | undefined {
         return this.props.contaDestino;
+    }
+
+    get contaPoupanca(): Conta | undefined {
+        return this.props.contaPoupanca;
     }
 
     private constructor(props: TransacaoProps, id?: UniqueEntityID) {
@@ -202,6 +207,28 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
         id?: UniqueEntityID
     ): Result<Transacao> {
         const typeResult = Tipo.create("Despesa Mensal");
+        const statusResult = Status.create("Pendente");
+
+        const combine = Result.combine([typeResult, statusResult]);
+        if (combine.isFailure) return Result.fail<Transacao>(combine.errorValue() as string);
+
+        return Transacao.create({
+            ...props,
+            tipo: typeResult.getValue(),
+            status: statusResult.getValue()
+        }, id);
+    }
+
+    /**
+     * Specialized factory for creating a Poupança transaction.
+     * Transfers money from origin account to a savings account (contaPoupanca).
+     * Starts as Pendente until confirmed.
+     */
+    public static createPoupanca(
+        props: Omit<TransacaoProps, 'tipo' | 'status'>,
+        id?: UniqueEntityID
+    ): Result<Transacao> {
+        const typeResult = Tipo.create("Poupança");
         const statusResult = Status.create("Pendente");
 
         const combine = Result.combine([typeResult, statusResult]);

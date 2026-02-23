@@ -1,0 +1,32 @@
+/* ── 2-column layout specific to the transactions page ── */
+.transacoes-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.transacoes-layout--single {
+  grid-template-columns: 1fr;
+}
+
+.transacoes-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Compact items in this page */
+.transacoes-list .transacao-item {
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.transacoes-list .transacao-item .transacao-descricao,
+.transacoes-list .transacao-item .transacao-valor {
+  font-size: 0.875rem;
+}
+
+@media (max-width: 900px) {
+  .transacoes-layout { grid-template-columns: 1fr; }
+}

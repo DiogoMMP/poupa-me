@@ -1,5 +1,5 @@
 import type {Request, Response, NextFunction} from 'express';
-import type {AuthenticatedRequest} from '../api/middlewares/isAuth.js';
+import {type AuthenticatedRequest, getEffectiveUserId} from '../api/middlewares/isAuth.js';
 import {Service, Inject} from 'typedi';
 import type {ICartaoCreditoController} from './IControllers/ICartaoCreditoController.js';
 import type ICartaoCreditoService from '../services/IServices/ICartaoCreditoService.js';
@@ -117,7 +117,8 @@ export default class CartaoCreditoController implements ICartaoCreditoController
      */
     public async getAllCartoes(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id as string | undefined;
+            // Admins get undefined so no userId filter is applied (see all cartões)
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
             const bancoId = req.query.bancoId as string | undefined;
             const result = await this.cartaoService.findAllCartoes(userId, bancoId);
             if (result.isFailure) return res.status(400).json({error: result.error});
@@ -140,7 +141,7 @@ export default class CartaoCreditoController implements ICartaoCreditoController
      */
     public async getExtrato(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id as string | undefined;
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
             const cartaoCreditoId = (req.params.id || req.query.id) as string;
             if (!cartaoCreditoId) return res.status(400).json({error: 'ID is required'});
 

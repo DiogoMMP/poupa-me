@@ -17,6 +17,10 @@ export default interface ITransacaoController {
 
     concluirDespesaMensal(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
+    createPoupanca(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+
+    concluirPoupanca(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+
     updateTransacao(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
     deleteTransacao(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
@@ -27,6 +31,10 @@ export default interface ITransacaoController {
     getContaTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
     getCartaoTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
     getDespesaMensal(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+
+    // Get ALL (no id filter)
+    getAllContaTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    getAllCartaoTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
     // Filter by categoria
     getContaTransactionsByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void>;

@@ -73,6 +73,19 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
         }
         const contaDestinoId = new UniqueEntityID(contaDestinoIdStr);
 
+        // contaPoupancaId (optional - only for Poupança)
+        let contaPoupancaIdStr = '';
+        if (r['contaPoupanca'] && typeof r['contaPoupanca'] === 'object') {
+            const cpObj = r['contaPoupanca'] as Record<string, unknown>;
+            contaPoupancaIdStr = String(cpObj['domainId'] ?? cpObj['domain_id'] ?? '');
+        }
+        if (!contaPoupancaIdStr) {
+            contaPoupancaIdStr = String(r['contaPoupancaId'] ?? r['conta_poupanca_id'] ?? '');
+        }
+        const contaPoupancaId = contaPoupancaIdStr ? new UniqueEntityID(contaPoupancaIdStr) : undefined;
+
+        const tipo = (r['tipo'] as 'Despesa Mensal' | 'Poupança') ?? 'Despesa Mensal';
+
         const ultimoProcessamento = r['ultimoProcessamento'] ?? r['ultimo_processamento'] ?? null;
         const ultimoDate = ultimoProcessamento ? new Date(String(ultimoProcessamento)) : null;
 
@@ -86,6 +99,8 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
             categoriaId,
             contaOrigemId,
             contaDestinoId,
+            contaPoupancaId,
+            tipo,
             ultimoProcessamento: ultimoDate,
             ativo
         }, new UniqueEntityID(String(r['domainId'] ?? r['id'])));
@@ -103,6 +118,8 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
             categoria_id: despesa.categoriaId.toString(),
             conta_origem_id: despesa.contaOrigemId.toString(),
             conta_destino_id: despesa.contaDestinoId.toString(),
+            conta_poupanca_id: despesa.contaPoupancaId?.toString() ?? null,
+            tipo: despesa.tipo,
             ultimo_processamento: despesa.ultimoProcessamento,
             ativo: despesa.ativo,
             user_domain_id: despesa.userId.toString()
@@ -122,6 +139,8 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
             categoriaId: despesa.categoriaId.toString(),
             contaOrigemId: despesa.contaOrigemId.toString(),
             contaDestinoId: despesa.contaDestinoId.toString(),
+            contaPoupancaId: despesa.contaPoupancaId?.toString(),
+            tipo: despesa.tipo,
             ultimoProcessamento: despesa.ultimoProcessamento,
             ativo: despesa.ativo
         };

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import type { AuthenticatedRequest } from '../api/middlewares/isAuth.js';
+import { type AuthenticatedRequest, getEffectiveUserId } from '../api/middlewares/isAuth.js';
 import { Service, Inject } from 'typedi';
 import type ITransacaoController from './IControllers/ITransacaoController.js';
 import type ITransacaoService from '../services/IServices/ITransacaoService.js';
@@ -106,6 +106,33 @@ export default class TransacaoController implements ITransacaoController {
     }
 
     /**
+     * Handles the creation of a new Poupança transaction (savings transfer).
+     */
+    public async createPoupanca(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const inputDTO = req.body as ITransacaoInputDTO;
+            inputDTO.userId = (req as AuthenticatedRequest).currentUser?.id;
+            const result = await this.transacaoService.createPoupanca(inputDTO);
+            if (result.isFailure) return res.status(400).json({ error: result.error });
+            return res.status(201).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    public async concluirPoupanca(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const id = req.params.id;
+            if (!id) return res.status(400).json({ error: 'ID is required' });
+            const result = await this.transacaoService.concluirPoupanca(id);
+            if (result.isFailure) return res.status(400).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
      * Handles updating an existing Transacao identified by its domain id. The ID can be provided in the URL parameters or query parameters, and the updated properties are provided in the request body.
      * @param req Express request object containing the updated transaction data in the body, and the transaction ID in the URL parameters or query parameters
      * @param res Express response object used to send back the result
@@ -192,7 +219,7 @@ export default class TransacaoController implements ITransacaoController {
             const contaId = (req.query.contaId || req.params.contaId) as string;
             if (!contaId) return res.status(400).json({ error: 'contaId is required' });
 
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
             const result = await this.transacaoService.findContaTransactions(contaId, userId);
             if (result.isFailure) return res.status(500).json({ error: result.error });
             return res.status(200).json(result.getValue());
@@ -209,7 +236,7 @@ export default class TransacaoController implements ITransacaoController {
             const cartaoCreditoId = (req.query.cartaoCreditoId || req.params.cartaoCreditoId) as string;
             if (!cartaoCreditoId) return res.status(400).json({ error: 'cartaoCreditoId is required' });
 
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
             const result = await this.transacaoService.findCartaoTransactions(cartaoCreditoId, userId);
             if (result.isFailure) return res.status(500).json({ error: result.error });
             return res.status(200).json(result.getValue());
@@ -226,8 +253,38 @@ export default class TransacaoController implements ITransacaoController {
             const contaId = (req.query.contaId || req.params.contaId) as string;
             if (!contaId) return res.status(400).json({ error: 'contaId is required' });
 
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
             const result = await this.transacaoService.findDespesaMensal(contaId, userId);
+            if (result.isFailure) return res.status(500).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles retrieving all Entrada/Saída transactions across every account (no contaId filter)
+     */
+    public async getAllContaTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
+            const bancoId = (req.query.bancoId) as string | undefined;
+            const result = await this.transacaoService.findAllContaTransactions(userId, bancoId);
+            if (result.isFailure) return res.status(500).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles retrieving all Crédito/Reembolso transactions across every credit card (no cartaoCreditoId filter)
+     */
+    public async getAllCartaoTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
+            const bancoId = (req.query.bancoId) as string | undefined;
+            const result = await this.transacaoService.findAllCartaoTransactions(userId, bancoId);
             if (result.isFailure) return res.status(500).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {
@@ -242,13 +299,12 @@ export default class TransacaoController implements ITransacaoController {
      */
     public async getContaTransactionsByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const contaId = (req.query.contaId || req.params.contaId) as string;
             const categoriaId = (req.query.categoriaId || req.params.categoriaId) as string;
-            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
             if (!categoriaId) return res.status(400).json({ error: 'categoriaId is required' });
 
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.findContaTransactionsByCategoria(contaId, categoriaId, userId);
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
+            const bancoId = (req.query.bancoId) as string | undefined;
+            const result = await this.transacaoService.findContaTransactionsByCategoria(categoriaId, userId, bancoId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {
@@ -257,17 +313,16 @@ export default class TransacaoController implements ITransacaoController {
     }
 
     /**
-     * Handles retrieving Crédito/Reembolso transactions by category for a specific credit card
+     * Handles retrieving Crédito/Reembolso transactions by category across all credit cards
      */
     public async getCartaoTransactionsByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const cartaoCreditoId = (req.query.cartaoCreditoId || req.params.cartaoCreditoId) as string;
             const categoriaId = (req.query.categoriaId || req.params.categoriaId) as string;
-            if (!cartaoCreditoId) return res.status(400).json({ error: 'cartaoCreditoId is required' });
             if (!categoriaId) return res.status(400).json({ error: 'categoriaId is required' });
 
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.findCartaoTransactionsByCategoria(cartaoCreditoId, categoriaId, userId);
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
+            const bancoId = (req.query.bancoId) as string | undefined;
+            const result = await this.transacaoService.findCartaoTransactionsByCategoria(categoriaId, userId, bancoId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {
@@ -285,7 +340,7 @@ export default class TransacaoController implements ITransacaoController {
             if (!contaId) return res.status(400).json({ error: 'contaId is required' });
             if (!categoriaId) return res.status(400).json({ error: 'categoriaId is required' });
 
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
             const result = await this.transacaoService.findDespesaMensalByCategoria(contaId, categoriaId, userId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
@@ -294,20 +349,19 @@ export default class TransacaoController implements ITransacaoController {
         }
     }
 
-    // --- Query Methods: Filter by Status (one for cartão, one for despesa mensal) ---
+    // --- Query Methods: Filter by Status ---
 
     /**
-     * Handles retrieving Crédito and Reembolso transactions by status for a specific credit card
+     * Handles retrieving Crédito and Reembolso transactions by status across all credit cards
      */
     public async getCartaoTransactionsByStatus(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const cartaoCreditoId = (req.query.cartaoCreditoId || req.params.cartaoCreditoId) as string;
             const status = (req.query.status || req.params.status) as string;
-            if (!cartaoCreditoId) return res.status(400).json({ error: 'cartaoCreditoId is required' });
             if (!status) return res.status(400).json({ error: 'status is required' });
 
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.findCartaoTransactionsByStatus(cartaoCreditoId, status, userId);
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
+            const bancoId = (req.query.bancoId) as string | undefined;
+            const result = await this.transacaoService.findCartaoTransactionsByStatus(status, userId, bancoId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {
@@ -325,7 +379,7 @@ export default class TransacaoController implements ITransacaoController {
             if (!contaId) return res.status(400).json({ error: 'contaId is required' });
             if (!status) return res.status(400).json({ error: 'status is required' });
 
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
             const result = await this.transacaoService.findDespesaMensalByStatus(contaId, status, userId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
@@ -334,16 +388,14 @@ export default class TransacaoController implements ITransacaoController {
         }
     }
 
-    // --- Query Methods: Filter by Period (one per type) ---
+    // --- Query Methods: Filter by Period ---
 
     /**
-     * Handles retrieving Entrada/Saída transactions by predefined period for a specific account
+     * Handles retrieving Entrada/Saída transactions by predefined period across all accounts
      */
     public async getContaTransactionsByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const contaId = (req.query.contaId || req.params.contaId) as string;
             const period = (req.query.period || req.params.period) as string;
-            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
             if (!period) return res.status(400).json({ error: 'period is required' });
 
             const validPeriods = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'];
@@ -351,8 +403,9 @@ export default class TransacaoController implements ITransacaoController {
                 return res.status(400).json({ error: `Period must be one of: ${validPeriods.join(', ')}` });
             }
 
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.findContaTransactionsByPeriod(contaId, period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId);
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
+            const bancoId = (req.query.bancoId) as string | undefined;
+            const result = await this.transacaoService.findContaTransactionsByPeriod(period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId, bancoId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {
@@ -361,13 +414,11 @@ export default class TransacaoController implements ITransacaoController {
     }
 
     /**
-     * Handles retrieving Crédito/Reembolso transactions by predefined period for a specific credit card
+     * Handles retrieving Crédito/Reembolso transactions by predefined period across all credit cards
      */
     public async getCartaoTransactionsByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const cartaoCreditoId = (req.query.cartaoCreditoId || req.params.cartaoCreditoId) as string;
             const period = (req.query.period || req.params.period) as string;
-            if (!cartaoCreditoId) return res.status(400).json({ error: 'cartaoCreditoId is required' });
             if (!period) return res.status(400).json({ error: 'period is required' });
 
             const validPeriods = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'];
@@ -375,8 +426,9 @@ export default class TransacaoController implements ITransacaoController {
                 return res.status(400).json({ error: `Period must be one of: ${validPeriods.join(', ')}` });
             }
 
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.findCartaoTransactionsByPeriod(cartaoCreditoId, period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId);
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
+            const bancoId = (req.query.bancoId) as string | undefined;
+            const result = await this.transacaoService.findCartaoTransactionsByPeriod(period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId, bancoId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {
@@ -399,7 +451,7 @@ export default class TransacaoController implements ITransacaoController {
                 return res.status(400).json({ error: `Period must be one of: ${validPeriods.join(', ')}` });
             }
 
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            const userId = getEffectiveUserId(req as AuthenticatedRequest);
             const result = await this.transacaoService.findDespesaMensalByPeriod(contaId, period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());

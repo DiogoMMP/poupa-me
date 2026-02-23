@@ -129,8 +129,10 @@ ${isLocalDevelopment ? `
       // Só injeta se vier do Swagger E não houver sessão real
       if (isFromSwagger && !req.session?.user) {
         if (!req.currentUser) {
+          // id left undefined so userId filters are skipped in repo queries (repo checks `if (userId)`)
+          // and create operations fall back to the conta/cartao owner id
           req.currentUser = {
-            id: 'swagger-dev',
+            id: undefined as unknown as string,
             name: 'Swagger Dev',
             role: 'Admin',
             isActive: true

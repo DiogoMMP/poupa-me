@@ -66,6 +66,14 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
                 return Promise.reject(new Error('Conta destino not found for despesa recorrente: ' + contaDestinoIdRaw));
             }
 
+            // Resolve conta poupanca ID (optional, only for Poupança type)
+            let contaPoupancaId: number | null = null;
+            const contaPoupancaIdRaw = raw.conta_poupanca_id ?? '';
+            if (contaPoupancaIdRaw) {
+                const contaPoupancaRow = await contaRepo.findOne({ where: { domainId: String(contaPoupancaIdRaw) } });
+                contaPoupancaId = contaPoupancaRow ? contaPoupancaRow.id : null;
+            }
+
             const entityObj: Record<string, unknown> = {
                 domainId,
                 nome,
@@ -75,6 +83,8 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
                 categoriaId: categoriaRow.id,
                 contaOrigemId: contaOrigemRow.id,
                 contaDestinoId: contaDestinoRow.id,
+                ...(contaPoupancaId ? { contaPoupancaId } : {}),
+                tipo: String(raw.tipo ?? 'Despesa Mensal'),
                 ultimoProcessamento,
                 ativo,
                 userDomainId
@@ -87,7 +97,7 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
             // Re-query with relations
             const savedRow = await this.repo.findOne({
                 where: { id: saved.id },
-                relations: ['categoria', 'contaOrigem', 'contaDestino']
+                relations: ['categoria', 'contaOrigem', 'contaDestino', 'contaPoupanca']
             });
             if (!savedRow) return Promise.reject(new Error('Failed to find saved despesa recorrente'));
 
@@ -135,26 +145,37 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
             const contaDestinoRow = await contaRepo.findOne({ where: { domainId: String(contaDestinoIdRaw) } });
             const contaDestinoId = contaDestinoRow ? contaDestinoRow.id : null;
 
+            let contaPoupancaIdForUpdate: number | null = null;
+            const contaPoupancaIdRaw = raw.conta_poupanca_id ?? '';
+            if (contaPoupancaIdRaw) {
+                const cpRow = await contaRepo.findOne({ where: { domainId: String(contaPoupancaIdRaw) } });
+                contaPoupancaIdForUpdate = cpRow ? cpRow.id : null;
+            }
+
+            const updateSet: Record<string, unknown> = {
+                nome,
+                valor: valorNum,
+                moeda,
+                diaDoMes,
+                categoriaId: categoriaId as number,
+                contaOrigemId: contaOrigemId as number,
+                contaDestinoId: contaDestinoId as number,
+                tipo: String(raw.tipo ?? 'Despesa Mensal'),
+                ultimoProcessamento,
+                ativo,
+                userDomainId
+            };
+            if (contaPoupancaIdForUpdate !== null) updateSet['contaPoupancaId'] = contaPoupancaIdForUpdate;
+
             await this.repo.createQueryBuilder()
                 .update(DespesaRecorrenteEntity)
-                .set({
-                    nome,
-                    valor: valorNum,
-                    moeda,
-                    diaDoMes,
-                    categoriaId: categoriaId as number,
-                    contaOrigemId: contaOrigemId as number,
-                    contaDestinoId: contaDestinoId as number,
-                    ultimoProcessamento,
-                    ativo,
-                    userDomainId
-                })
+                .set(updateSet)
                 .where('domain_id = :domainId', { domainId })
                 .execute();
 
             const saved = await this.repo.findOne({
                 where: { domainId },
-                relations: ['categoria', 'contaOrigem', 'contaDestino']
+                relations: ['categoria', 'contaOrigem', 'contaDestino', 'contaPoupanca']
             });
             if (!saved) return Promise.reject(new Error('Failed to find updated despesa recorrente'));
 
@@ -190,7 +211,7 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
         try {
             const row = await this.repo.findOne({
                 where: { domainId: despesaId },
-                relations: ['categoria', 'contaOrigem', 'contaDestino']
+                relations: ['categoria', 'contaOrigem', 'contaDestino', 'contaPoupanca']
             });
             if (!row) return null;
 
@@ -215,6 +236,7 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
                 .leftJoinAndSelect('d.categoria', 'categoria')
                 .leftJoinAndSelect('d.contaOrigem', 'contaOrigem')
                 .leftJoinAndSelect('d.contaDestino', 'contaDestino')
+                .leftJoinAndSelect('d.contaPoupanca', 'contaPoupanca')
                 .where('d.user_domain_id = :userId', { userId })
                 .orderBy('d.id', 'ASC')
                 .getMany();
@@ -239,6 +261,7 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
                 .leftJoinAndSelect('d.categoria', 'categoria')
                 .leftJoinAndSelect('d.contaOrigem', 'contaOrigem')
                 .leftJoinAndSelect('d.contaDestino', 'contaDestino')
+                .leftJoinAndSelect('d.contaPoupanca', 'contaPoupanca')
                 .where('d.user_domain_id = :userId', { userId })
                 .andWhere('d.ativo = :ativo', { ativo: true })
                 .orderBy('d.id', 'ASC')

@@ -1,10 +1,10 @@
-import {TransacaoDTO} from '../../transacoes/dto/transacao.dto';
+import {TransacoesDTO} from '../../transacoes/dto/transacoes.dto';
 
 /**
  * Data Transfer Object for Extrato do Cartão de Crédito
  */
 export interface ExtratoCartaoDTO {
-  transacoes: TransacaoDTO[];
+  transacoes: TransacoesDTO[];
   saldoAtual: {
     valor: number;
     moeda: string;

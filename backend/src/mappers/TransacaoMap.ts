@@ -105,8 +105,16 @@ export class TransacaoMap extends Mapper<Transacao> {
             contaDestinoDomain = await ContaMap.toDomain(r['contaDestino']);
             if (!contaDestinoDomain) throw new Error('TransacaoMap.toDomain: failed to map nested contaDestino');
         } else if (r['conta_destino_id']) {
-            // no nested join provided
             contaDestinoDomain = null;
+        }
+
+        // ContaPoupanca (optional - only for Poupança)
+        let contaPoupancaDomain = null;
+        if (r['contaPoupanca']) {
+            contaPoupancaDomain = await ContaMap.toDomain(r['contaPoupanca']);
+            if (!contaPoupancaDomain) throw new Error('TransacaoMap.toDomain: failed to map nested contaPoupanca');
+        } else if (r['conta_poupanca_id']) {
+            contaPoupancaDomain = null;
         }
 
         // CartaoCredito (optional)
@@ -165,6 +173,7 @@ export class TransacaoMap extends Mapper<Transacao> {
                 status: statusResult.getValue(),
                 ...(contaDomain ? { conta: contaDomain } : {}),
                 ...(contaDestinoDomain ? { contaDestino: contaDestinoDomain } : {}),
+                ...(contaPoupancaDomain ? { contaPoupanca: contaPoupancaDomain } : {}),
                 ...(cartaoCreditoDomain ? { cartaoCredito: cartaoCreditoDomain } : {})
             },
             new UniqueEntityID(String(r['domainId'] ?? r['id']))
@@ -225,9 +234,10 @@ export class TransacaoMap extends Mapper<Transacao> {
             },
             tipo: transacao.tipo.value,
             categoria_id: transacao.categoria.id.toString(),
-            // allow a non-domain attached property 'contaId' (string) so callers can set conta without constructing a Conta domain
             conta_id: transacao.conta ? transacao.conta.id.toString() : (transacao as unknown as Record<string, unknown>)['contaId'] ?? undefined,
             cartao_credito_id: transacao.cartaoCredito ? transacao.cartaoCredito.id.toString() : (transacao as unknown as Record<string, unknown>)['cartaoCreditoId'] ?? undefined,
+            conta_destino_id: transacao.contaDestino ? transacao.contaDestino.id.toString() : undefined,
+            conta_poupanca_id: transacao.contaPoupanca ? transacao.contaPoupanca.id.toString() : undefined,
             status: transacao.status.value,
             user_domain_id: userDomainId ?? undefined
         };
@@ -267,6 +277,8 @@ export class TransacaoMap extends Mapper<Transacao> {
                 if (userDomainId) cartaoDto.userId = String(userDomainId);
                 return cartaoDto;
             })(),
+            contaDestino: transacao.contaDestino ? ContaMap.toDTO(transacao.contaDestino) : undefined,
+            contaPoupanca: transacao.contaPoupanca ? ContaMap.toDTO(transacao.contaPoupanca) : undefined,
             userId: userDomainId
         } as ITransacaoDTO;
     }

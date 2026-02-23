@@ -31,7 +31,8 @@ export interface AuthenticatedRequest extends Request {
 const isAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         // In development, if Swagger auto-auth already set currentUser, skip validation
-        if (process.env.NODE_ENV === 'development' && req.currentUser && req.currentUser.id) {
+        // Note: id may be undefined for Swagger admin (no userId filter applied in repos)
+        if (process.env.NODE_ENV === 'development' && req.currentUser) {
             // Skip session validation for Swagger auto-auth
             next();
             return;
@@ -70,4 +71,16 @@ const isAuth = async (req: AuthenticatedRequest, res: Response, next: NextFuncti
 };
 
 export default isAuth;
+
+/**
+ * Returns the effective userId to use in repo/service queries.
+ * Admins receive undefined so that no userId filter is applied and all records are returned.
+ * Normal users receive their own id so that only their records are returned.
+ */
+export function getEffectiveUserId(req: AuthenticatedRequest): string | undefined {
+    const user = req.currentUser;
+    if (!user) return undefined;
+    if (user.role === 'Admin') return undefined;
+    return user.id;
+}
 

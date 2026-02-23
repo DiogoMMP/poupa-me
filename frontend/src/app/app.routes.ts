@@ -28,6 +28,8 @@ export const routes: Routes = [
 
       { path: 'cartoes-credito', loadChildren: () => import('./features/cartoes-credito/cartoes-credito.routes').then(m => m.routes), data: { allowedRoles: ['Admin','User'] } },
 
+      { path: 'transacoes', loadChildren: () => import('./features/transacoes/transacoes.routes').then(m => m.routes), data: { allowedRoles: ['Admin','User'] } },
+
       { path: 'categorias', loadChildren: () => import('./features/categorias/categorias.routes').then(m => m.routes), data: { allowedRoles: ['Admin'] } },
 
       //{ path: 'profile', loadChildren: () => import('./features/profile/profile.routes').then(m => m.routes), data: { allowedRoles: ['Admin'] } },

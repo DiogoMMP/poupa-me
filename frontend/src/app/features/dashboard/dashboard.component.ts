@@ -14,7 +14,8 @@ import { DashboardViewModel } from './dashboard.view-model';
   imports: [CommonModule, RouterModule],
   templateUrl: 'dashboard.component.html',
   styleUrls: ['dashboard.component.css'],
-  host: { class: 'page-dashboard' },
+  host: {class: 'page-dashboard'},
+  standalone: true,
   providers: [DashboardViewModel]
 })
 
