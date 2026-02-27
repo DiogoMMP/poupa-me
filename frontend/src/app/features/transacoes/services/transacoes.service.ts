@@ -50,6 +50,16 @@ export class TransacoesService {
   }
 
   /**
+   * Get all transactions for a banco (5 most recent) optionally filtered by banco id
+   * @param bancoId - optional bank id
+   */
+  getAllByBanco(bancoId?: string): Observable<TransacoesDTO[]> {
+    let params = new HttpParams();
+    if (bancoId) params = params.set('bancoId', bancoId);
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-banco`, { params, withCredentials: true });
+  }
+
+  /**
    * Get monthly expense entries for an account
    * @param contaId - account id
    */

@@ -292,6 +292,44 @@ export default class TransacaoController implements ITransacaoController {
         }
     }
 
+    /**
+     * Returns ALL transactions for a given banco. This ignores user ownership.
+     */
+    public async getAllByBanco(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const bancoId = (req.query.bancoId || req.params.bancoId) as string;
+            if (!bancoId) return res.status(400).json({ error: 'bancoId is required' });
+
+            const authReq = req as AuthenticatedRequest;
+            const currentUser = authReq.currentUser;
+
+            // If not authenticated for some reason, deny
+            if (!currentUser) return res.status(401).json({ error: 'Not authenticated' });
+
+            // userId filter passed in query (optional)
+            const requestedUserId = (req.query.userId || req.query.user_id) as string | undefined;
+
+            let userIdForQuery: string | undefined;
+
+            if (currentUser.role === 'Admin') {
+                // Admin can see everything for banco, or can request a specific user's records by passing userId
+                userIdForQuery = requestedUserId;
+            } else {
+                // Normal users can only see their own records
+                if (requestedUserId && requestedUserId !== currentUser.id) {
+                    return res.status(403).json({ error: 'Forbidden: cannot view other user transactions' });
+                }
+                userIdForQuery = currentUser.id;
+            }
+
+            const result = await this.transacaoService.findAllByBanco(bancoId, userIdForQuery);
+            if (result.isFailure) return res.status(500).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
     // --- Query Methods: Filter by Categoria ---
 
     /**

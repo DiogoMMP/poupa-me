@@ -12,6 +12,9 @@ import { ContasModel } from '../contas/models/contas.model';
 import { CartoesCreditoService } from '../cartoes-credito/services/cartoes-credito.service';
 import { CartoesCreditoMapper } from '../cartoes-credito/mappers/cartoes-credito.mapper';
 import { CartoesCreditoModel } from '../cartoes-credito/models/cartoes-credito.model';
+import { TransacoesService } from '../transacoes/services/transacoes.service';
+import { TransacoesMapper } from '../transacoes/mappers/transacoes.mapper';
+import { TransacaoModel } from '../transacoes/models/transacoes.model';
 
 /**
  * Lightweight ViewModel for the Dashboard component.
@@ -26,6 +29,7 @@ export class DashboardViewModel {
   private bancosService = inject(BancosService);
   private contasService = inject(ContasService);
   private cartoesService = inject(CartoesCreditoService);
+  private transacoesService = inject(TransacoesService);
   private notification = inject(NotificationService);
   private selectedBancoService = inject(SelectedBancoService);
 
@@ -33,6 +37,7 @@ export class DashboardViewModel {
   readonly dashboard$ = new BehaviorSubject<DashboardDTO | null>(null);
   readonly contas$ = new BehaviorSubject<ContasModel[]>([]);
   readonly cartoes$ = new BehaviorSubject<CartoesCreditoModel[]>([]);
+  readonly transacoes$ = new BehaviorSubject<TransacaoModel[]>([]);
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
 
   private selectedBancoId: string | null = null;
@@ -85,6 +90,7 @@ export class DashboardViewModel {
       this.dashboard$.next(null);
       this.contas$.next([]);
       this.cartoes$.next([]);
+      this.transacoes$.next([]);
       return;
     }
 
@@ -108,6 +114,9 @@ export class DashboardViewModel {
 
     // Load cartoes for the selected banco
     this.loadCartoes(id);
+
+    // Load 5 most recent transactions for the selected banco
+    this.loadTransacoes(id);
   }
 
   private loadContas(bancoId: string): void {
@@ -161,6 +170,26 @@ export class DashboardViewModel {
         this.cartoes$.next([]);
       }
     });
+  }
+
+  private loadTransacoes(bancoId: string): void {
+    this.transacoesService.getAllByBanco(bancoId).subscribe({
+      next: (dtos) => {
+        const models = TransacoesMapper.toModelArray(dtos);
+        this.transacoes$.next(models);
+      },
+      error: (err) => {
+        console.error('[FRONTEND] DashboardViewModel.loadTransacoes -', err);
+        this.transacoes$.next([]);
+      }
+    });
+  }
+
+  private readonly MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  formatData(dia: number, mes: number): string {
+    const nomeMes = this.MESES[(mes - 1)] ?? '';
+    return `${dia} ${nomeMes}`;
   }
 
   /**

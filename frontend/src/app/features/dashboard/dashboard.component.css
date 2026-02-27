@@ -49,12 +49,61 @@
   width: 100%;
 }
 
-/* First row - cards lado a lado */
+/* First row - single full-width card with 3 summary items */
 .first-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-around;
+  width: 100%;
   margin-bottom: 2rem;
+  padding: 0;
+  gap: 0;
+}
+
+.first-row .dashboard_section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+}
+
+.first-row__divider {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(226, 232, 240, 0.15);
+  flex-shrink: 0;
+}
+
+/* center icons inside the summary items and place them above the text */
+.first-row .saldo-icon,
+.first-row .entradas-icon,
+.first-row .saidas-icon {
+  width: 48px;
+  height: 48px;
+  display: block;
+  margin: 0 auto;
+}
+
+.first-row .resumo-financeiro {
+  align-items: center;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .first-row {
+    flex-direction: column;
+    padding: 1.25rem;
+  }
+
+  .first-row__divider {
+    width: 100%;
+    height: 1px;
+    align-self: auto;
+  }
 }
 
 /* === CONTAS ROW === */
@@ -256,12 +305,6 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 1024px) {
-  .first-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 @media (max-width: 768px) {
   .dashboard {
     padding: 1.5rem;
@@ -281,9 +324,6 @@
     font-size: 1.5rem;
   }
 
-  .first-row {
-    grid-template-columns: 1fr;
-  }
 
   .second-row {
     grid-template-columns: 1fr;

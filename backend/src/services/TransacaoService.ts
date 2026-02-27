@@ -1069,7 +1069,7 @@ export default class TransacaoService implements ITransacaoService {
 
     /**
      * Finds Crédito/Reembolso transactions by predefined period across all credit cards.
-     * @param period - The period to filter by: 'Este Mês', 'Últimos 3 Meses', or 'Último Ano'
+     * @param period - The period to filter by: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano'
      * @param userId - Optional user identifier to filter transactions by user ownership
      * @param bancoId - Optional banco domain id to filter by bank
      */
@@ -1086,7 +1086,7 @@ export default class TransacaoService implements ITransacaoService {
     /**
      * Finds Despesa Mensal transactions by predefined period for a specific account.
      * @param contaId - The domain id of the Conta to filter transactions by.
-     * @param period - The period to filter by: 'Este Mês', 'Últimos 3 Meses', or 'Último Ano'
+     * @param period - The period to filter by: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano'
      * @param userId - Optional user identifier to filter transactions by user ownership
      * @returns A Result object containing either an array of transaction DTOs or an error message
      */
@@ -1176,5 +1176,20 @@ export default class TransacaoService implements ITransacaoService {
             return Result.fail<ITransacaoDTO[]>('Error fetching all cartão transactions');
         }
     }
-}
 
+    /**
+     * Finds ALL transactions for a specific banco (admin/tools). This returns all transactions where either the conta or cartaoCredito belongs to the banco.
+     * This method intentionally does not enforce user ownership and is intended for administrative use.
+     * @param bancoId - Domain id of the banco (required).
+     * @param userId - Optional user identifier to filter by user ownership (if provided, will only return transactions for that user's accounts/cards within the banco)
+     */
+    public async findAllByBanco(bancoId: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
+        try {
+            const rows: Transacao[] = await this.transacaoRepo.findAllByBanco(bancoId, userId);
+            return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
+        } catch (e) {
+            this.logger.error('TransacaoService.findAllByBanco error: %o', e);
+            return Result.fail<ITransacaoDTO[]>('Error fetching transactions for banco');
+        }
+    }
+}

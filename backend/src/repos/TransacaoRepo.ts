@@ -633,6 +633,40 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
+     * Finds ALL transactions that belong to a specific banco (across contas and cartões).
+     * This ignores user ownership and returns every matching transaction for admin/tools use.
+     * @param bancoId - The domain ID of the Banco to filter transactions by.
+     * @param userId - Optional user ID to scope the search to a specific user's transactions. If not provided, returns transactions for all users.
+     */
+    public async findAllByBanco(bancoId: string, userId?: string): Promise<Transacao[]> {
+        try {
+            const qb = this.repo.createQueryBuilder('t')
+                .leftJoinAndSelect('t.categoria', 'c')
+                .leftJoinAndSelect('t.conta', 'co')
+                .leftJoinAndSelect('t.cartaoCredito', 'cc');
+
+            // bancoId is required for this method: filter by banco across conta or cartao
+            qb.where('co.banco_id = :bancoId OR cc.banco_id = :bancoId', { bancoId });
+
+            if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
+
+            const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').limit(5).getMany();
+
+            const res: Transacao[] = [];
+            for (const r of rows) {
+                const rowEntity = r as TransacaoEntity;
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: rowEntity.userDomainId };
+                const d = await TransacaoMap.toDomain(raw);
+                if (d) res.push(d);
+            }
+            return res;
+        } catch (err) {
+            this.logger.error('TransacaoRepo.findAllByBanco error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
      * Finds Entrada/Saída transactions by categoria across all accounts.
      * @param categoriaId - The domain ID of the Categoria to filter Transacao records by.
      * @param userId - Optional user ID to scope the search to a specific user's transactions.

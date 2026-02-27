@@ -6,57 +6,83 @@
       <p *ngIf="hasBancoSelected$ | async">Aqui está como se encontram as suas finanças hoje.</p>
     </div>
 
-    <div class="actions-header" *ngIf="hasBancoSelected$ | async">
-      <button class="action-button">
-        <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nova-transacao-icon">
-          <path d="M12 5V19M5 12H19" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-        </svg>
-        Nova Transação
-      </button>
+    <div class="page-actions" *ngIf="hasBancoSelected$ | async">
+      <div class="nova-transacao-wrapper">
+        <button class="nova-transacao-btn" (click)="toggleCreateMenu($event)">
+          <svg class="nova-transacao-icon" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5V19M5 12H19" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"
+                  stroke-linejoin="round"/>
+          </svg>
+          Nova Transação
+        </button>
+
+        <div class="nova-transacao-menu" *ngIf="showCreateMenu" (click)="$event.stopPropagation()">
+          <a href="/transacoes/criar-entradas">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5"
+                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Entrada
+          </a>
+          <div class="menu-divider"></div>
+          <a href="/transacoes/criar-saidas">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5"
+                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Saída
+          </a>
+
+          <!-- only show credit/reembolso when there are cards -->
+          <ng-container *ngIf="(vm.cartoes$ | async)?.length">
+            <div class="menu-divider"></div>
+            <a href="/transacoes/criar-credito">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M3 10h18M7 15h2m4 0h2M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z"
+                      stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Crédito
+            </a>
+            <div class="menu-divider"></div>
+            <a href="/transacoes/criar-reembolso">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M9 14l-4-4 4-4M5 10h11a4 4 0 0 1 0 8h-1" stroke="currentColor" stroke-width="1.5"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Reembolso
+            </a>
+          </ng-container>
+        </div>
+      </div>
     </div>
   </div>
+
   <div class="dashboard_content" *ngIf="hasBancoSelected$ | async">
 
-    <div class="first-row">
-      <div class="dashboard_section card">
-        <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="saldo-icon">
-          <path d="M6 10H10" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M20.8333 11H18.2308C16.4465 11 15 12.3431 15 14C15 15.6569 16.4465 17 18.2308 17H20.8333C20.9167 17 20.9583 17 20.9935 16.9979C21.5328 16.965 21.9623 16.5662 21.9977 16.0654C22 16.0327 22 15.994 22 15.9167V12.0833C22 12.006 22 11.9673 21.9977 11.9346C21.9623 11.4338 21.5328 11.035 20.9935 11.0021C20.9583 11 20.9167 11 20.8333 11Z" stroke="#1C274C" stroke-width="1.5"/>
-          <path d="M20.965 11C20.8873 9.1277 20.6366 7.97975 19.8284 7.17157C18.6569 6 16.7712 6 13 6H10C6.22876 6 4.34315 6 3.17157 7.17157C2 8.34315 2 10.2288 2 14C2 17.7712 2 19.6569 3.17157 20.8284C4.34315 22 6.22876 22 10 22H13C16.7712 22 18.6569 22 19.8284 20.8284C20.6366 20.0203 20.8873 18.8723 20.965 17" stroke="#1C274C" stroke-width="1.5"/>
-          <path d="M6 6L9.73549 3.52313C10.7874 2.82562 12.2126 2.82562 13.2645 3.52313L17 6" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M17.9912 14H18.0002" stroke="#1C274C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+    <!-- Single full-width summary card -->
+    <div class="first-row card">
 
+      <div class="dashboard_section">
+        <svg viewBox="0 0 24 24" fill="none" class="saldo-icon">
+          <path d="M6 10H10" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path
+            d="M20.8333 11H18.2308C16.4465 11 15 12.3431 15 14C15 15.6569 16.4465 17 18.2308 17H20.8333C20.9167 17 20.9583 17 20.9935 16.9979C21.5328 16.965 21.9623 16.5662 21.9977 16.0654C22 16.0327 22 15.994 22 15.9167V12.0833C22 12.006 22 11.9673 21.9977 11.9346C21.9623 11.4338 21.5328 11.035 20.9935 11.0021C20.9583 11 20.9167 11 20.8333 11Z"
+            stroke="#1C274C" stroke-width="1.5"/>
+          <path
+            d="M20.965 11C20.8873 9.1277 20.6366 7.97975 19.8284 7.17157C18.6569 6 16.7712 6 13 6H10C6.22876 6 4.34315 6 3.17157 7.17157C2 8.34315 2 10.2288 2 14C2 17.7712 2 19.6569 3.17157 20.8284C4.34315 22 6.22876 22 10 22H13C16.7712 22 18.6569 22 19.8284 20.8284C20.6366 20.0203 20.8873 18.8723 20.965 17"
+            stroke="#1C274C" stroke-width="1.5"/>
+          <path d="M6 6L9.73549 3.52313C10.7874 2.82562 12.2126 2.82562 13.2645 3.52313L17 6" stroke="#1C274C"
+                stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M17.9912 14H18.0002" stroke="#1C274C" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"/>
+        </svg>
         <div class="resumo-financeiro">
           <p class="resumo-label">Saldo Atual</p>
           <span class="resumo-value">
-            <ng-container *ngIf="dashboard$ | async as db; else noSaldo">
-              {{ db.saldoGlobal | number:'1.2-2' }} €
-            </ng-container>
+            <ng-container *ngIf="dashboard$ | async as db; else noSaldo">{{ db.saldoGlobal | number:'1.2-2' }}
+              €</ng-container>
             <ng-template #noSaldo>-</ng-template>
           </span>
-        </div>
-      </div>
-
-      <div class="dashboard_section card">
-        <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="entradas-icon">
-          <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-
-        <div class="resumo-financeiro">
-          <p class="resumo-label">Entradas</p>
-          <span class="resumo-value">5.000,00 €</span>
-        </div>
-      </div>
-
-      <div class="dashboard_section card">
-        <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="saidas-icon">
-          <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-
-        <div class="resumo-financeiro">
-          <p class="resumo-label">Saídas</p>
-          <span class="resumo-value">5.000,00 €</span>
         </div>
       </div>
     </div>
@@ -75,7 +101,8 @@
           </div>
           <div class="conta-info">
             <h4 class="conta-nome">{{ conta.nome }}</h4>
-            <p class="conta-valor">{{ conta.saldo.valor | number:'1.2-2' }} {{ conta.saldo.moeda === 'EUR' ? '€' : conta.saldo.moeda }}</p>
+            <p
+              class="conta-valor">{{ conta.saldo.valor | number:'1.2-2' }} {{ conta.saldo.moeda === 'EUR' ? '€' : conta.saldo.moeda }}</p>
           </div>
         </div>
       </div>
@@ -84,7 +111,7 @@
     <ng-container *ngIf="cartoes$ | async as cartoes">
       <div class="second-row" [class.second-row--single]="!cartoes || cartoes.length === 0">
 
-        <!-- Transações Recentes - Esquerda -->
+        <!-- Recent Transactions - Left column -->
         <div class="transacoes-section">
           <div class="section-header">
             <h3 class="section-title">Transações Recentes</h3>
@@ -92,60 +119,72 @@
           </div>
 
           <div class="transacoes-list">
-            <!-- Transação 1 - Saída -->
-            <div class="transacao-item card card--clickable">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transacao-icon saidas-icon">
-                <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-
-              <div class="transacao-details">
-                <p class="transacao-descricao text-large">Compra no Supermercado</p>
-                <span class="transacao-meta text-muted text-small">Supermercado • Conta Principal</span>
+            <ng-container *ngIf="transacoes$ | async as transacoes">
+              <div *ngIf="transacoes.length === 0" class="empty-state text-muted text-small">Sem transações recentes.
               </div>
 
-              <div class="transacao-values">
-                <p class="transacao-valor text-large text-negative">- 150,00 €</p>
-                <span class="transacao-data text-muted text-small">10 Fev</span>
+              <div *ngFor="let t of transacoes" class="transacao-item card card--clickable">
+
+                <!-- Icon by type -->
+                <svg *ngIf="t.tipo === 'Entrada'" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                     class="transacao-icon entradas-icon">
+                  <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5"
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <svg *ngIf="t.tipo === 'Saída'" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                     class="transacao-icon saidas-icon">
+                  <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5"
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <svg *ngIf="t.tipo === 'Crédito'" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                     class="transacao-icon saidas-icon">
+                  <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5"
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <svg *ngIf="t.tipo === 'Reembolso'" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                     class="transacao-icon entradas-icon">
+                  <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5"
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <svg *ngIf="t.tipo === 'Despesa Mensal'" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                     class="transacao-icon saidas-icon">
+                  <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5"
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+
+                <div class="transacao-details">
+                  <p class="transacao-descricao text-large">{{ t.descricao }}</p>
+                  <span class="transacao-meta text-muted text-small">
+                    {{ t.categoria.icon }} {{ t.categoria.nome }}
+                    <span *ngIf="t.conta"> • {{ t.conta.nome }}</span>
+                    <span *ngIf="t.cartaoCredito"> • {{ t.cartaoCredito.nome }}</span>
+                    <span> • {{ t.tipo }}</span>
+                  </span>
+                </div>
+
+                <div class="transacao-values">
+                  <p class="transacao-valor text-large"
+                     [class.text-positive]="t.tipo === 'Entrada' || t.tipo === 'Reembolso'"
+                     [class.text-negative]="t.tipo === 'Saída' || t.tipo === 'Crédito'">
+                    {{ (t.tipo === 'Entrada' || t.tipo === 'Reembolso') ? '+' : '-' }} {{ t.valor | number:'1.2-2' }} {{ t.moeda === 'EUR' ? '€' : t.moeda }}
+                  </p>
+                  <span
+                    class="transacao-data text-muted text-small">{{ vm.formatData(t.dia, t.mes) }} {{ t.ano }}</span>
+                  <!-- Status only for Credit, Refund or Monthly Expense -->
+                  <span *ngIf="t.tipo === 'Crédito' || t.tipo === 'Reembolso' || t.tipo === 'Despesa Mensal'"
+                        class="status-badge"
+                        [class.status-badge--pendente]="t.status === 'Pendente'"
+                        [class.status-badge--concluido]="t.status === 'Concluído'">
+                    {{ t.status }}
+                  </span>
+                </div>
+
               </div>
-            </div>
-
-            <!-- Transação 2 - Entrada -->
-            <div class="transacao-item card card--clickable">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transacao-icon entradas-icon">
-                <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-
-              <div class="transacao-details">
-                <p class="transacao-descricao text-large">Salário Mensal</p>
-                <span class="transacao-meta text-muted text-small">Ordenado • Conta Principal</span>
-              </div>
-
-              <div class="transacao-values">
-                <p class="transacao-valor text-large text-positive">+ 2.500,00 €</p>
-                <span class="transacao-data text-muted text-small">01 Fev</span>
-              </div>
-            </div>
-
-            <!-- Transação 3 - Saída -->
-            <div class="transacao-item card card--clickable">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transacao-icon saidas-icon">
-                <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-
-              <div class="transacao-details">
-                <p class="transacao-descricao text-large">Restaurante</p>
-                <span class="transacao-meta text-muted text-small">Alimentação • Cartão Crédito</span>
-              </div>
-
-              <div class="transacao-values">
-                <p class="transacao-valor text-large text-negative">- 45,00 €</p>
-                <span class="transacao-data text-muted text-small">08 Fev</span>
-              </div>
-            </div>
+            </ng-container>
           </div>
         </div>
 
-        <!-- Cartões - Direita (only when we have cartoes) -->
+        <!-- Cards - Right column (only when we have cards) -->
         <div class="cartoes-section" *ngIf="cartoes && cartoes.length > 0">
           <div class="section-header">
             <h3 class="section-title">Cartões de Crédito</h3>
@@ -162,14 +201,16 @@
               <div class="cartao-info">
                 <div class="cartao-limite">
                   <span class="text-muted text-small">Limite utilizado</span>
-                  <span class="text-large">{{ cartao.saldoUtilizado.valor | number:'1.2-2' }} € / {{ cartao.limiteCredito.valor | number:'1.2-2' }} €</span>
+                  <span class="text-large">{{ cartao.saldoUtilizado.valor | number:'1.2-2' }}
+                    € / {{ cartao.limiteCredito.valor | number:'1.2-2' }} €</span>
                 </div>
 
                 <div class="progress-bar">
-                  <div class="progress-bar__fill" [ngStyle]="{ width: vm.getPercentagemUtilizada(cartao) + '%' }"></div>
+                  <div class="progress-bar__fill" [style.width]="vm.getPercentagemUtilizada(cartao) + '%'"></div>
                 </div>
 
-                <span class="text-muted text-small">{{ vm.getPercentagemUtilizada(cartao) | number:'1.0-0' }}% utilizado</span>
+                <span class="text-muted text-small">{{ vm.getPercentagemUtilizada(cartao) | number:'1.0-0' }}
+                  % utilizado</span>
               </div>
             </div>
           </div>

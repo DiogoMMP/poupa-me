@@ -70,7 +70,7 @@
         </button>
       </div>
 
-      <!-- Filtros Contas -->
+      <!-- Account Filters -->
       <div class="filter-panel" *ngIf="showContaFilters">
         <div class="filter-row">
           <div class="filter-field">
@@ -101,7 +101,7 @@
         </div>
       </div>
 
-      <!-- Lista paginada -->
+      <!-- Paged list -->
       <ng-container *ngIf="vm.contaTransacoes$ | async as all">
         <div class="empty-state" *ngIf="all.length === 0">Sem transações de contas.</div>
 
@@ -121,7 +121,7 @@
                 {{ t.categoria.icon }} {{ t.categoria.nome }}<span *ngIf="t.conta"> • {{ t.conta.nome }}</span>
               </span>
 
-              <!-- ── Ações (esquerda) ── -->
+              <!-- ── Actions (left) ── -->
               <div class="transacao-actions">
                 <a class="btn-edit-small" [routerLink]="['/transacoes/editar', t.id]" title="Editar" aria-label="Editar transação">
                   <svg viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -144,7 +144,7 @@
           </div>
         </div>
 
-        <!-- Paginação Contas -->
+        <!-- Accounts Pagination -->
         <div class="pagination" *ngIf="totalPages(all) > 1">
           <button class="pagination-btn" (click)="contaPage = contaPage - 1" [disabled]="contaPage === 1">‹</button>
           <span class="pagination-info">{{ contaPage }} / {{ totalPages(all) }}</span>
@@ -169,7 +169,7 @@
         </button>
       </div>
 
-      <!-- Filtros Cartão -->
+      <!-- Card Filters -->
       <div class="filter-panel" *ngIf="showCartaoFilters">
         <div class="filter-row">
           <div class="filter-field">
@@ -207,7 +207,7 @@
         </div>
       </div>
 
-      <!-- Lista paginada -->
+      <!-- Paged list -->
       <ng-container *ngIf="vm.cartaoTransacoes$ | async as all">
         <div class="empty-state" *ngIf="all.length === 0">Sem transações de cartões.</div>
 
@@ -227,7 +227,7 @@
                 {{ t.categoria.icon }} {{ t.categoria.nome }}<span *ngIf="t.cartaoCredito"> • {{ t.cartaoCredito.nome }}</span>
               </span>
 
-              <!-- ── Ações (esquerda) ── -->
+              <!-- ── Actions (left) ── -->
               <div class="transacao-actions">
                 <a class="btn-edit-small" [routerLink]="['/transacoes/editar', t.id]" title="Editar" aria-label="Editar transação">
                   <svg viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>

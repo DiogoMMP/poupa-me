@@ -523,6 +523,58 @@ export default (app: Router) => {
 
   /**
    * @openapi
+   * /transacao/all-banco:
+   *   get:
+   *     tags:
+   *       - Transacao
+   *     summary: Get ALL transactions for a banco
+   *     description: Returns the 5 most recent transactions for the authenticated user, optionally filtered by banco. Requires authentication.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: bancoId
+   *         required: false
+   *         schema:
+   *           type: string
+   *         description: Domain ID of the Banco to filter transactions by
+   *         example: "BNC00000000001"
+   *     responses:
+   *       200:
+   *         description: List of all transactions for the banco
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Transacao'
+   *             examples:
+   *               sample:
+   *                 value:
+   *                   - data:
+   *                       dia: 17
+   *                       mes: 1
+   *                       ano: 2026
+   *                     descricao: "Continente"
+   *                     valor:
+   *                       valor: 21.69
+   *                       moeda: "EUR"
+   *                     tipo: "Crédito"
+   *                     status: "Pendente"
+   *                     categoria:
+   *                       id: "CAT00000000004"
+   *                       nome: "Sem Categoria"
+   *                     cartaoCredito:
+   *                       id: "CCR00000000001"
+   *                       nome: "Cartão Santander"
+   *                       limiteCredito:
+   *                         valor: 2098.02
+   *                         moeda: "EUR"
+   */
+  route.get('/all-banco', isAuth, (req, res, next) => ctrl.getAllByBanco(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
    * /transacao/conta:
    *   get:
    *     tags:

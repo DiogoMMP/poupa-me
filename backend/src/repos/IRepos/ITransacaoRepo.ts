@@ -20,6 +20,9 @@ export default interface ITransacaoRepo {
     findAllContaTransactions(userId?: string, bancoId?: string): Promise<Transacao[]>;
     findAllCartaoTransactions(userId?: string, bancoId?: string): Promise<Transacao[]>;
 
+    // NEW: Get ALL transactions for a given banco (no user filter)
+    findAllByBanco(bancoId: string, userId?: string): Promise<Transacao[]>;
+
     // Filter by categoria (one per type, with id filters)
     findContaTransactionsByCategoria(categoriaId: string, userId?: string, bancoId?: string): Promise<Transacao[]>;
     findCartaoTransactionsByCategoria(categoriaId: string, userId?: string, bancoId?: string): Promise<Transacao[]>;

@@ -120,6 +120,9 @@ export default interface ITransacaoService {
      */
     findAllCartaoTransactions(userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>>;
 
+    // Get ALL transactions for a given banco
+    findAllByBanco(bancoId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+
     // --- Filter by categoria (one per type) ---
 
     /**
