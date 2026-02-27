@@ -2,7 +2,14 @@ import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
-import {CartoesCreditoDTO, CartoesCreditoInputDTO, CartoesCreditoUpdateDTO, ExtratoCartaoDTO} from '../dto/cartoes-credito.dto';
+import {
+  CartoesCreditoDTO,
+  CartoesCreditoInputDTO,
+  CartoesCreditoUpdateDTO,
+  ExtratoCartaoDTO,
+  PeriodoDTO
+} from '../dto/cartoes-credito.dto';
+import {TransacoesDTO} from '../../transacoes/dto/transacoes.dto';
 
 @Injectable({providedIn: 'root'})
 export class CartoesCreditoService {
@@ -38,5 +45,9 @@ export class CartoesCreditoService {
 
   getExtrato(id: string): Observable<ExtratoCartaoDTO> {
     return this.http.get<ExtratoCartaoDTO>(`${this.apiUrl}/${id}/extrato`, {withCredentials: true});
+  }
+
+  pagar(id: string, dto: PeriodoDTO): Observable<TransacoesDTO> {
+    return this.http.post<TransacoesDTO>(`${this.apiUrl}/${id}/pagar`, dto, {withCredentials: true});
   }
 }

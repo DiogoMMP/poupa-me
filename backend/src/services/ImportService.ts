@@ -234,8 +234,11 @@ export default class ImportService implements IImportService {
         const entradasVistas = new Set<string>();
         const results: string[] = [];
 
+        // Pre-parse saidas rows so entradas can look up cartao for Reembolso
+        const saidasRows = saidasCsv ? this.parseCSV(saidasCsv).slice(1) : [];
+
         if (entradasCsv) {
-            const r = await this.importTransacoes(entradasCsv, userId, 'entradas', periodo, entradasVistas);
+            const r = await this.importTransacoes(entradasCsv, userId, 'entradas', periodo, entradasVistas, saidasRows);
             if (r.isFailure) return Result.fail<string[]>(`Entradas: ${r.error}`);
             results.push('entradas');
         }
@@ -258,7 +261,8 @@ export default class ImportService implements IImportService {
         userId: string,
         fileType: 'entradas' | 'saidas',
         periodo?: { inicio: Date; fim: Date },
-        entradasVistas?: Set<string>
+        entradasVistas?: Set<string>,
+        saidasRows?: string[][]
     ): Promise<Result<void>> {
         try {
             const rows = this.parseCSV(csvContent);
@@ -304,7 +308,6 @@ export default class ImportService implements IImportService {
                 const dataStr = row[3] || '';
 
                 // Different column positions for entries vs exits
-                const reembolsoCol = fileType === 'entradas' ? (row[5] || '').toLowerCase() : '';
                 const saiuStr = fileType === 'entradas' ? (row[6] || '').toLowerCase() : '';
                 const valorStr = fileType === 'entradas' ? (row[7] || '') : (row[5] || '');
 
@@ -645,24 +648,14 @@ export default class ImportService implements IImportService {
 
                 // Determine transaction type based on file type and other factors
                 let tipo: 'Entrada' | 'Saída' | 'Crédito' | 'Reembolso';
-                const isReembolsoCat = categoria!.nome.value.toLowerCase().includes('reembolso');
-                const isReembolsoCol = reembolsoCol === 'yes' || reembolsoCol === 'sim';
+                const isReembolso = fileType === 'entradas' && nome.toLowerCase().includes('reembolso');
 
-                if (fileType === 'entradas') {
-                    if (isReembolsoCol || isReembolsoCat) {
-                        tipo = 'Reembolso';
-                    } else if (isCard) {
-                        tipo = 'Crédito';
-                    } else {
-                        tipo = 'Entrada';
-                    }
+                if (isReembolso) {
+                    tipo = 'Reembolso';
+                } else if (fileType === 'entradas') {
+                    tipo = isCard ? 'Crédito' : 'Entrada';
                 } else {
-                    // saidas
-                    if (isCard) {
-                        tipo = 'Crédito';
-                    } else {
-                        tipo = 'Saída';
-                    }
+                    tipo = isCard ? 'Crédito' : 'Saída';
                 }
 
                 // Check for duplicates
@@ -708,40 +701,37 @@ export default class ImportService implements IImportService {
                     status = (saiuStr === 'yes' || saiuStr === 'sim') ? 'Concluído' : 'Pendente';
                 }
 
-                // For Reembolso, we need to find the original Crédito/Saída transaction to get the cartao
-                let contaForTransaction = conta;
-                let cartaoForTransaction = cartao;
+                // For Reembolso: conta comes from the entrada row, cartao is found in the saidas CSV by matching name/month/valor
+                let contaFinal = isCard ? undefined : conta;
+                let cartaoFinal = isCard ? cartao : undefined;
 
-                if (tipo === 'Reembolso') {
-                    // Search for matching Crédito or Saída transaction with similar name/category
-                    const matchingTransacao = allTransacoes.find(t => {
-                        // Look for transactions with similar description or same category
-                        const sameCategory = t.categoria.id.toString() === categoria!.id.toString();
-                        const similarDescription = t.descricao.value.toLowerCase().includes(nome.toLowerCase()) ||
-                                                   nome.toLowerCase().includes(t.descricao.value.toLowerCase());
-
-                        // Must be a Crédito or Saída type (not another Reembolso)
-                        const isExpenseType = t.tipo.value === 'Crédito' || t.tipo.value === 'Saída';
-
-                        return isExpenseType && (sameCategory || similarDescription);
+                if (tipo === 'Reembolso' && saidasRows) {
+                    contaFinal = conta ?? undefined;
+                    // Find matching row in saidas CSV: same name, same month/year, same valor, and conta is a cartão
+                    const saidaMatch = saidasRows.find(r => {
+                        const saidaNome = this.cleanName(r[0] || '');
+                        const saidaContaStr = this.cleanName(r[2] || '');
+                        const saidaDataStr = r[3] || '';
+                        const saidaValorStr = r[5] || '';
+                        if (!saidaNome || !saidaContaStr) return false;
+                        const saidaIsCard = saidaContaStr.toLowerCase().includes('cartão') || saidaContaStr.toLowerCase().includes('cartao');
+                        if (!saidaIsCard) return false;
+                        if (saidaNome.toLowerCase() !== nome.toLowerCase()) return false;
+                        const saidaDate = this.parseDate(saidaDataStr);
+                        if (!saidaDate) return false;
+                        if (saidaDate.getMonth() !== date.getMonth() || saidaDate.getFullYear() !== date.getFullYear()) return false;
+                        const saidaValor = this.parseCurrency(saidaValorStr);
+                        return Math.abs(saidaValor - valor) < 0.01;
                     });
 
-                    if (matchingTransacao && matchingTransacao.cartaoCredito) {
-                        // Found a matching card transaction, use that card
-                        cartaoForTransaction = matchingTransacao.cartaoCredito;
-
-                        // Get the payment account from the card
-                        const contaPagamentoId = matchingTransacao.cartaoCredito.contaPagamentoId;
-                        if (contaPagamentoId) {
-                            const contaPagamento = existingContas.find(c => c.id.toString() === contaPagamentoId.toString());
-                            if (contaPagamento) {
-                                contaForTransaction = contaPagamento;
-                            }
-                        }
-                    } else {
-                        // Fallback: if no matching transaction found, skip this reembolso
-                        this.logger.info(`Skipping reembolso without matching card transaction: ${nome}`);
-                        continue;
+                    if (saidaMatch) {
+                        const saidaCartaoStr = this.cleanName(saidaMatch[2] || '');
+                        const saidaExtractedName = (saidaCartaoStr.split('(')[0] ?? saidaCartaoStr).trim();
+                        cartaoFinal = existingCartoes.find(c => {
+                            const entityName = c.nome.value.toLowerCase();
+                            const searchStr = saidaExtractedName.toLowerCase();
+                            return searchStr.includes(entityName) || entityName.includes(searchStr);
+                        });
                     }
                 }
 
@@ -752,8 +742,8 @@ export default class ImportService implements IImportService {
                     tipo: Tipo.create(tipo).getValue(),
                     status: Status.create(status).getValue(),
                     categoria: categoria!,
-                    conta: tipo === 'Reembolso' ? contaForTransaction : (isCard ? undefined : conta),
-                    cartaoCredito: tipo === 'Reembolso' ? cartaoForTransaction : (isCard ? cartao : undefined)
+                    conta: contaFinal,
+                    cartaoCredito: cartaoFinal
                 };
 
                 const transacaoOrError = Transacao.create(props);

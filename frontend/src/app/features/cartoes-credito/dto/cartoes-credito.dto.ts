@@ -99,3 +99,19 @@ export interface CartoesCreditoUpdateDTO {
     contaPagamentoId?: string;
     bancoId?: string;
 }
+
+/**
+ * Data Transfer Object for Periodo (used in payment)
+ */
+export interface PeriodoDTO {
+  dataInicio: {
+    dia: number;
+    mes: number;
+    ano: number;
+  };
+  dataFim: {
+    dia: number;
+    mes: number;
+    ano: number;
+  };
+}

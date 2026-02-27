@@ -70,6 +70,22 @@
               </button>
             </ng-container>
           </div>
+
+          <div class="card-content-pagar">
+            <!-- Valor a Pagar label -->
+            <div class="card-details">
+              <small><b>Valor a Pagar:</b> {{ vm.getValorAPagar(cartao.id) | number:'1.2-2' }} {{ cartao.saldoUtilizado.moeda === 'EUR' ? '€' : cartao.saldoUtilizado.moeda }}</small>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button [routerLink]="['/cartoes-credito/pagar', cartao.id]" class="btn-pay">
+              <svg class="svg-icon" viewBox="0 0 24 24">
+                <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor"/>
+              </svg>
+              <span>Pagar Cartão</span>
+            </button>
+          </div>
         </div>
       </div>
     </ng-container>

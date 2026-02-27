@@ -16,5 +16,12 @@ export const routes: Routes = [
   {
     path: 'editar/:id',
     loadComponent: () => import('./components/editar/cartoes-credito-editar.component').then(m => m.CartoesCreditoEditarComponent)
+  },
+
+  // redirect bare 'pagar' to list to avoid intermediate pages
+  { path: 'pagar', redirectTo: '', pathMatch: 'full' },
+  {
+    path: 'pagar/:id',
+    loadComponent: () => import('./components/pagar/cartoes-credito-pagar.component').then(m => m.CartoesCreditoPagarComponent)
   }
 ];

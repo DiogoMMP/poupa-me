@@ -155,6 +155,12 @@ export class CartoesCreditoListViewModel {
     return this.contasNamesMap.get(contaId) || '-';
   }
 
+  getValorAPagar(cartaoId: string): number {
+    const extrato = this.extratosMap.get(cartaoId);
+    if (!extrato) return 0;
+    return extrato.saldoAtual?.valor ?? 0;
+  }
+
   /**
    * Calculate percentage of credit limit used
    */

@@ -391,7 +391,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 .where('cartao_credito_id = :cartaoId', { cartaoId: cartaoRow.id })
                 .andWhere('user_domain_id = :userId', { userId })
                 .andWhere('status = :status', { status: 'Pendente' })
-                .andWhere('tipo = :tipo', { tipo: 'Crédito' })
+                .andWhere('tipo IN (:...tipos)', { tipos: ['Crédito', 'Reembolso'] })
                 .andWhere(
                     '(ano * 10000 + mes * 100 + dia) >= :inicioInt AND (ano * 10000 + mes * 100 + dia) <= :fechoInt',
                     {
@@ -428,8 +428,8 @@ export default class TransacaoRepo implements ITransacaoRepo {
             const Dinheiro = (await import('../domain/Shared/ValueObjects/Dinheiro.js')).Dinheiro;
 
             const dataOrError = Data.createFromParts(now.getDate(), now.getMonth() + 1, now.getFullYear());
-            const descricaoOrError = Descricao.create(`Pagamento Cartão de Crédito ${cartaoRow.nome}`);
-            const tipoOrError = Tipo.create('Saída');
+            const descricaoOrError = Descricao.create(`Pagamento ${cartaoRow.nome}`);
+            const tipoOrError = Tipo.create('Crédito');
             const statusOrError = Status.create('Concluído');
             const valorOrError = Dinheiro.create(valorPagamento, cartaoRow.moeda);
 
