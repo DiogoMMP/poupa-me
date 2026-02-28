@@ -100,11 +100,11 @@ export default interface ITransacaoService {
     findCartaoTransactions(cartaoCreditoId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
-     * Find all Despesa Mensal transactions for a specific account.
-     * @param contaId - The domain id of the Conta to filter transactions by.
+     * Find all recurring expense transactions (Despesa Mensal + Poupança) for a specific bank.
+     * @param bancoId - The domain id of the Banco to filter transactions by.
      * @param userId - Optional user id to scope the search to a specific user's transactions.
      */
-    findDespesaMensal(contaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findDespesaRecorrente(bancoId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
      * Find ALL Entrada/Saída transactions across every account (no contaId filter).
@@ -142,14 +142,14 @@ export default interface ITransacaoService {
     findCartaoTransactionsByCategoria(categoriaId: string, userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
-     * Find Despesa Mensal transactions by category for a specific account.
-     * @param contaId - The domain id of the Conta to filter transactions by.
+     * Find recurring expense transactions by category for a specific bank.
+     * @param bancoId - The domain id of the Banco to filter transactions by.
      * @param categoriaId - Category domain id used to filter transactions.
      * @param userId - Optional user id to scope the search to a specific user's transactions.
      */
-    findDespesaMensalByCategoria(contaId: string, categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findDespesaRecorrenteByCategoria(bancoId: string, categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
 
-    // --- Filter by status (one for cartão, one for despesa mensal) ---
+    // --- Filter by status (one for cartão, one for despesa recorrente) ---
 
     /**
      * Find Crédito and Reembolso transactions by status across all credit cards.
@@ -160,12 +160,12 @@ export default interface ITransacaoService {
     findCartaoTransactionsByStatus(status: string, userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
-     * Find Despesa Mensal transactions by status for a specific account.
-     * @param contaId - The domain id of the Conta to filter transactions by.
+     * Find recurring expense transactions by status for a specific bank.
+     * @param bancoId - The domain id of the Banco to filter transactions by.
      * @param status - The status value used to filter transactions (e.g., "Pendente", "Concluído").
      * @param userId - Optional user id to scope the search to a specific user's transactions.
      */
-    findDespesaMensalByStatus(contaId: string, status: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findDespesaRecorrenteByStatus(bancoId: string, status: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     // --- Filter by period (one per type) ---
 
@@ -186,10 +186,10 @@ export default interface ITransacaoService {
     findCartaoTransactionsByPeriod(period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>>;
 
     /**
-     * Find Despesa Mensal transactions by predefined period for a specific account.
-     * @param contaId - The domain id of the Conta to filter transactions by.
+     * Find recurring expense transactions by predefined period for a specific bank.
+     * @param bancoId - The domain id of the Banco to filter transactions by.
      * @param period - Predefined period: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
      * @param userId - Optional user id to scope the search to a specific user's transactions.
      */
-    findDespesaMensalByPeriod(contaId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findDespesaRecorrenteByPeriod(bancoId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>>;
 }

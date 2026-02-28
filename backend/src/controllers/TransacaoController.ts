@@ -6,7 +6,7 @@ import type ITransacaoService from '../services/IServices/ITransacaoService.js';
 import type { ITransacaoInputDTO, ITransacaoReembolsoDTO, ITransacaoUpdateDTO } from '../dto/ITransacaoDTO.js';
 
 /**
- * Controller implementation for Transacao operations
+ * Controller implementation for Transacao HTTP endpoints
  */
 @Service()
 export default class TransacaoController implements ITransacaoController {
@@ -246,15 +246,15 @@ export default class TransacaoController implements ITransacaoController {
     }
 
     /**
-     * Handles retrieving all Despesa Mensal transactions for a specific account
+     * Handles retrieving all recurring expense transactions (Despesa Mensal + Poupança) for a specific bank
      */
-    public async getDespesaMensal(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+    public async getDespesaRecorrente(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const contaId = (req.query.contaId || req.params.contaId) as string;
-            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
+            const bancoId = (req.query.bancoId || req.params.bancoId) as string;
+            if (!bancoId) return res.status(400).json({ error: 'bancoId is required' });
 
             const userId = getEffectiveUserId(req as AuthenticatedRequest);
-            const result = await this.transacaoService.findDespesaMensal(contaId, userId);
+            const result = await this.transacaoService.findDespesaRecorrente(bancoId, userId);
             if (result.isFailure) return res.status(500).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {
@@ -369,17 +369,17 @@ export default class TransacaoController implements ITransacaoController {
     }
 
     /**
-     * Handles retrieving Despesa Mensal transactions by category for a specific account
+     * Handles retrieving recurring expense transactions by category for a specific bank
      */
-    public async getDespesaMensalByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+    public async getDespesaRecorrenteByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const contaId = (req.query.contaId || req.params.contaId) as string;
+            const bancoId = (req.query.bancoId || req.params.bancoId) as string;
             const categoriaId = (req.query.categoriaId || req.params.categoriaId) as string;
-            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
+            if (!bancoId) return res.status(400).json({ error: 'bancoId is required' });
             if (!categoriaId) return res.status(400).json({ error: 'categoriaId is required' });
 
             const userId = getEffectiveUserId(req as AuthenticatedRequest);
-            const result = await this.transacaoService.findDespesaMensalByCategoria(contaId, categoriaId, userId);
+            const result = await this.transacaoService.findDespesaRecorrenteByCategoria(bancoId, categoriaId, userId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {
@@ -408,17 +408,17 @@ export default class TransacaoController implements ITransacaoController {
     }
 
     /**
-     * Handles retrieving Despesa Mensal transactions by status for a specific account
+     * Handles retrieving recurring expense transactions by status for a specific bank
      */
-    public async getDespesaMensalByStatus(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+    public async getDespesaRecorrenteByStatus(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const contaId = (req.query.contaId || req.params.contaId) as string;
+            const bancoId = (req.query.bancoId || req.params.bancoId) as string;
             const status = (req.query.status || req.params.status) as string;
-            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
+            if (!bancoId) return res.status(400).json({ error: 'bancoId is required' });
             if (!status) return res.status(400).json({ error: 'status is required' });
 
             const userId = getEffectiveUserId(req as AuthenticatedRequest);
-            const result = await this.transacaoService.findDespesaMensalByStatus(contaId, status, userId);
+            const result = await this.transacaoService.findDespesaRecorrenteByStatus(bancoId, status, userId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {
@@ -475,13 +475,13 @@ export default class TransacaoController implements ITransacaoController {
     }
 
     /**
-     * Handles retrieving Despesa Mensal transactions by predefined period for a specific account
+     * Handles retrieving recurring expense transactions by predefined period for a specific bank
      */
-    public async getDespesaMensalByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+    public async getDespesaRecorrenteByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const contaId = (req.query.contaId || req.params.contaId) as string;
+            const bancoId = (req.query.bancoId || req.params.bancoId) as string;
             const period = (req.query.period || req.params.period) as string;
-            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
+            if (!bancoId) return res.status(400).json({ error: 'bancoId is required' });
             if (!period) return res.status(400).json({ error: 'period is required' });
 
             const validPeriods = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'];
@@ -490,7 +490,7 @@ export default class TransacaoController implements ITransacaoController {
             }
 
             const userId = getEffectiveUserId(req as AuthenticatedRequest);
-            const result = await this.transacaoService.findDespesaMensalByPeriod(contaId, period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId);
+            const result = await this.transacaoService.findDespesaRecorrenteByPeriod(bancoId, period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {

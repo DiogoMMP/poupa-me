@@ -633,24 +633,24 @@ export default (app: Router) => {
 
   /**
    * @openapi
-   * /transacao/despesa-mensal:
+   * /transacao/despesa-recorrente:
    *   get:
    *     tags:
    *       - Transacao
-   *     summary: Get all Despesa Mensal transactions for a specific account
-   *     description: Returns all monthly expense transactions for a specific account. Requires authentication.
+   *     summary: Get all recurring expense transactions (Despesa Mensal + Poupança) for a specific bank
+   *     description: Returns all recurring expense transactions for accounts belonging to the given bank. Requires authentication.
    *     security:
    *       - bearerAuth: []
    *     parameters:
    *       - in: query
-   *         name: contaId
+   *         name: bancoId
    *         required: true
    *         schema:
    *           type: string
-   *         description: Domain ID of the Conta to filter transactions by
+   *         description: Domain ID of the Banco to filter transactions by
    *     responses:
    *       200:
-   *         description: List of despesa mensal transactions
+   *         description: List of recurring expense transactions
    *         content:
    *           application/json:
    *             schema:
@@ -658,7 +658,7 @@ export default (app: Router) => {
    *               items:
    *                 $ref: '#/components/schemas/Transacao'
    */
-  route.get('/despesa-mensal', isAuth, (req, res, next) => ctrl.getDespesaMensal(req as AuthenticatedRequest, res, next));
+  route.get('/despesa-recorrente', isAuth, (req, res, next) => ctrl.getDespesaRecorrente(req as AuthenticatedRequest, res, next));
 
   // --- GET Routes: Filter by Categoria ---
 
@@ -722,21 +722,21 @@ export default (app: Router) => {
 
   /**
    * @openapi
-   * /transacao/despesa-mensal/by-categoria:
+   * /transacao/despesa-recorrente/by-categoria:
    *   get:
    *     tags:
    *       - Transacao
-   *     summary: Get Despesa Mensal transactions by category for a specific account
-   *     description: Returns despesa mensal transactions filtered by category for a specific account. Requires authentication.
+   *     summary: Get recurring expense transactions by category for a specific bank
+   *     description: Returns recurring expense transactions filtered by category for accounts belonging to the given bank. Requires authentication.
    *     security:
    *       - bearerAuth: []
    *     parameters:
    *       - in: query
-   *         name: contaId
+   *         name: bancoId
    *         required: true
    *         schema:
    *           type: string
-   *         description: Domain ID of the Conta
+   *         description: Domain ID of the Banco
    *       - in: query
    *         name: categoriaId
    *         required: true
@@ -753,7 +753,7 @@ export default (app: Router) => {
    *               items:
    *                 $ref: '#/components/schemas/Transacao'
    */
-  route.get('/despesa-mensal/by-categoria', isAuth, (req, res, next) => ctrl.getDespesaMensalByCategoria(req as AuthenticatedRequest, res, next));
+  route.get('/despesa-recorrente/by-categoria', isAuth, (req, res, next) => ctrl.getDespesaRecorrenteByCategoria(req as AuthenticatedRequest, res, next));
 
   // --- GET Routes: Filter by Status (one for cartão, one for despesa mensal) ---
 
@@ -788,21 +788,21 @@ export default (app: Router) => {
 
   /**
    * @openapi
-   * /transacao/despesa-mensal/by-status:
+   * /transacao/despesa-recorrente/by-status:
    *   get:
    *     tags:
    *       - Transacao
-   *     summary: Get Despesa Mensal transactions by status for a specific account
-   *     description: Returns Despesa Mensal transactions filtered by status for a specific account. Requires authentication.
+   *     summary: Get recurring expense transactions by status for a specific bank
+   *     description: Returns recurring expense transactions filtered by status for accounts belonging to the given bank. Requires authentication.
    *     security:
    *       - bearerAuth: []
    *     parameters:
    *       - in: query
-   *         name: contaId
+   *         name: bancoId
    *         required: true
    *         schema:
    *           type: string
-   *         description: Domain ID of the Conta
+   *         description: Domain ID of the Banco
    *       - in: query
    *         name: status
    *         required: true
@@ -819,7 +819,7 @@ export default (app: Router) => {
    *               items:
    *                 $ref: '#/components/schemas/Transacao'
    */
-  route.get('/despesa-mensal/by-status', isAuth, (req, res, next) => ctrl.getDespesaMensalByStatus(req as AuthenticatedRequest, res, next));
+  route.get('/despesa-recorrente/by-status', isAuth, (req, res, next) => ctrl.getDespesaRecorrenteByStatus(req as AuthenticatedRequest, res, next));
 
   // --- GET Routes: Filter by Period (one per type) ---
 
@@ -887,23 +887,23 @@ export default (app: Router) => {
 
   /**
    * @openapi
-   * /transacao/despesa-mensal/by-period:
+   * /transacao/despesa-recorrente/by-period:
    *   get:
    *     tags:
    *       - Transacao
-   *     summary: Get Despesa Mensal transactions by predefined period for a specific account
+   *     summary: Get recurring expense transactions by predefined period for a specific bank
    *     description: |-
-   *       Returns despesa mensal transactions within a predefined period for a specific account. Requires authentication.
+   *       Returns recurring expense transactions within a predefined period for accounts belonging to the given bank. Requires authentication.
    *       Valid periods: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
    *     security:
    *       - bearerAuth: []
    *     parameters:
    *       - in: query
-   *         name: contaId
+   *         name: bancoId
    *         required: true
    *         schema:
    *           type: string
-   *         description: Domain ID of the Conta
+   *         description: Domain ID of the Banco
    *       - in: query
    *         name: period
    *         required: true
@@ -920,7 +920,7 @@ export default (app: Router) => {
    *               items:
    *                 $ref: '#/components/schemas/Transacao'
    */
-  route.get('/despesa-mensal/by-period', isAuth, (req, res, next) => ctrl.getDespesaMensalByPeriod(req as AuthenticatedRequest, res, next));
+  route.get('/despesa-recorrente/by-period', isAuth, (req, res, next) => ctrl.getDespesaRecorrenteByPeriod(req as AuthenticatedRequest, res, next));
 
   /**
    * @openapi

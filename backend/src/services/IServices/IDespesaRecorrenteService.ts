@@ -31,6 +31,18 @@ export default interface IDespesaRecorrenteService {
     getAllDespesas(userId: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
 
     /**
+     * Gets DespesaRecorrentes that have valor + diaDoMes defined,
+     * filtered to those whose origin account belongs to the given bank
+     */
+    getDespesasComValor(userId: string, bancoId: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
+
+    /**
+     * Gets DespesaRecorrentes without valor + diaDoMes (icon/nome only),
+     * filtered to those whose origin account belongs to the given bank
+     */
+    getDespesasSemValor(userId: string, bancoId: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
+
+    /**
      * Processes recurring expenses for a user (called on login/dashboard load)
      */
     processarRecorrencias(userId: string): Promise<Result<void>>;

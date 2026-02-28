@@ -106,8 +106,10 @@ export default class ImportService implements IImportService {
     private isDespesaMensalName(name: string): boolean {
         const lower = name.normalize('NFC').toLowerCase().trim();
         return this.DESPESA_MENSAL_NAMES.some(dm => {
-            const dmNorm = dm.normalize('NFC');
-            return lower === dmNorm || lower.startsWith(dmNorm);
+            const dmNorm = dm.normalize('NFC').toLowerCase();
+            // Exact match, or the name starts with the keyword followed by a space/punctuation
+            // (prevents 'gas' from matching 'gasolina', 'gás' from matching 'gás natural station', etc.)
+            return lower === dmNorm || lower.startsWith(dmNorm + ' ') || lower.startsWith(dmNorm + '-');
         });
     }
 

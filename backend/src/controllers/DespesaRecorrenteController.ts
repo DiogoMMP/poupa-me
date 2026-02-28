@@ -162,5 +162,59 @@ export default class DespesaRecorrenteController implements IDespesaRecorrenteCo
             next(err);
         }
     }
+
+    /**
+     * GET /despesa-recorrente/com-valor?bancoId=:bancoId - Get recurring expenses with valor + diaDoMes defined for a bank
+     */
+    public async getDespesasComValor(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            if (!userId) {
+                return res.status(401).json({ error: 'User not authenticated' });
+            }
+
+            const bancoId = req.query.bancoId as string;
+            if (!bancoId) {
+                return res.status(400).json({ error: 'bancoId query parameter is required' });
+            }
+
+            const result = await this.despesaService.getDespesasComValor(userId, bancoId);
+
+            if (result.isFailure) {
+                return res.status(400).json({ error: result.error });
+            }
+
+            return res.status(200).json(result.getValue());
+        } catch (err) {
+            next(err);
+        }
+    }
+
+    /**
+     * GET /despesa-recorrente/sem-valor?bancoId=:bancoId - Get recurring expenses without valor + diaDoMes for a bank
+     */
+    public async getDespesasSemValor(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            if (!userId) {
+                return res.status(401).json({ error: 'User not authenticated' });
+            }
+
+            const bancoId = req.query.bancoId as string;
+            if (!bancoId) {
+                return res.status(400).json({ error: 'bancoId query parameter is required' });
+            }
+
+            const result = await this.despesaService.getDespesasSemValor(userId, bancoId);
+
+            if (result.isFailure) {
+                return res.status(400).json({ error: result.error });
+            }
+
+            return res.status(200).json(result.getValue());
+        } catch (err) {
+            next(err);
+        }
+    }
 }
 

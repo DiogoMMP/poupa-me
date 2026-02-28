@@ -545,12 +545,11 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds all Despesa Mensal transactions for a specific account.
-     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
-     * @param contaId - The domain ID of the Conta to filter transactions by.
+     * Finds all recurring expense transactions (Despesa Mensal + Poupança) for a specific bank.
+     * @param bancoId - The domain ID of the Banco to filter transactions by.
      * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findDespesaMensal(contaId: string, userId?: string): Promise<Transacao[]> {
+    public async findDespesaRecorrente(bancoId: string, userId?: string): Promise<Transacao[]> {
         try {
             const qb = this.repo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
@@ -558,7 +557,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 .leftJoinAndSelect('t.contaDestino', 'cd')
                 .leftJoinAndSelect('t.contaPoupanca', 'cp')
                 .where('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
-                .andWhere('co.domain_id = :contaId', { contaId });
+                .andWhere('co.banco_id = :bancoId', { bancoId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
@@ -571,7 +570,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
             }
             return res;
         } catch (err) {
-            this.logger.error('TransacaoRepo.findDespesaMensal error: %o', err);
+            this.logger.error('TransacaoRepo.findDespesaRecorrente error: %o', err);
             throw err;
         }
     }
@@ -728,13 +727,12 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds Despesa Mensal transactions by categoria for a specific account.
-     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
-     * @param contaId - The domain ID of the Conta to filter transactions by.
+     * Finds recurring expense transactions (Despesa Mensal + Poupança) by category for a specific bank.
+     * @param bancoId - The domain ID of the Banco to filter transactions by.
      * @param categoriaId - The domain ID of the Categoria to filter Transacao records by.
      * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findDespesaMensalByCategoria(contaId: string, categoriaId: string, userId?: string): Promise<Transacao[]> {
+    public async findDespesaRecorrenteByCategoria(bancoId: string, categoriaId: string, userId?: string): Promise<Transacao[]> {
         try {
              const qb = this.repo.createQueryBuilder('t')
                  .leftJoinAndSelect('t.categoria', 'c')
@@ -743,7 +741,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                  .leftJoinAndSelect('t.contaPoupanca', 'cp')
                  .where('c.domain_id = :domainId', { domainId: categoriaId })
                  .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
-                 .andWhere('co.domain_id = :contaId', { contaId });
+                 .andWhere('co.banco_id = :bancoId', { bancoId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
@@ -756,7 +754,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
              }
              return res;
         } catch (err) {
-            this.logger.error('TransacaoRepo.findDespesaMensalByCategoria error: %o', err);
+            this.logger.error('TransacaoRepo.findDespesaRecorrenteByCategoria error: %o', err);
             throw err;
         }
     }
@@ -791,13 +789,12 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds Despesa Mensal transactions by status for a specific account.
-     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
-     * @param contaId - The domain ID of the Conta to filter transactions by.
+     * Finds recurring expense transactions (Despesa Mensal + Poupança) by status for a specific bank.
+     * @param bancoId - The domain ID of the Banco to filter transactions by.
      * @param status - The status value to filter Transacao records by (e.g., "Concluído", "Pendente").
      * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findDespesaMensalByStatus(contaId: string, status: string, userId?: string): Promise<Transacao[]> {
+    public async findDespesaRecorrenteByStatus(bancoId: string, status: string, userId?: string): Promise<Transacao[]> {
         try {
             const qb = this.repo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
@@ -806,7 +803,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 .leftJoinAndSelect('t.contaPoupanca', 'cp')
                 .where('t.status = :status', { status })
                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
-                .andWhere('co.domain_id = :contaId', { contaId });
+                .andWhere('co.banco_id = :bancoId', { bancoId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
             const res: Transacao[] = [];
@@ -818,7 +815,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
             }
             return res;
         } catch (err) {
-            this.logger.error('TransacaoRepo.findDespesaMensalByStatus error: %o', err);
+            this.logger.error('TransacaoRepo.findDespesaRecorrenteByStatus error: %o', err);
             throw err;
         }
     }
@@ -925,14 +922,12 @@ export default class TransacaoRepo implements ITransacaoRepo {
     }
 
     /**
-     * Finds Despesa Mensal transactions by predefined period for a specific account.
-     * Accepts: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'.
-     * Returns an array of Transacao mapped to domain format, ordered by ID descending.
-     * @param contaId - The domain ID of the Conta to filter transactions by.
-     * @param period - The period to filter by
+     * Finds recurring expense transactions (Despesa Mensal + Poupança) by predefined period for a specific bank.
+     * @param bancoId - The domain ID of the Banco to filter transactions by.
+     * @param period - The period to filter by: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'.
      * @param userId - Optional user ID to scope the search to a specific user's transactions.
      */
-    public async findDespesaMensalByPeriod(contaId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Transacao[]> {
+    public async findDespesaRecorrenteByPeriod(bancoId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Transacao[]> {
         try {
             const now = new Date();
             let startDate: Date;
@@ -961,7 +956,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 .leftJoinAndSelect('t.contaPoupanca', 'cp')
                 .where('(t.ano * 10000 + t.mes * 100 + t.dia) >= :startInt AND (t.ano * 10000 + t.mes * 100 + t.dia) <= :endInt', { startInt, endInt })
                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
-                .andWhere('co.domain_id = :contaId', { contaId });
+                .andWhere('co.banco_id = :bancoId', { bancoId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
 
@@ -974,7 +969,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
             }
             return res;
         } catch (err) {
-            this.logger.error('TransacaoRepo.findDespesaMensalByPeriod error: %o', err);
+            this.logger.error('TransacaoRepo.findDespesaRecorrenteByPeriod error: %o', err);
             throw err;
         }
     }

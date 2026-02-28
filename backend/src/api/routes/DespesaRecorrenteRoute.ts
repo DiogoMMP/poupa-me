@@ -25,6 +25,9 @@ export default (app: Router) => {
    *         nome:
    *           type: string
    *           example: "Netflix"
+   *         icon:
+   *           type: string
+   *           example: "netflix"
    *         valor:
    *           $ref: '#/components/schemas/IDinheiroProps'
    *         diaDoMes:
@@ -36,11 +39,15 @@ export default (app: Router) => {
    *         contaOrigemId:
    *           type: string
    *           example: "CNT00000000001"
-   *           description: Conta de onde sai o dinheiro (saldo real)
+   *           description: Account from which money leaves (real balance)
    *         contaDestinoId:
    *           type: string
    *           example: "CNT00000000002"
-   *           description: Conta de destino (despesas mensais)
+   *           description: Destination account (monthly expenses)
+   *         tipo:
+   *           type: string
+   *           enum: [Despesa Mensal, Poupança]
+   *           example: "Despesa Mensal"
    *         ultimoProcessamento:
    *           type: string
    *           format: date
@@ -49,29 +56,44 @@ export default (app: Router) => {
    *           type: boolean
    *     DespesaRecorrenteInput:
    *       type: object
-   *       required: [nome, valor, diaDoMes, categoriaId, contaOrigemId, contaDestinoId]
+   *       required: [nome, icon, categoriaId, contaOrigemId, contaDestinoId]
    *       properties:
    *         nome:
    *           type: string
    *           example: "Netflix"
+   *         icon:
+   *           type: string
+   *           example: "netflix"
+   *           description: Icon identifier (required)
    *         valor:
    *           $ref: '#/components/schemas/IDinheiroProps'
+   *           description: Required together with diaDoMes
    *         diaDoMes:
    *           type: number
    *           minimum: 1
    *           maximum: 31
    *           example: 15
+   *           description: Required together with valor
    *         categoriaId:
    *           type: string
    *           example: "CAT00000000001"
    *         contaOrigemId:
    *           type: string
    *           example: "CNT00000000001"
-   *           description: Conta de onde sai o dinheiro (saldo real)
+   *           description: Account from which money leaves (real balance)
    *         contaDestinoId:
    *           type: string
    *           example: "CNT00000000002"
-   *           description: Conta de destino (despesas mensais)
+   *           description: Destination account (monthly expenses)
+   *         contaPoupancaId:
+   *           type: string
+   *           example: "CNT00000000003"
+   *           description: Required when tipo is Poupança
+   *         tipo:
+   *           type: string
+   *           enum: [Despesa Mensal, Poupança]
+   *           default: Despesa Mensal
+   *           example: "Despesa Mensal"
    *         ativo:
    *           type: boolean
    *           default: true
@@ -80,18 +102,25 @@ export default (app: Router) => {
    *       properties:
    *         nome:
    *           type: string
+   *         icon:
+   *           type: string
    *         valor:
    *           $ref: '#/components/schemas/IDinheiroProps'
+   *           description: Required together with diaDoMes
    *         diaDoMes:
    *           type: number
    *           minimum: 1
    *           maximum: 31
+   *           description: Required together with valor
    *         categoriaId:
    *           type: string
    *         contaOrigemId:
    *           type: string
    *         contaDestinoId:
    *           type: string
+   *         tipo:
+   *           type: string
+   *           enum: [Despesa Mensal, Poupança]
    *         ativo:
    *           type: boolean
    */
@@ -114,6 +143,7 @@ export default (app: Router) => {
    *             $ref: '#/components/schemas/DespesaRecorrenteInput'
    *           example:
    *             nome: "Netflix"
+   *             icon: "netflix"
    *             valor:
    *               valor: 15.99
    *               moeda: EUR
@@ -121,6 +151,7 @@ export default (app: Router) => {
    *             categoriaId: "CAT00000000001"
    *             contaOrigemId: "CNT00000000001"
    *             contaDestinoId: "CNT00000000002"
+   *             tipo: "Despesa Mensal"
    *             ativo: true
    *     responses:
    *       201:
@@ -159,6 +190,74 @@ export default (app: Router) => {
    *         description: Unauthorized
    */
   route.get('/', isAuth, (req, res, next) => ctrl.getAllDespesas(req, res, next));
+
+  /**
+   * @openapi
+   * /despesa-recorrente/com-valor:
+   *   get:
+   *     tags:
+   *       - DespesaRecorrente
+   *     summary: Get scheduled recurring expenses for a bank
+   *     description: Returns recurring expenses that have both valor and diaDoMes configured, whose origin account belongs to the given bank
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: bancoId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Bank domain ID to filter by
+   *         example: "BNC00000000001"
+   *     responses:
+   *       200:
+   *         description: List of scheduled recurring expenses for the bank
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/DespesaRecorrente'
+   *       400:
+   *         description: bancoId is required
+   *       401:
+   *         description: Unauthorized
+   */
+  route.get('/com-valor', isAuth, (req, res, next) => ctrl.getDespesasComValor(req, res, next));
+
+  /**
+   * @openapi
+   * /despesa-recorrente/sem-valor:
+   *   get:
+   *     tags:
+   *       - DespesaRecorrente
+   *     summary: Get unscheduled recurring expenses for a bank
+   *     description: Returns recurring expenses that have no valor or diaDoMes configured (icon/nome only), whose origin account belongs to the given bank
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: bancoId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Bank domain ID to filter by
+   *         example: "BNC00000000001"
+   *     responses:
+   *       200:
+   *         description: List of unscheduled recurring expenses for the bank
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/DespesaRecorrente'
+   *       400:
+   *         description: bancoId is required
+   *       401:
+   *         description: Unauthorized
+   */
+  route.get('/sem-valor', isAuth, (req, res, next) => ctrl.getDespesasSemValor(req, res, next));
 
   /**
    * @openapi
@@ -264,4 +363,3 @@ export default (app: Router) => {
    */
   route.delete('/:id', isAuth, (req, res, next) => ctrl.deleteDespesa(req, res, next));
 };
-

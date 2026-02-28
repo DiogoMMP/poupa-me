@@ -6,25 +6,26 @@ import {Result} from '../../../core/logic/Result.js';
 import {Guard} from '../../../core/logic/Guard.js';
 
 /**
- * Props da DespesaRecorrente
+ * Properties for Recurring Expense
  */
 interface DespesaRecorrenteProps {
     userId: UniqueEntityID;
     nome: Nome;
-    valor: Dinheiro;
-    diaDoMes: number; // 1-31
+    icon: string;
+    valor?: Dinheiro;       // Required together with diaDoMes
+    diaDoMes?: number;      // 1-31 — Required together with valor
     categoriaId: UniqueEntityID;
-    contaOrigemId: UniqueEntityID;      // De onde sai o dinheiro (Saldo Real)
-    contaDestinoId: UniqueEntityID;     // Para onde vai (Conta de Despesas Mensais)
-    contaPoupancaId?: UniqueEntityID;   // Only for Poupança type recurrences
+    contaOrigemId: UniqueEntityID;      // Account from which money leaves (real balance)
+    contaDestinoId: UniqueEntityID;     // Account where money goes (monthly expenses account)
+    contaPoupancaId?: UniqueEntityID;   // Only for "Poupança" recurrence type
     tipo?: 'Despesa Mensal' | 'Poupança'; // default: 'Despesa Mensal'
     ultimoProcessamento: Date | null;
     ativo: boolean;
 }
 
 /**
- * Aggregate root representando uma Despesa Recorrente (ex: Netflix, Spotify).
- * Gera automaticamente transações mensais quando o dia do mês chega.
+ * Aggregate root representing a Recurring Expense (e.g. Netflix, Spotify).
+ * Automatically generates monthly transactions when the scheduled day arrives.
  */
 export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
 
@@ -36,11 +37,15 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
         return this.props.nome;
     }
 
-    get valor(): Dinheiro {
+    get icon(): string {
+        return this.props.icon;
+    }
+
+    get valor(): Dinheiro | undefined {
         return this.props.valor;
     }
 
-    get diaDoMes(): number {
+    get diaDoMes(): number | undefined {
         return this.props.diaDoMes;
     }
 
@@ -77,35 +82,34 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
     }
 
     /**
-     * Marca esta despesa recorrente como processada numa determinada data
+     * Marks this recurring expense as processed on a specific date
      */
     public marcarComoProcessada(data: Date): void {
         this.props.ultimoProcessamento = data;
     }
 
     /**
-     * Ativa esta despesa recorrente
+     * Activates this recurring expense
      */
     public ativar(): void {
         this.props.ativo = true;
     }
 
     /**
-     * Desativa esta despesa recorrente
+     * Deactivates this recurring expense
      */
     public desativar(): void {
         this.props.ativo = false;
     }
 
     /**
-     * Factory method para criar uma DespesaRecorrente
+     * Factory method to create a Recurring Expense
      */
     public static create(props: DespesaRecorrenteProps, id?: UniqueEntityID): Result<DespesaRecorrente> {
         const guardedProps = [
             {argument: props.userId, argumentName: 'userId'},
             {argument: props.nome, argumentName: 'nome'},
-            {argument: props.valor, argumentName: 'valor'},
-            {argument: props.diaDoMes, argumentName: 'diaDoMes'},
+            {argument: props.icon, argumentName: 'icon'},
             {argument: props.categoriaId, argumentName: 'categoriaId'},
             {argument: props.contaOrigemId, argumentName: 'contaOrigemId'},
             {argument: props.contaDestinoId, argumentName: 'contaDestinoId'}
@@ -116,8 +120,15 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
             return Result.fail<DespesaRecorrente>(guardResult.message || 'Invalid DespesaRecorrente props');
         }
 
-        // Validate diaDoMes
-        if (props.diaDoMes < 1 || props.diaDoMes > 31) {
+        // valor e diaDoMes devem existir os 2 ou nenhum
+        const hasValor = props.valor !== undefined && props.valor !== null;
+        const hasDiaDoMes = props.diaDoMes !== undefined && props.diaDoMes !== null;
+        if (hasValor !== hasDiaDoMes) {
+            return Result.fail<DespesaRecorrente>('valor e diaDoMes devem ser fornecidos em conjunto ou nenhum dos dois');
+        }
+
+        // Validate diaDoMes when provided
+        if (hasDiaDoMes && (props.diaDoMes! < 1 || props.diaDoMes! > 31)) {
             return Result.fail<DespesaRecorrente>('diaDoMes must be between 1 and 31');
         }
 

@@ -14,7 +14,7 @@ export default interface ITransacaoRepo {
     // Get all by type (with id filters)
     findContaTransactions(contaId: string, userId?: string): Promise<Transacao[]>;
     findCartaoTransactions(cartaoCreditoId: string, userId?: string): Promise<Transacao[]>;
-    findDespesaMensal(contaId: string, userId?: string): Promise<Transacao[]>;
+    findDespesaRecorrente(bancoId: string, userId?: string): Promise<Transacao[]>;
 
     // Get ALL across all accounts / all cards (no id filter, just userId + optional bancoId)
     findAllContaTransactions(userId?: string, bancoId?: string): Promise<Transacao[]>;
@@ -26,14 +26,14 @@ export default interface ITransacaoRepo {
     // Filter by categoria (one per type, with id filters)
     findContaTransactionsByCategoria(categoriaId: string, userId?: string, bancoId?: string): Promise<Transacao[]>;
     findCartaoTransactionsByCategoria(categoriaId: string, userId?: string, bancoId?: string): Promise<Transacao[]>;
-    findDespesaMensalByCategoria(contaId: string, categoriaId: string, userId?: string): Promise<Transacao[]>;
+    findDespesaRecorrenteByCategoria(bancoId: string, categoriaId: string, userId?: string): Promise<Transacao[]>;
 
-    // Filter by status (one for cartão, one for despesa mensal, with id filters)
+    // Filter by status (one for cartão, one for despesa recorrente, with id filters)
     findCartaoTransactionsByStatus(status: string, userId?: string, bancoId?: string): Promise<Transacao[]>;
-    findDespesaMensalByStatus(contaId: string, status: string, userId?: string): Promise<Transacao[]>;
+    findDespesaRecorrenteByStatus(bancoId: string, status: string, userId?: string): Promise<Transacao[]>;
 
     // Filter by period (one per type, with id filters)
     findContaTransactionsByPeriod(period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string, bancoId?: string): Promise<Transacao[]>;
     findCartaoTransactionsByPeriod(period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string, bancoId?: string): Promise<Transacao[]>;
-    findDespesaMensalByPeriod(contaId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Transacao[]>;
+    findDespesaRecorrenteByPeriod(bancoId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Transacao[]>;
 }
