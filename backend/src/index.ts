@@ -13,7 +13,7 @@ async function startServer() {
   const loaders = await import('./loaders/index.js');
   await loaders.default({ expressApp: app });
 
-  app.listen(config.port, () => {
+  app.listen(config.port, '0.0.0.0', () => {
     Logger.info(`
       ################################################
       Server listening on port: ${config.port}
