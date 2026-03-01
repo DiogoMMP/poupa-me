@@ -3,7 +3,8 @@ import { Result } from '../core/logic/Result.js';
 import type IDespesaRecorrenteService from './IServices/IDespesaRecorrenteService.js';
 import type IDespesaRecorrenteRepo from '../repos/IRepos/IDespesaRecorrenteRepo.js';
 import type ITransacaoService from './IServices/ITransacaoService.js';
-import type { IDespesaRecorrenteDTO, ICreateDespesaRecorrenteDTO, IUpdateDespesaRecorrenteDTO } from '../dto/IDespesaRecorrenteDTO.js';
+import type { IDespesaRecorrenteDTO, ICreateDespesaRecorrenteDTO, IUpdateDespesaRecorrenteDTO, IGerarTransacaoSemValorDTO } from '../dto/IDespesaRecorrenteDTO.js';
+import type { ITransacaoDTO } from '../dto/ITransacaoDTO.js';
 import { DespesaRecorrenteMap } from '../mappers/DespesaRecorrenteMap.js';
 import { DespesaRecorrente } from '../domain/DespesaRecorrente/Entities/DespesaRecorrente.js';
 import { Nome } from '../domain/Shared/ValueObjects/Nome.js';
@@ -236,6 +237,64 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
     }
 
     /**
+     * Manually generates a single pending transaction for a sem-valor rule.
+     * The rule is NOT updated — valor/diaDoMes come from the request, not the rule.
+     */
+    public async gerarTransacaoSemValor(
+        despesaId: string,
+        dto: IGerarTransacaoSemValorDTO,
+        userId: string
+    ): Promise<Result<ITransacaoDTO>> {
+        try {
+            const regra = await this.despesaRepo.findById(despesaId);
+            if (!regra) return Result.fail<ITransacaoDTO>('Despesa not found');
+            if (regra.userId.toString() !== userId) return Result.fail<ITransacaoDTO>('Unauthorized');
+
+            // Validate that the rule is indeed sem-valor
+            if (regra.valor !== undefined && regra.diaDoMes !== undefined) {
+                return Result.fail<ITransacaoDTO>('Esta despesa já tem valor configurado. Use o processamento automático.');
+            }
+
+            const transacaoInput = {
+                data: {
+                    dia: dto.data.dia,
+                    mes: dto.data.mes,
+                    ano: dto.data.ano
+                },
+                descricao: regra.nome.value,
+                valor: {
+                    valor: dto.valor.valor,
+                    moeda: dto.valor.moeda
+                },
+                categoriaId: regra.categoriaId.toString(),
+                contaId: regra.contaOrigemId.toString(),
+                userId: regra.userId.toString()
+            };
+
+            let result: Result<ITransacaoDTO>;
+            if (regra.tipo === 'Poupança') {
+                if (!regra.contaPoupancaId) {
+                    return Result.fail<ITransacaoDTO>('Regra de Poupança sem contaPoupancaId definida');
+                }
+                result = await this.transacaoService.createPoupanca({
+                    ...transacaoInput,
+                    contaPoupancaId: regra.contaPoupancaId.toString()
+                });
+            } else {
+                result = await this.transacaoService.createDespesaMensal({
+                    ...transacaoInput,
+                    contaDestinoId: regra.contaDestinoId.toString()
+                });
+            }
+
+            return result;
+        } catch (err) {
+            this.logger.error('DespesaRecorrenteService.gerarTransacaoSemValor error: %o', err);
+            return Result.fail<ITransacaoDTO>('Erro ao gerar transação');
+        }
+    }
+
+    /**
      * Private helper to create Despesa Mensal transaction and update the rule
      * Calls TransacaoService.createDespesaMensal() to handle the transaction creation
      */
@@ -251,7 +310,7 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
                     mes: hoje.getMonth() + 1,
                     ano: hoje.getFullYear()
                 },
-                descricao: `Mensalidade: ${regra.nome.value}`,
+                descricao: `${regra.nome.value}`,
                 valor: {
                     valor: regra.valor.value,
                     moeda: regra.valor.moeda

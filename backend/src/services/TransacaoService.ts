@@ -328,16 +328,25 @@ export default class TransacaoService implements ITransacaoService {
             // attach owner user id
             (transacao as unknown as Record<string, unknown>)['userDomainId'] = inputDTO.userId ?? conta.userId.toString();
 
-            // Despesa Mensal (Pendente): subtract from origin account, add to destination account
-            const subtractResult = conta.subtrairSaldo(transacao.valor);
+            // Save transaction first
+            const savedTransacao = await this.transacaoRepo.save(transacao);
+
+            // Load fresh account instances from repo to avoid shared object references
+            const contaOrigemFresh = await this.contaRepo.findById(inputDTO.contaId);
+            const contaDestinoFresh = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+            if (!contaOrigemFresh) return Result.fail<ITransacaoDTO>('Origin Account not found after save');
+            if (!contaDestinoFresh) return Result.fail<ITransacaoDTO>('Destination Account not found after save');
+
+            // Subtract from origin account
+            const subtractResult = contaOrigemFresh.subtrairSaldo(transacao.valor);
             if (subtractResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractResult.error));
 
-            const addResult = contaDestino.adicionarSaldo(transacao.valor);
+            // Add to destination account
+            const addResult = contaDestinoFresh.adicionarSaldo(transacao.valor);
             if (addResult.isFailure) return Result.fail<ITransacaoDTO>(String(addResult.error));
 
-            const savedTransacao = await this.transacaoRepo.save(transacao);
-            await this.contaRepo.update(conta);
-            await this.contaRepo.update(contaDestino);
+            await this.contaRepo.update(contaOrigemFresh);
+            await this.contaRepo.update(contaDestinoFresh);
 
             return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
         } catch (e) {
@@ -396,12 +405,9 @@ export default class TransacaoService implements ITransacaoService {
             (updatedTransacao as unknown as Record<string, unknown>)['userDomainId'] =
                 (transacao as unknown as Record<string, unknown>)['userDomainId'];
 
-            // Subtract from destination account
-            const subtractResult = transacao.contaDestino.subtrairSaldo(transacao.valor);
-            if (subtractResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractResult.error));
-
+            // Balances were already updated when the transaction was created (subtract from origem, add to destino).
+            // Concluding only changes the status — no balance changes needed.
             const savedTransacao = await this.transacaoRepo.update(updatedTransacao);
-            await this.contaRepo.update(transacao.contaDestino);
 
             return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
         } catch (e) {
@@ -611,20 +617,13 @@ export default class TransacaoService implements ITransacaoService {
         if (!contaOrigem) return Result.fail<void>('Origin account not found');
         if (!contaDestino) return Result.fail<void>('Destination account not found');
 
-        // Revert based on status
-        if (transacao.status.value === 'Pendente') {
-            // Revert: add back to origem, subtract from destino
-            const revertOrigemResult = contaOrigem.adicionarSaldo(transacao.valor);
-            const revertDestinoResult = contaDestino.subtrairSaldo(transacao.valor);
-            if (revertOrigemResult.isFailure) return Result.fail<void>(String(revertOrigemResult.error));
-            if (revertDestinoResult.isFailure) return Result.fail<void>(String(revertDestinoResult.error));
-        } else if (transacao.status.value === 'Concluído') {
-            // Revert: add back to origem, add back to destino (since it was subtracted)
-            const revertOrigemResult = contaOrigem.adicionarSaldo(transacao.valor);
-            const revertDestinoResult = contaDestino.adicionarSaldo(transacao.valor);
-            if (revertOrigemResult.isFailure) return Result.fail<void>(String(revertOrigemResult.error));
-            if (revertDestinoResult.isFailure) return Result.fail<void>(String(revertDestinoResult.error));
-        }
+        // Impact is always: subtract origem + add destino (applied at creation, regardless of status)
+        // Revert is always the opposite: add back to origem + subtract from destino
+        const revertOrigemResult = contaOrigem.adicionarSaldo(transacao.valor);
+        if (revertOrigemResult.isFailure) return Result.fail<void>(String(revertOrigemResult.error));
+
+        const revertDestinoResult = contaDestino.subtrairSaldo(transacao.valor);
+        if (revertDestinoResult.isFailure) return Result.fail<void>(String(revertDestinoResult.error));
 
         await this.contaRepo.update(contaOrigem);
         await this.contaRepo.update(contaDestino);
@@ -697,7 +696,8 @@ export default class TransacaoService implements ITransacaoService {
     }
 
     /**
-     * Applies the impact of a Despesa Mensal transaction (affects two accounts)
+     * Applies the impact of a Despesa Mensal transaction (affects two accounts).
+     * Always: subtract from origem, add to destino.
      */
     private async applyDespesaMensalImpact(transacao: Transacao): Promise<Result<void>> {
         if (!transacao.conta) return Result.fail<void>('Conta origem not found');
@@ -708,20 +708,11 @@ export default class TransacaoService implements ITransacaoService {
         if (!contaOrigem) return Result.fail<void>('Origin account not found');
         if (!contaDestino) return Result.fail<void>('Destination account not found');
 
-        // Apply based on status
-        if (transacao.status.value === 'Pendente') {
-            // Apply: subtract from origem, add to destino
-            const applyOrigemResult = contaOrigem.subtrairSaldo(transacao.valor);
-            const applyDestinoResult = contaDestino.adicionarSaldo(transacao.valor);
-            if (applyOrigemResult.isFailure) return Result.fail<void>(String(applyOrigemResult.error));
-            if (applyDestinoResult.isFailure) return Result.fail<void>(String(applyDestinoResult.error));
-        } else if (transacao.status.value === 'Concluído') {
-            // Apply: subtract from origem, subtract from destino
-            const applyOrigemResult = contaOrigem.subtrairSaldo(transacao.valor);
-            const applyDestinoResult = contaDestino.subtrairSaldo(transacao.valor);
-            if (applyOrigemResult.isFailure) return Result.fail<void>(String(applyOrigemResult.error));
-            if (applyDestinoResult.isFailure) return Result.fail<void>(String(applyDestinoResult.error));
-        }
+        const applyOrigemResult = contaOrigem.subtrairSaldo(transacao.valor);
+        if (applyOrigemResult.isFailure) return Result.fail<void>(String(applyOrigemResult.error));
+
+        const applyDestinoResult = contaDestino.adicionarSaldo(transacao.valor);
+        if (applyDestinoResult.isFailure) return Result.fail<void>(String(applyDestinoResult.error));
 
         await this.contaRepo.update(contaOrigem);
         await this.contaRepo.update(contaDestino);

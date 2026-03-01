@@ -496,6 +496,13 @@ select option {
   color: var(--brand-text);
 }
 
+.form-label-hint {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: rgba(226, 232, 240, 0.5);
+  margin-left: 0.35rem;
+}
+
 .form-input,
 input[type="text"],
 input[type="email"],
@@ -1289,6 +1296,26 @@ input[type="radio"]:focus {
 .btn-delete-small svg { width: 15px !important; height: 15px !important; flex-shrink: 0; fill: currentColor !important; stroke: currentColor !important; }
 .btn-delete-small svg path { fill: inherit !important; stroke: inherit !important; }
 .btn-delete-small:hover:not(:disabled) { background: #dc2626; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(220,38,38,0.35); }
+
+/* Conclude small: green, compact — same size as btn-edit-small */
+.btn-concluir-small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--brand-entrada);
+  color: #fff;
+  border: none;
+  font-weight: 200;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.btn-concluir-small svg { width: 15px !important; height: 15px !important; flex-shrink: 0; fill: currentColor !important; stroke: currentColor !important; }
+.btn-concluir-small svg path { fill: inherit !important; stroke: inherit !important; }
+.btn-concluir-small:hover:not(:disabled) { background: #22c55e; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(34,197,94,0.35); }
 
 /* Action group — both buttons side-by-side on the same row, left side */
 .transacao-actions {

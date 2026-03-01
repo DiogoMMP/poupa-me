@@ -1,0 +1,29 @@
+.card-meta {
+  gap: 0.5rem;
+  margin: 0.25rem 0 0.4rem;
+}
+
+.card-valor {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--brand-accent);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(97, 237, 214, 0.15);
+  color: var(--brand-accent);
+  border: 1px solid rgba(97, 237, 214, 0.3);
+  white-space: nowrap;
+}
+
+.badge--poupanca {
+  background: rgba(74, 222, 128, 0.15);
+  color: var(--brand-entrada);
+  border-color: rgba(74, 222, 128, 0.3);
+}
+

@@ -51,3 +51,18 @@ export interface IUpdateDespesaRecorrenteDTO {
     tipo?: 'Despesa Mensal' | 'Poupança';
     ativo?: boolean;
 }
+
+/**
+ * Payload to manually generate a pending transaction for a sem-valor recurring expense.
+ * The rule itself is NOT updated — valor/data are used only for this one transaction.
+ */
+export interface IGerarTransacaoSemValorDTO {
+    valor: IDinheiroProps;
+    /** Full date for the transaction */
+    data: {
+        dia: number;
+        mes: number;
+        ano: number;
+    };
+}
+

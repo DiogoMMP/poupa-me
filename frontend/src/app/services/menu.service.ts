@@ -64,6 +64,14 @@ export class MenuService {
     },
 
     {
+      id: 'Despesas Recorrentes',
+      labelKey: 'Despesas Recorrentes',
+      icon: '/icons/despesas_mensais.svg',
+      route: '/despesas-recorrentes',
+      roles: ['Admin', 'User']
+    },
+
+    {
       id: 'Categorias',
       labelKey: 'Categorias',
       icon: '/icons/categorias.svg',

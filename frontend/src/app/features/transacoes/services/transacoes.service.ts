@@ -60,12 +60,13 @@ export class TransacoesService {
   }
 
   /**
-   * Get monthly expense entries for an account
-   * @param contaId - account id
+   * Get all monthly expense transactions, optionally filtered by banco
+   * @param bancoId - optional bank id
    */
-  getDespesaMensal(contaId: string): Observable<TransacoesDTO[]> {
-    const params = new HttpParams().set('contaId', contaId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-mensal`, { params, withCredentials: true });
+  getDespesaRecorrente(bancoId?: string): Observable<TransacoesDTO[]> {
+    let params = new HttpParams();
+    if (bancoId) params = params.set('bancoId', bancoId);
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-recorrente`, { params, withCredentials: true });
   }
 
   /**
@@ -91,13 +92,14 @@ export class TransacoesService {
   }
 
   /**
-   * Get monthly expenses for a given account filtered by category
-   * @param contaId - account id
+   * Get monthly expenses filtered by category
    * @param categoriaId - category id
+   * @param bancoId - optional bank id
    */
-  getDespesaMensalByCategoria(contaId: string, categoriaId: string): Observable<TransacoesDTO[]> {
-    const params = new HttpParams().set('contaId', contaId).set('categoriaId', categoriaId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-mensal/by-categoria`, { params, withCredentials: true });
+  getDespesaRecorrenteByCategoria(categoriaId: string, bancoId?: string): Observable<TransacoesDTO[]> {
+    let params = new HttpParams().set('categoriaId', categoriaId);
+    if (bancoId) params = params.set('bancoId', bancoId);
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-recorrente/by-categoria`, { params, withCredentials: true });
   }
 
   /**
@@ -113,12 +115,13 @@ export class TransacoesService {
 
   /**
    * Get monthly expenses filtered by status
-   * @param contaId - account id
    * @param status - status filter
+   * @param bancoId - optional bank id
    */
-  getDespesaMensalByStatus(contaId: string, status: string): Observable<TransacoesDTO[]> {
-    const params = new HttpParams().set('contaId', contaId).set('status', status);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-mensal/by-status`, { params, withCredentials: true });
+  getDespesaRecorrenteByStatus(status: string, bancoId?: string): Observable<TransacoesDTO[]> {
+    let params = new HttpParams().set('status', status);
+    if (bancoId) params = params.set('bancoId', bancoId);
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-recorrente/by-status`, { params, withCredentials: true });
   }
 
   /**
@@ -144,13 +147,14 @@ export class TransacoesService {
   }
 
   /**
-   * Get monthly expenses filtered by period for an account
-   * @param contaId - account id
+   * Get monthly expenses filtered by period
    * @param period - period label
+   * @param bancoId - optional bank id
    */
-  getDespesaMensalByPeriod(contaId: string, period: string): Observable<TransacoesDTO[]> {
-    const params = new HttpParams().set('contaId', contaId).set('period', period);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-mensal/by-period`, { params, withCredentials: true });
+  getDespesaRecorrenteByPeriod(period: string, bancoId?: string): Observable<TransacoesDTO[]> {
+    let params = new HttpParams().set('period', period);
+    if (bancoId) params = params.set('bancoId', bancoId);
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-recorrente/by-period`, { params, withCredentials: true });
   }
 
   /**
@@ -190,10 +194,33 @@ export class TransacoesService {
   }
 
   /**
+   * Create a Poupança (savings) transfer
+   */
+  createPoupanca(dto: TransacoesInputDTO): Observable<TransacoesDTO> {
+    return this.http.post<TransacoesDTO>(`${this.apiUrl}/poupanca`, dto, { withCredentials: true });
+  }
+
+  /**
+   * Conclude a Poupança transaction (mark as Concluído)
+   * @param id - transaction id
+   */
+  concluirPoupanca(id: string): Observable<TransacoesDTO> {
+    return this.http.post<TransacoesDTO>(`${this.apiUrl}/poupanca/concluir/${id}`, {}, { withCredentials: true });
+  }
+
+  /**
    * Create a monthly expense entry
    */
   createDespesaMensal(dto: TransacoesInputDTO): Observable<TransacoesDTO> {
     return this.http.post<TransacoesDTO>(`${this.apiUrl}/despesa-mensal`, dto, { withCredentials: true });
+  }
+
+  /**
+   * Conclude a Despesa Mensal transaction (mark as Concluído)
+   * @param id - transaction id
+   */
+  concluirDespesaMensal(id: string): Observable<TransacoesDTO> {
+    return this.http.post<TransacoesDTO>(`${this.apiUrl}/despesa-mensal/concluir/${id}`, {}, { withCredentials: true });
   }
 
   /**

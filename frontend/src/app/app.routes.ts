@@ -30,6 +30,8 @@ export const routes: Routes = [
 
       { path: 'transacoes', loadChildren: () => import('./features/transacoes/transacoes.routes').then(m => m.routes), data: { allowedRoles: ['Admin','User'] } },
 
+      { path: 'despesas-recorrentes', loadChildren: () => import('./features/despesas-recorrentes/despesas-recorrentes.routes').then(m => m.routes), data: { allowedRoles: ['Admin','User'] } },
+
       { path: 'categorias', loadChildren: () => import('./features/categorias/categorias.routes').then(m => m.routes), data: { allowedRoles: ['Admin'] } },
 
       //{ path: 'profile', loadChildren: () => import('./features/profile/profile.routes').then(m => m.routes), data: { allowedRoles: ['Admin'] } },

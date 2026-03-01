@@ -1,0 +1,64 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title">Regras de Despesas Recorrentes</h1>
+    <div class="page-actions">
+      <button routerLink="/despesas-recorrentes/nova-regra">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 5V19M5 12H19" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Nova Regra</span>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="vm.isLoading$ | async" class="loading-state">A carregar...</div>
+
+  <div *ngIf="!(vm.isLoading$ | async)" class="content-container">
+    <ng-container *ngIf="vm.regras$ | async as regras">
+
+      <div *ngIf="regras.length === 0" class="empty-state">
+        <p>Não existem regras criadas.</p>
+      </div>
+
+      <div *ngIf="regras.length > 0" class="cards-grid">
+        <div *ngFor="let regra of regras" class="card card--hover">
+
+          <div class="card-icon-wrapper">
+            <div class="card-icon card-icon--circle">{{ regra.icon }}</div>
+          </div>
+
+          <div class="card-content">
+            <h3 class="card-title">{{ regra.nome }}</h3>
+            <span class="badge" [class.badge--poupanca]="regra.tipo === 'Poupança'">{{ regra.tipo }}</span>
+            <div class="card-meta">
+              <span class="text-muted" *ngIf="regra.diaDoMes">Dia {{ regra.diaDoMes }}</span>
+              <span class="text-muted" *ngIf="!regra.diaDoMes">Sem dia definido</span>
+            </div>
+            <div class="card-valor" *ngIf="regra.temValor">
+              {{ regra.valor | number:'1.2-2' }} {{ regra.moeda }}
+            </div>
+            <div class="card-valor text-muted" *ngIf="!regra.temValor">
+              Sem valor definido
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button [routerLink]="['/despesas-recorrentes/editar-regra', regra.id]" class="btn-action">
+              <svg class="svg-icon" viewBox="0 0 24 24">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="currentColor"/>
+              </svg>
+              <span>Editar</span>
+            </button>
+            <button (click)="deleteRegra(regra.id)" class="btn-delete">
+              <svg class="svg-icon" viewBox="0 0 24 24">
+                <path d="M6 7h12v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3-4h6l1 1H8l1-1z" fill="currentColor"/>
+              </svg>
+              <span>Eliminar</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

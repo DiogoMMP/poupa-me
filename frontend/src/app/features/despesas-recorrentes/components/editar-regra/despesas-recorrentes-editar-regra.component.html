@@ -1,0 +1,157 @@
+<div class="page-container">
+  <div class="form-card">
+    <div class="form-header">
+      <h1 class="form-title">Editar Regra</h1>
+      <p class="form-subtitle">Atualize as informações da despesa recorrente</p>
+    </div>
+
+    <div *ngIf="vm.isLoading$ | async" class="loading-state">A carregar...</div>
+
+    <form *ngIf="!(vm.isLoading$ | async)" [formGroup]="form" (ngSubmit)="onSubmit()" class="form-content">
+
+      <!-- Nome -->
+      <div class="form-field">
+        <label for="nome" class="form-label">Nome</label>
+        <input
+          type="text"
+          id="nome"
+          formControlName="nome"
+          class="form-input"
+          placeholder="Ex: Netflix">
+      </div>
+
+      <!-- Ícone -->
+      <div class="form-field">
+        <label for="icon" class="form-label">Ícone</label>
+        <div class="emoji-input-group">
+          <input
+            type="text"
+            id="icon"
+            formControlName="icon"
+            class="form-input"
+            placeholder="Emoji da despesa"
+            readonly>
+          <button type="button" class="emoji-btn" (click)="toggleEmojiPicker()" title="Escolher emoji">
+            <span class="emoji-btn-icon">{{ form.get('icon')?.value || '😀' }}</span>
+          </button>
+        </div>
+
+        <!-- Picmo Emoji Picker Modal -->
+        <div *ngIf="showEmojiPicker" class="emoji-modal-backdrop" (click)="closeEmojiPicker()">
+          <div class="emoji-modal" (click)="$event.stopPropagation()">
+            <div class="emoji-modal-header">
+              <h3 class="emoji-modal-title">Escolha um Emoji</h3>
+              <button type="button" class="emoji-modal-close" (click)="closeEmojiPicker()">✕</button>
+            </div>
+            <div class="emoji-modal-body">
+              <div #emojiPickerContainer class="picmo-container"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tipo -->
+      <div class="form-field">
+        <label class="form-label">Tipo</label>
+        <select formControlName="tipo" class="form-select">
+          <option value="Despesa Mensal">Despesa Mensal</option>
+          <option value="Poupança">Poupança</option>
+        </select>
+      </div>
+
+      <!-- Categoria -->
+      <div class="form-field">
+        <label class="form-label">Categoria</label>
+        <select formControlName="categoriaId" class="form-select">
+          <option value="" disabled>Selecione uma categoria</option>
+          <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">
+            {{ cat.icon }} {{ cat.nome }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Conta Origem -->
+      <div class="form-field">
+        <label class="form-label">Conta de Origem</label>
+        <select formControlName="contaOrigemId" class="form-select">
+          <option value="" disabled>Selecione uma conta</option>
+          <option *ngFor="let conta of vm.contas$ | async" [value]="conta.id">
+            {{ conta.icon }} {{ conta.nome }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Conta Destino -->
+      <div class="form-field">
+        <label class="form-label">Conta de Destino</label>
+        <select formControlName="contaDestinoId" class="form-select">
+          <option value="" disabled>Selecione uma conta</option>
+          <option *ngFor="let conta of vm.contas$ | async" [value]="conta.id">
+            {{ conta.icon }} {{ conta.nome }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Conta Poupança (só aparece quando tipo = Poupança) -->
+      <div class="form-field" *ngIf="isPoupanca">
+        <label class="form-label">Conta Poupança</label>
+        <select formControlName="contaPoupancaId" class="form-select">
+          <option value="" disabled>Selecione a conta poupança</option>
+          <option *ngFor="let conta of vm.contas$ | async" [value]="conta.id">
+            {{ conta.icon }} {{ conta.nome }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Valor (opcional) -->
+      <div class="form-field" formGroupName="valor">
+        <label class="form-label">
+          Valor
+          <span class="form-label-hint">(opcional — pode preencher mais tarde)</span>
+        </label>
+        <div class="row-controls">
+          <input
+            type="number"
+            id="valorValor"
+            formControlName="valor"
+            class="form-input"
+            placeholder="Ex: 9.99">
+          <input
+            type="text"
+            id="valorMoeda"
+            formControlName="moeda"
+            class="form-input">
+        </div>
+      </div>
+
+      <!-- Dia do Mês (opcional) -->
+      <div class="form-field">
+        <label for="diaDoMes" class="form-label">
+          Dia do Mês
+          <span class="form-label-hint">(opcional — pode preencher mais tarde)</span>
+        </label>
+        <input
+          type="number"
+          id="diaDoMes"
+          formControlName="diaDoMes"
+          class="form-input"
+          placeholder="Ex: 15"
+          min="1"
+          max="31">
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="form.invalid || (vm.isLoading$ | async)">
+          <svg width="16" height="16" viewBox="0 0 24 24">
+            <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z" fill="currentColor"/>
+          </svg>
+          <span>Guardar</span>
+        </button>
+        <button type="button" routerLink="/despesas-recorrentes/listar-regras" class="btn-secondary">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+

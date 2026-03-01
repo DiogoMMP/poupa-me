@@ -1,5 +1,6 @@
 import type { Result } from '../../core/logic/Result.js';
-import type { IDespesaRecorrenteDTO, ICreateDespesaRecorrenteDTO, IUpdateDespesaRecorrenteDTO } from '../../dto/IDespesaRecorrenteDTO.js';
+import type { IDespesaRecorrenteDTO, ICreateDespesaRecorrenteDTO, IUpdateDespesaRecorrenteDTO, IGerarTransacaoSemValorDTO } from '../../dto/IDespesaRecorrenteDTO.js';
+import type { ITransacaoDTO } from '../../dto/ITransacaoDTO.js';
 
 /**
  * Service interface for DespesaRecorrente business logic
@@ -46,5 +47,11 @@ export default interface IDespesaRecorrenteService {
      * Processes recurring expenses for a user (called on login/dashboard load)
      */
     processarRecorrencias(userId: string): Promise<Result<void>>;
+
+    /**
+     * Manually generates a pending transaction for a sem-valor recurring expense rule.
+     * The rule itself is NOT modified — valor and diaDoMes are only used for this transaction.
+     */
+    gerarTransacaoSemValor(despesaId: string, dto: IGerarTransacaoSemValorDTO, userId: string): Promise<Result<ITransacaoDTO>>;
 }
 
