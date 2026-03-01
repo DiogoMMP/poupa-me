@@ -93,7 +93,7 @@ ${isLocalDevelopment ? `
       },
       servers: [
         {
-          url: `https://poupa-me-api.onrender.com/${config.api.prefix}`,
+          url: `https://poupa-me-api.onrender.com${config.api.prefix}`,
           description: 'Servidor de Produção (Render)',
         },
         {
