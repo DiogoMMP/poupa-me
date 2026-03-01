@@ -2,13 +2,13 @@
 
   <div class="auth-overlay" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
 
-    <div class="auth-card" role="document" id="authCard">
+    <div class="auth-card" role="document">
 
-      <h1 id="loginTitle" class="auth-title">{{ message() }}</h1>
+      <h1 id="loginTitle" class="auth-title">Entrar</h1>
       <p class="auth-sub">Autentique-se para continuar</p>
 
       <!-- Login Form -->
-      <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth-actions">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="auth-actions">
 
         <!-- Email field -->
         <div class="form-group">
@@ -19,9 +19,9 @@
             formControlName="email"
             class="form-input"
             placeholder="seu@email.com"
-            [class.invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+            [class.invalid]="form.get('email')?.invalid && form.get('email')?.touched"
           />
-          <span class="error-hint" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+          <span class="error-hint" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
             Email inválido
           </span>
         </div>
@@ -35,25 +35,27 @@
             formControlName="password"
             class="form-input"
             placeholder="••••••••"
-            [class.invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+            [class.invalid]="form.get('password')?.invalid && form.get('password')?.touched"
           />
-          <span class="error-hint" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+          <span class="error-hint" *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
             Mínimo 6 caracteres
           </span>
         </div>
 
         <!-- Error message -->
-        <div *ngIf="error()" class="error" role="alert">{{ error() }}</div>
+        <div *ngIf="vm.error()" class="error" role="alert">{{ vm.error() }}</div>
 
         <!-- Submit button -->
         <button
           type="submit"
           class="btn-primary"
-          [disabled]="loading() || loginForm.invalid"
+          [disabled]="vm.loading() || form.invalid"
         >
-          <span *ngIf="!loading()">Entrar</span>
-          <span *ngIf="loading()">A autenticar...</span>
+          <span *ngIf="!vm.loading()">Entrar</span>
+          <span *ngIf="vm.loading()">A autenticar...</span>
         </button>
+
+        <p class="auth-switch">Não tem conta? <a routerLink="/registar">Registar</a></p>
 
       </form>
 

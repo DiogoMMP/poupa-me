@@ -11,7 +11,13 @@ export const routes: Routes = [
   {
     path: 'entrar',
     canActivate: [NoLoginGuard],
-    loadChildren: () => import('./features/auth/auth.component').then(m => m.routes)
+    loadChildren: () => import('./features/auth/components/entrar/auth-entrar.component').then(m => m.routes)
+  },
+
+  {
+    path: 'registar',
+    canActivate: [NoLoginGuard],
+    loadChildren: () => import('./features/auth/components/registar/auth-registar.component').then(m => m.routes)
   },
 
   {
