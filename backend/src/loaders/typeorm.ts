@@ -15,6 +15,9 @@ export default async function createTypeOrmDataSource(): Promise<DataSource> {
         throw new Error('Postgres URL is not configured');
     }
 
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isCloudDB = config.postgresURL.includes('aivencloud.com');
+
     const dataSource = new DataSource({
         type: 'postgres',
         url: config.postgresURL,
@@ -29,12 +32,14 @@ export default async function createTypeOrmDataSource(): Promise<DataSource> {
         ],
         synchronize: true,
         logging: false,
-        ssl: true,
-        extra: {
+
+        ssl: isProduction || isCloudDB ? { rejectUnauthorized: false } : false,
+
+        extra: (isProduction || isCloudDB) ? {
             ssl: {
                 rejectUnauthorized: false
             }
-        }
+        } : {}
     });
 
     try {
