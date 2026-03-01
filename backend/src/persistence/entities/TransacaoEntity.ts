@@ -64,6 +64,13 @@ export class TransacaoEntity {
     @Column({ name: 'conta_destino_id', type: 'int', nullable: true })
     contaDestinoId?: number;
 
+    @ManyToOne(() => ContaEntity, { eager: false })
+    @JoinColumn({ name: 'conta_poupanca_id' })
+    contaPoupanca?: ContaEntity;
+
+    @Column({ name: 'conta_poupanca_id', type: 'int', nullable: true })
+    contaPoupancaId?: number;
+
     @ManyToOne(() => CartaoCreditoEntity, { eager: false })
     @JoinColumn({ name: 'cartao_credito_id' })
     cartaoCredito?: CartaoCreditoEntity;

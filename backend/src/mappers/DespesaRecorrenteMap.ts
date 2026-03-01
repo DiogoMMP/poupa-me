@@ -17,30 +17,35 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
         const nomeResult = Nome.create(String(r['nome'] ?? ''));
         if (nomeResult.isFailure) return null;
 
-        // Handle valor e moeda
-        let valorNum: number;
-        let moeda: string;
+        const icon = String(r['icon'] ?? '');
+
+        // Handle valor e moeda (optional)
+        let valorResult: ReturnType<typeof Dinheiro.create> | null = null;
         const valorRaw = r['valor'];
-        if (typeof valorRaw === 'number') {
-            valorNum = valorRaw;
-            moeda = String(r['moeda'] ?? 'EUR');
-        } else if (typeof valorRaw === 'string') {
-            valorNum = Number(String(valorRaw).replace(',', '.')) || 0;
-            moeda = String(r['moeda'] ?? 'EUR');
-        } else if (typeof valorRaw === 'object' && valorRaw !== null) {
-            const vObj = valorRaw as Record<string, unknown>;
-            const v = vObj['valor'] ?? vObj['value'] ?? 0;
-            valorNum = typeof v === 'string' ? Number(String(v).replace(',', '.')) || 0 : Number(v || 0);
-            moeda = String(vObj['moeda'] ?? vObj['currency'] ?? r['moeda'] ?? 'EUR');
-        } else {
-            valorNum = 0;
-            moeda = String(r['moeda'] ?? 'EUR');
+        if (valorRaw !== null && valorRaw !== undefined) {
+            let valorNum: number;
+            let moeda: string;
+            if (typeof valorRaw === 'number') {
+                valorNum = valorRaw;
+                moeda = String(r['moeda'] ?? 'EUR');
+            } else if (typeof valorRaw === 'string') {
+                valorNum = Number(String(valorRaw).replace(',', '.')) || 0;
+                moeda = String(r['moeda'] ?? 'EUR');
+            } else if (typeof valorRaw === 'object') {
+                const vObj = valorRaw as Record<string, unknown>;
+                const v = vObj['valor'] ?? vObj['value'] ?? 0;
+                valorNum = typeof v === 'string' ? Number(String(v).replace(',', '.')) || 0 : Number(v || 0);
+                moeda = String(vObj['moeda'] ?? vObj['currency'] ?? r['moeda'] ?? 'EUR');
+            } else {
+                valorNum = 0;
+                moeda = String(r['moeda'] ?? 'EUR');
+            }
+            valorResult = Dinheiro.create(valorNum, moeda);
+            if (valorResult.isFailure) return null;
         }
 
-        const valorResult = Dinheiro.create(valorNum, moeda);
-        if (valorResult.isFailure) return null;
-
-        const diaDoMes = Number(r['diaDoMes'] ?? r['dia_do_mes'] ?? 1);
+        const diaDoMesRaw = r['diaDoMes'] ?? r['dia_do_mes'];
+        const diaDoMes = diaDoMesRaw !== null && diaDoMesRaw !== undefined ? Number(diaDoMesRaw) : undefined;
 
         // Extract domain IDs from relations if available, otherwise use raw IDs
         let categoriaIdStr = '';
@@ -73,6 +78,19 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
         }
         const contaDestinoId = new UniqueEntityID(contaDestinoIdStr);
 
+        // contaPoupancaId (optional - only for Poupança)
+        let contaPoupancaIdStr = '';
+        if (r['contaPoupanca'] && typeof r['contaPoupanca'] === 'object') {
+            const cpObj = r['contaPoupanca'] as Record<string, unknown>;
+            contaPoupancaIdStr = String(cpObj['domainId'] ?? cpObj['domain_id'] ?? '');
+        }
+        if (!contaPoupancaIdStr) {
+            contaPoupancaIdStr = String(r['contaPoupancaId'] ?? r['conta_poupanca_id'] ?? '');
+        }
+        const contaPoupancaId = contaPoupancaIdStr ? new UniqueEntityID(contaPoupancaIdStr) : undefined;
+
+        const tipo = (r['tipo'] as 'Despesa Mensal' | 'Poupança') ?? 'Despesa Mensal';
+
         const ultimoProcessamento = r['ultimoProcessamento'] ?? r['ultimo_processamento'] ?? null;
         const ultimoDate = ultimoProcessamento ? new Date(String(ultimoProcessamento)) : null;
 
@@ -81,11 +99,14 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
         const despesaOrError = DespesaRecorrente.create({
             userId,
             nome: nomeResult.getValue(),
-            valor: valorResult.getValue(),
+            icon,
+            valor: valorResult ? valorResult.getValue() : undefined,
             diaDoMes,
             categoriaId,
             contaOrigemId,
             contaDestinoId,
+            contaPoupancaId,
+            tipo,
             ultimoProcessamento: ultimoDate,
             ativo
         }, new UniqueEntityID(String(r['domainId'] ?? r['id'])));
@@ -97,12 +118,15 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
         return {
             domainId: despesa.id.toString(),
             nome: despesa.nome.value,
-            valor: despesa.valor.value,
-            moeda: despesa.valor.moeda,
-            dia_do_mes: despesa.diaDoMes,
+            icon: despesa.icon,
+            valor: despesa.valor?.value ?? null,
+            moeda: despesa.valor?.moeda ?? null,
+            dia_do_mes: despesa.diaDoMes ?? null,
             categoria_id: despesa.categoriaId.toString(),
             conta_origem_id: despesa.contaOrigemId.toString(),
             conta_destino_id: despesa.contaDestinoId.toString(),
+            conta_poupanca_id: despesa.contaPoupancaId?.toString() ?? null,
+            tipo: despesa.tipo,
             ultimo_processamento: despesa.ultimoProcessamento,
             ativo: despesa.ativo,
             user_domain_id: despesa.userId.toString()
@@ -114,14 +138,16 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
             id: despesa.id.toString(),
             userId: despesa.userId.toString(),
             nome: despesa.nome.value,
-            valor: {
-                valor: despesa.valor.value,
-                moeda: despesa.valor.moeda
-            },
+            icon: despesa.icon,
+            valor: despesa.valor
+                ? { valor: despesa.valor.value, moeda: despesa.valor.moeda }
+                : undefined,
             diaDoMes: despesa.diaDoMes,
             categoriaId: despesa.categoriaId.toString(),
             contaOrigemId: despesa.contaOrigemId.toString(),
             contaDestinoId: despesa.contaDestinoId.toString(),
+            contaPoupancaId: despesa.contaPoupancaId?.toString(),
+            tipo: despesa.tipo,
             ultimoProcessamento: despesa.ultimoProcessamento,
             ativo: despesa.ativo
         };

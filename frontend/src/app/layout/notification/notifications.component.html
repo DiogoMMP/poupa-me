@@ -1,0 +1,7 @@
+<div class="notifications-container" aria-live="polite">
+  <div *ngFor="let n of svc.notifications()" class="notification" [attr.data-type]="n.type">
+    <div class="message">{{ n.message }}</div>
+    <button class="close" (click)="svc.dismiss(n.id)">×</button>
+  </div>
+</div>
+

@@ -1,5 +1,5 @@
 import {Result} from "../../core/logic/Result.js";
-import type {IUserDTO, IUserRegistrationDTO, IUserLoginDTO, IUserUpdateDTO} from "../../dto/IUserDTO.js";
+import type {IUserDTO, IUserRegistrationDTO, IUserLoginDTO, IUserUpdateDTO, IUserChangeRoleDTO} from "../../dto/IUserDTO.js";
 
 /**
  * Service interface for User operations.
@@ -55,6 +55,14 @@ export default interface IUserService {
      * @returns Result containing the updated User DTO.
      */
     updateUser(updateDTO: IUserUpdateDTO, email: string): Promise<Result<IUserDTO>>;
+
+    /**
+     * Changes the role of a user identified by email.
+     * @param email - The user email.
+     * @param dto - DTO containing the new role.
+     * @returns Result containing the updated User DTO.
+     */
+    changeRole(email: string, dto: IUserChangeRoleDTO): Promise<Result<IUserDTO>>;
 
     /**
      * Deletes a User by email.

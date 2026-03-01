@@ -1,0 +1,75 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title">Bancos</h1>
+
+    <div class="page-actions">
+      <button routerLink="/bancos/criar">
+        <svg class="svg-icon" viewBox="0 0 24 24">
+          <path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor"/>
+        </svg>
+        <span>Criar Banco</span>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="vm.isLoading$ | async" class="loading-state">A carregar...</div>
+
+  <div *ngIf="!(vm.isLoading$ | async)" class="content-container">
+    <ng-container *ngIf="(vm.bancos$ | async) as bancos">
+      <div *ngIf="bancos.length === 0" class="empty-state">
+        <p>Não existem bancos criados.</p>
+      </div>
+
+      <div *ngIf="bancos.length > 0" class="cards-grid">
+        <div *ngFor="let banco of bancos" class="card card--hover">
+          <div class="card-icon-wrapper">
+            <div class="card-icon card-icon--circle">{{ banco.icon }}</div>
+          </div>
+
+          <div class="card-content">
+            <h3 class="card-title">{{ banco.nome }}</h3>
+
+            <!-- get detalhe (dashboard) if available -->
+            <ng-container *ngIf="vm.getDetalhe(banco.id) as detalhe; else noDetalhe">
+              <p class="card-value">{{ detalhe.totalBanco | number:'1.2-2' }} €</p>
+              <div class="card-details">
+                <small><b>Contas:</b> {{ detalhe.saldoContas | number:'1.2-2' }} €</small>
+                <small><b>Cartões:</b> {{ detalhe.saldoCartoes | number:'1.2-2' }} €</small>
+              </div>
+            </ng-container>
+            <ng-template #noDetalhe>
+              <p class="card-value">-</p>
+              <div class="card-details">
+                <small><b>Contas:</b> -</small>
+                <small><b>Cartões:</b> -</small>
+              </div>
+            </ng-template>
+          </div>
+
+          <div class="card-actions">
+            <button [routerLink]="['/bancos/editar', banco.id]" class="btn-action">
+              <svg class="svg-icon" viewBox="0 0 24 24">
+                <path
+                  d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"
+                  fill="currentColor"/>
+              </svg>
+              <span>Editar</span>
+            </button>
+
+            <!-- Admin-only info and actions placed under the edit button -->
+            <ng-container *ngIf="vm.auth.user()?.role === 'Admin'">
+              <div class="card-details admin-section">
+                <small><b>User ID:</b> {{ banco.userId }}</small>
+              </div>
+              <button (click)="vm.deleteBanco(banco.id)" class="btn-delete">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 7h12v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3-4h6l1 1H8l1-1z" fill="currentColor"/></svg>
+                <span>Eliminar</span>
+              </button>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+</div>

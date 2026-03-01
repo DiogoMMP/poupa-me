@@ -21,14 +21,17 @@ export class DespesaRecorrenteEntity {
     @Column({ name: 'nome', type: 'varchar', length: 100 })
     nome!: string;
 
-    @Column({ name: 'valor', type: 'decimal', precision: 12, scale: 2 })
-    valor!: number;
+    @Column({ name: 'icon', type: 'varchar', length: 255 })
+    icon!: string;
 
-    @Column({ name: 'moeda', type: 'varchar', length: 3, default: 'EUR' })
-    moeda!: string;
+    @Column({ name: 'valor', type: 'decimal', precision: 12, scale: 2, nullable: true })
+    valor!: number | null;
 
-    @Column({ name: 'dia_do_mes', type: 'integer' })
-    diaDoMes!: number;
+    @Column({ name: 'moeda', type: 'varchar', length: 3, default: 'EUR', nullable: true })
+    moeda!: string | null;
+
+    @Column({ name: 'dia_do_mes', type: 'integer', nullable: true })
+    diaDoMes!: number | null;
 
     @ManyToOne(() => CategoriaEntity)
     @JoinColumn({ name: 'categoria_id' })
@@ -50,6 +53,16 @@ export class DespesaRecorrenteEntity {
 
     @Column({ name: 'conta_destino_id' })
     contaDestinoId!: number;
+
+    @ManyToOne(() => ContaEntity, { nullable: true })
+    @JoinColumn({ name: 'conta_poupanca_id' })
+    contaPoupanca?: ContaEntity;
+
+    @Column({ name: 'conta_poupanca_id', type: 'int', nullable: true })
+    contaPoupancaId?: number;
+
+    @Column({ name: 'tipo', type: 'varchar', length: 20, default: 'Despesa Mensal' })
+    tipo!: string;
 
     @Column({ name: 'ultimo_processamento', type: 'date', nullable: true })
     ultimoProcessamento!: Date | null;

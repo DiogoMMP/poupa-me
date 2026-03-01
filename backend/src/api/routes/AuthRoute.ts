@@ -63,6 +63,35 @@ export default (app: Router) => {
 
   /**
    * @openapi
+   * /me:
+   *   get:
+   *     tags:
+   *       - Auth
+   *     summary: Get current logged-in user
+   *     description: Returns the current user from session. Requires active session.
+   *     responses:
+   *       200:
+   *         description: Current user
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 id:
+   *                   type: string
+   *                 name:
+   *                   type: string
+   *                 role:
+   *                   type: string
+   *                 locale:
+   *                   type: string
+   *       401:
+   *         description: Not authenticated
+   */
+  app.get('/me', (req, res, next) => ctrl.getCurrentUser(req, res, next));
+
+  /**
+   * @openapi
    * /auth/register:
    *   post:
    *     tags:
@@ -117,6 +146,29 @@ export default (app: Router) => {
    *         description: Invalid credentials
    */
   route.post('/login', (req, res, next) => ctrl.login(req, res, next));
+
+  /**
+   * @openapi
+   * /auth/logout:
+   *   post:
+   *     tags:
+   *       - Auth
+   *     summary: Logout current user
+   *     description: Destroys the current session and clears the session cookie.
+   *     responses:
+   *       200:
+   *         description: Logout successful
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *       500:
+   *         description: Logout failed
+   */
+  route.post('/logout', (req, res, next) => ctrl.logout(req, res, next));
 
   /**
    * @openapi
@@ -199,6 +251,45 @@ export default (app: Router) => {
    *         description: Not found
    */
   route.get('/:id', isAuth, (req, res, next) => ctrl.getUserByDomainId(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
+   * /auth/{email}/role:
+   *   patch:
+   *     tags:
+   *       - Auth
+   *     summary: Change a user's role
+   *     description: Changes the role of a user identified by email. Admin only.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: email
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [role]
+   *             properties:
+   *               role:
+   *                 type: string
+   *                 example: "Admin"
+   *     responses:
+   *       200:
+   *         description: Updated user
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/User'
+   *       400:
+   *         description: Validation error
+   */
+  route.patch('/:email/role', isAuth, authorize([Role.Admin]), (req, res, next) => ctrl.changeRole(req as AuthenticatedRequest, res, next));
 
   /**
    * @openapi

@@ -1,0 +1,66 @@
+<section class="auth">
+
+  <div class="auth-overlay" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+
+    <div class="auth-card" role="document">
+
+      <h1 id="loginTitle" class="auth-title">Entrar</h1>
+      <p class="auth-sub">Autentique-se para continuar</p>
+
+      <!-- Login Form -->
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="auth-actions">
+
+        <!-- Email field -->
+        <div class="form-group">
+          <label for="emailInput">Email</label>
+          <input
+            type="email"
+            id="emailInput"
+            formControlName="email"
+            class="form-input"
+            placeholder="seu@email.com"
+            [class.invalid]="form.get('email')?.invalid && form.get('email')?.touched"
+          />
+          <span class="error-hint" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
+            Email inválido
+          </span>
+        </div>
+
+        <!-- Password field -->
+        <div class="form-group">
+          <label for="passwordInput">Password</label>
+          <input
+            type="password"
+            id="passwordInput"
+            formControlName="password"
+            class="form-input"
+            placeholder="••••••••"
+            [class.invalid]="form.get('password')?.invalid && form.get('password')?.touched"
+          />
+          <span class="error-hint" *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
+            Mínimo 6 caracteres
+          </span>
+        </div>
+
+        <!-- Error message -->
+        <div *ngIf="vm.error()" class="error" role="alert">{{ vm.error() }}</div>
+
+        <!-- Submit button -->
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="vm.loading() || form.invalid"
+        >
+          <span *ngIf="!vm.loading()">Entrar</span>
+          <span *ngIf="vm.loading()">A autenticar...</span>
+        </button>
+
+        <p class="auth-switch">Não tem conta? <a routerLink="/registar">Registar</a></p>
+
+      </form>
+
+      <small class="auth-foot">© {{ year }} Diogo Pereira. Todos os direitos reservados.</small>
+    </div>
+
+  </div>
+</section>

@@ -28,5 +28,21 @@ export default interface IDespesaRecorrenteController {
      * Gets all DespesaRecorrentes for the authenticated user
      */
     getAllDespesas(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+
+    /**
+     * Gets DespesaRecorrentes with valor + diaDoMes defined
+     */
+    getDespesasComValor(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+
+    /**
+     * Gets DespesaRecorrentes without valor + diaDoMes
+     */
+    getDespesasSemValor(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+
+    /**
+     * Manually generates a pending transaction for a sem-valor recurring expense.
+     * The rule itself is NOT modified.
+     */
+    gerarTransacaoSemValor(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 }
 

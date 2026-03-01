@@ -3,10 +3,18 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --proxy-config proxy.conf.json",
+    "start:local": "ng serve --proxy-config proxy.local.conf.json",
+    "start:trusted": "scripts\\start-with-trusted-cert.bat",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test --watch=false --browsers=ChromeHeadless",
+    "test:open": "ng test",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadless && npx cypress run --config baseUrl=http://localhost:4200",
+    "serve:ssr:frontend": "node dist/frontend/server/server.mjs",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "e2e": "cypress run --config baseUrl=http://localhost:4200"
   },
   "prettier": {
     "printWidth": 100,
@@ -27,22 +35,22 @@
     "@angular/core": "^20.3.0",
     "@angular/forms": "^20.3.0",
     "@angular/platform-browser": "^20.3.0",
+    "@angular/platform-server": "^20.3.0",
     "@angular/router": "^20.3.0",
+    "@angular/ssr": "^20.3.0",
+    "express": "^5.2.1",
+    "picmo": "^5.8.5",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
+    "typescript": "~5.9.2",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@angular/build": "^20.3.9",
-    "@angular/cli": "^20.3.9",
+    "@angular/build": "^20.3.8",
+    "@angular/cli": "^20.0.6",
     "@angular/compiler-cli": "^20.3.0",
-    "@types/jasmine": "~5.1.0",
-    "jasmine-core": "~5.9.0",
-    "karma": "~6.4.0",
-    "karma-chrome-launcher": "~3.2.0",
-    "karma-coverage": "~2.2.0",
-    "karma-jasmine": "~5.1.0",
-    "karma-jasmine-html-reporter": "~2.1.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^20.17.19",
     "typescript": "~5.9.2"
   }
 }

@@ -1,0 +1,76 @@
+/* ── 2-column layout specific to the transactions page ── */
+.transacoes-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.transacoes-layout--single {
+  grid-template-columns: 1fr;
+}
+
+.transacoes-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Compact items in this page */
+.transacoes-list .transacao-item {
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.transacoes-list .transacao-item .transacao-descricao,
+.transacoes-list .transacao-item .transacao-valor {
+  font-size: 0.875rem;
+}
+
+/* ── Status dot in section title ── */
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+  flex-shrink: 0;
+}
+
+.status-dot--pendente {
+  background-color: var(--color-warning, #f59e0b);
+}
+
+.status-dot--concluido {
+  background-color: var(--color-success, #22c55e);
+}
+
+/* ── Concluído checkmark icon ── */
+.concluido-icon {
+  color: var(--color-success, #22c55e);
+}
+
+@media (max-width: 900px) {
+  .transacoes-layout { grid-template-columns: 1fr; }
+}
+
+/* ── Sem Valor section ── */
+.sem-valor-section {
+  margin-bottom: 1.5rem;
+}
+
+.sem-valor-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted, #6b7280);
+  margin: 0 0 0.6rem 0;
+}
+
+.sem-valor-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+

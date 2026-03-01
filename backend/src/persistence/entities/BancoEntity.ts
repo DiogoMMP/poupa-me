@@ -29,6 +29,9 @@ export class BancoEntity {
     @Column({ type: 'varchar', nullable: true })
     locale!: string | null;
 
+    @Column({ name: 'contas_cartoes_selecionados', type: 'json', nullable: true })
+    contasCartoesSelecionados!: string[] | null;
+
     @CreateDateColumn({ name: 'created_at' })
     createdAt!: Date;
 

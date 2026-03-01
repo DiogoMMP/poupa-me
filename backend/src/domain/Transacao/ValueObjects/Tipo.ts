@@ -6,7 +6,7 @@ import {ValueObject} from "../../../core/domain/ValueObject.js";
  * Valid Tipo values for a transaction.
  * These are the values used in the domain: Entrada, Saída, Crédito, Reembolso and Despesa Mensal.
  */
-export type Tipos = "Entrada" | "Saída" | "Crédito" | "Reembolso" | "Despesa Mensal";
+export type Tipos = "Entrada" | "Saída" | "Crédito" | "Reembolso" | "Despesa Mensal" | "Poupança";
 
 /**
  * Properties required to create a Tipo value object.
@@ -31,7 +31,7 @@ export class Tipo extends ValueObject<TipoProps> {
 
     /** Checks whether the provided value is supported by the domain */
     public static isSupported(value: string): value is Tipos {
-        return ["Entrada", "Saída", "Crédito", "Reembolso", "Despesa Mensal"].includes(value);
+        return ["Entrada", "Saída", "Crédito", "Reembolso", "Despesa Mensal", "Poupança"].includes(value);
     }
 
     /**
@@ -58,7 +58,7 @@ export class Tipo extends ValueObject<TipoProps> {
      * Returns true if the transaction represents money leaving your net worth
      */
     public isExpense(): boolean {
-        return this.value === "Saída" || this.value === "Crédito" || this.value === "Despesa Mensal";
+        return this.value === "Saída" || this.value === "Crédito" || this.value === "Despesa Mensal" || this.value === "Poupança";
     }
 
     /**

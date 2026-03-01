@@ -177,15 +177,18 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
     }
 
     /**
-     * Finds all CartaoCredito entities, optionally filtered by user ID. This method retrieves CartaoCredito entities
+     * Finds all CartaoCredito entities, optionally filtered by user ID and banco ID. This method retrieves CartaoCredito entities
      * from the repository, maps them to DTOs, and returns them in a Result. If a user ID is provided, only CartaoCredito
-     * entities associated with that user will be returned. If no user ID is provided, all CartaoCredito entities will be returned.
+     * entities associated with that user will be returned. If a banco ID is provided, only CartaoCredito entities associated
+     * with that banco will be returned. If neither is provided, all CartaoCredito entities will be returned.
      * @param userId - Optional user ID to filter CartaoCredito entities by. If provided, only CartaoCredito entities
-     * with a matching user_domain_id will be returned. If not provided, all CartaoCredito entities will be returned.
+     * with a matching user_domain_id will be returned.
+     * @param bancoId - Optional banco ID to filter CartaoCredito entities by. If provided, only CartaoCredito entities
+     * with a matching banco_id will be returned.
      */
-    public async findAllCartoes(userId?: string): Promise<Result<ICartaoCreditoDTO[]>> {
+    public async findAllCartoes(userId?: string, bancoId?: string): Promise<Result<ICartaoCreditoDTO[]>> {
         try {
-            const cartoes = await this.cartaoRepo.findAll(userId);
+            const cartoes = await this.cartaoRepo.findAll(userId, bancoId);
             return Result.ok<ICartaoCreditoDTO[]>(cartoes.map(c => CartaoCreditoMap.toDTO(c)));
         } catch (err) {
             this.logger.error('CartaoCreditoService.findAllCartoes error: %o', err);
@@ -240,11 +243,12 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
      */
     public async pagarCartao(cartaoId: string, userId: string, novoPeriodo: IPeriodoProps): Promise<Result<ITransacaoDTO>> {
         try {
-            // 1. Get the amount to pay from the current statement
-            const extratoResult = await this.cartaoRepo.getExtrato(cartaoId, userId);
-            const { saldoAtual } = extratoResult;
+            // 1. Get the amount to pay from the current statement (no userId filter — admin must be able to pay any card)
+            const extratoResult = await this.getExtrato(cartaoId);
+            if (extratoResult.isFailure) return Result.fail<ITransacaoDTO>(String(extratoResult.error));
+            const { saldoAtual } = extratoResult.getValue();
 
-            const valorPagar = Dinheiro.create(saldoAtual.value, saldoAtual.moeda).getValue();
+            const valorPagar = Dinheiro.create(saldoAtual.valor, saldoAtual.moeda).getValue();
 
             // Check if there is anything to pay
             if (valorPagar.value === 0) return Result.fail<ITransacaoDTO>("No amount to pay on the card statement");
@@ -291,15 +295,16 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
             await this.cartaoRepo.update(updatedCartaoOrError.getValue());
 
             // 7. Call TransacaoRepo to mark pending transactions and create payment transaction
-            // IMPORTANT: Pass the OLD period (current card period) to mark transactions in that period as completed
-            const periodoAntigoInicio = new Date(cartao.periodo.inicio.year, cartao.periodo.inicio.month - 1, cartao.periodo.inicio.day);
-            const periodoAntigoFecho = new Date(cartao.periodo.fecho.year, cartao.periodo.fecho.month - 1, cartao.periodo.fecho.day);
+            // Use the card owner's userId, not the caller's (caller may be admin)
+            const cartaoOwnerId = cartao.userId.toString();
+            const periodoAntigoInicio = new Date(Date.UTC(cartao.periodo.inicio.year, cartao.periodo.inicio.month - 1, cartao.periodo.inicio.day));
+            const periodoAntigoFecho = new Date(Date.UTC(cartao.periodo.fecho.year, cartao.periodo.fecho.month - 1, cartao.periodo.fecho.day));
 
             const transacaoPagamento = await this.transacaoRepo.pagarCartao(
                 cartaoId,
                 valorPagar.value,
-                userId,
-                { inicio: periodoAntigoInicio, fecho: periodoAntigoFecho } // OLD period, not new!
+                cartaoOwnerId,
+                { inicio: periodoAntigoInicio, fecho: periodoAntigoFecho }
             );
 
             return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(transacaoPagamento));

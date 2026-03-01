@@ -1,6 +1,6 @@
 import { Service, Inject } from 'typedi';
 import { Result } from '../core/logic/Result.js';
-import type { IUserDTO, IUserRegistrationDTO, IUserLoginDTO, IUserUpdateDTO } from '../dto/IUserDTO.js';
+import type { IUserDTO, IUserRegistrationDTO, IUserLoginDTO, IUserUpdateDTO, IUserChangeRoleDTO } from '../dto/IUserDTO.js';
 import type IUserService from './IServices/IUserService.js';
 import type IUserRepo from '../repos/IRepos/IUserRepo.js';
 import { User } from '../domain/User/Entities/User.js';
@@ -209,6 +209,43 @@ export default class AuthService implements IUserService {
         } catch (e) {
             this.logger.error('AuthService.updateUser error: %o', e);
             const message = e instanceof Error ? e.message : 'Error updating user';
+            return Result.fail<IUserDTO>(message);
+        }
+    }
+
+    /**
+     * Changes the role of a user identified by email.
+     * @param email - Email of the user whose role will be changed.
+     * @param dto - DTO containing the new role string.
+     * @returns Result containing the updated User DTO or an error message.
+     */
+    public async changeRole(email: string, dto: IUserChangeRoleDTO): Promise<Result<IUserDTO>> {
+        try {
+            if (!email) return Result.fail<IUserDTO>('Email is required');
+            if (!dto?.role) return Result.fail<IUserDTO>('Role is required');
+
+            const existing = await this.userRepo.findByEmail(email);
+            if (!existing) return Result.fail<IUserDTO>(`User not found with email=${email}`);
+
+            const roleResult = UserRole.create(dto.role);
+            if (roleResult.isFailure) return Result.fail<IUserDTO>(roleResult.error || 'Invalid role');
+
+            const userOrError = User.create(
+                {
+                    name: existing.name,
+                    email: existing.email,
+                    password: existing.password,
+                    role: roleResult.getValue()
+                },
+                existing.id
+            );
+            if (userOrError.isFailure) return Result.fail<IUserDTO>(String(userOrError.errorValue()));
+
+            const updated = await this.userRepo.updateByEmail(userOrError.getValue(), email);
+            return Result.ok<IUserDTO>(UserMap.toDTO(updated) as IUserDTO);
+        } catch (e) {
+            this.logger.error('AuthService.changeRole error: %o', e);
+            const message = e instanceof Error ? e.message : 'Error changing role';
             return Result.fail<IUserDTO>(message);
         }
     }

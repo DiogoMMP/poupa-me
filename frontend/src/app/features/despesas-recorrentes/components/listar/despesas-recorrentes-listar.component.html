@@ -1,0 +1,283 @@
+<section class="page-container">
+
+  <div class="page-header">
+    <h1 class="page-title">Despesas Recorrentes</h1>
+
+    <div class="page-actions">
+      <button routerLink="/despesas-recorrentes/listar-regras" class="btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Ver Regras
+      </button>
+      <button routerLink="/despesas-recorrentes/nova-regra">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 5V19M5 12H19" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round"/>
+        </svg>
+        Nova Regra
+      </button>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="vm.isLoading$ | async">A carregar...</div>
+
+  <!-- ══════════ SEM VALOR — Despesas recorrentes por configurar ══════════ -->
+  <ng-container *ngIf="vm.despesasSemValor$ | async as semValor">
+    <div class="sem-valor-section" *ngIf="semValor.length > 0">
+      <p class="sem-valor-label">Já veio Fatura</p>
+      <div class="sem-valor-list">
+        <button
+          *ngFor="let d of semValor"
+          class="sem-valor-btn"
+          (click)="onDespesaSemValorClick(d)"
+          [title]="d.nome"
+        >
+          <span class="sem-valor-icon">{{ d.icon }}</span>
+          <span class="sem-valor-nome">{{ d.nome }}</span>
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
+  <div class="transacoes-layout">
+
+    <!-- ══════════ LEFT COLUMN — PENDENTES ══════════ -->
+    <div class="transacoes-column">
+
+      <div class="section-header">
+        <h3 class="section-title">
+          <span class="status-dot status-dot--pendente"></span>
+          Pendentes
+        </h3>
+        <button class="filter-toggle-btn"
+                (click)="showPendenteFilters = !showPendenteFilters"
+                [class.active]="showPendenteFilters">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M3 7H21M6 12H18M10 17H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Filtros
+          <span class="filter-badge" *ngIf="hasActivePendenteFilters()">●</span>
+        </button>
+      </div>
+
+      <!-- Pendente Filters -->
+      <div class="filter-panel" *ngIf="showPendenteFilters">
+        <div class="filter-row">
+          <div class="filter-field">
+            <label class="filter-label">Categoria</label>
+            <select [(ngModel)]="pendenteFilterForm.categoriaId">
+              <option value="">Todas as categorias</option>
+              <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">{{ cat.icon }} {{ cat.nome }}</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="filter-label">Período</label>
+            <select [(ngModel)]="pendenteFilterForm.period">
+              <option value="">Qualquer período</option>
+              <option *ngFor="let p of vm.PERIODS" [value]="p">{{ p }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button class="btn-secondary" (click)="clearPendenteFilters()">Limpar</button>
+          <button (click)="applyPendenteFilters()">Aplicar</button>
+        </div>
+      </div>
+
+      <!-- Paged list -->
+      <ng-container *ngIf="vm.pendentes$ | async as all">
+        <div class="empty-state" *ngIf="all.length === 0 && !(vm.isLoading$ | async)">
+          Sem despesas pendentes.
+        </div>
+
+        <div class="transacoes-list">
+          <div *ngFor="let t of paginate(all, pendentePage)" class="transacao-item card">
+
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="transacao-icon saidas-icon">
+              <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5"
+                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+
+            <div class="transacao-details">
+              <p class="transacao-descricao text-large">{{ t.descricao }}</p>
+              <span class="transacao-meta text-muted text-small">
+                {{ t.categoria.icon }} {{ t.categoria.nome }}
+                <span *ngIf="t.conta"> • {{ t.conta.nome }}</span>
+              </span>
+
+              <!-- Actions (left) - same as transactions list -->
+              <div class="transacao-actions">
+                <a class="btn-edit-small" [routerLink]="['/despesas-recorrentes/editar-transacao', t.id]" title="Editar"
+                   aria-label="Editar transação">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                      stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+
+                <button class="btn-delete-small" title="Eliminar" aria-label="Eliminar transação"
+                        (click)="vm.deleteTransacao(t.id)">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M3 6h18M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6M10 6V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"
+                          stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+
+                <button class="btn-concluir-small" title="Concluir" aria-label="Concluir transação"
+                        (click)="vm.concluirTransacao(t)" [disabled]="vm.isBusy(t.id)">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+
+            </div>
+
+            <div class="transacao-values">
+              <p class="transacao-valor text-large text-negative">
+                - {{ t.valor | number:'1.2-2' }} {{ t.moeda === 'EUR' ? '€' : t.moeda }}
+              </p>
+              <span class="transacao-data text-muted text-small">{{ vm.formatData(t.dia, t.mes) }} {{ t.ano }}</span>
+              <span class="status-badge"
+                    [class.status-badge--pendente]="t.status === 'Pendente'"
+                    [class.status-badge--concluido]="t.status === 'Concluído'">
+                {{ t.status }}
+              </span>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="pagination" *ngIf="totalPages(all) > 1">
+          <button class="pagination-btn" (click)="pendentePage = pendentePage - 1" [disabled]="pendentePage === 1">‹
+          </button>
+          <span class="pagination-info">{{ pendentePage }} / {{ totalPages(all) }}</span>
+          <button class="pagination-btn" (click)="pendentePage = pendentePage + 1"
+                  [disabled]="pendentePage === totalPages(all)">›
+          </button>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- ══════════ RIGHT COLUMN — CONCLUÍDAS ══════════ -->
+    <div class="transacoes-column">
+
+      <div class="section-header">
+        <h3 class="section-title">
+          <span class="status-dot status-dot--concluido"></span>
+          Concluídas
+        </h3>
+        <button class="filter-toggle-btn"
+                (click)="showConcluidaFilters = !showConcluidaFilters"
+                [class.active]="showConcluidaFilters">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M3 7H21M6 12H18M10 17H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Filtros
+          <span class="filter-badge" *ngIf="hasActiveConcluidaFilters()">●</span>
+        </button>
+      </div>
+
+      <!-- Concluída Filters -->
+      <div class="filter-panel" *ngIf="showConcluidaFilters">
+        <div class="filter-row">
+          <div class="filter-field">
+            <label class="filter-label">Categoria</label>
+            <select [(ngModel)]="concluidaFilterForm.categoriaId">
+              <option value="">Todas as categorias</option>
+              <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">{{ cat.icon }} {{ cat.nome }}</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="filter-label">Período</label>
+            <select [(ngModel)]="concluidaFilterForm.period">
+              <option value="">Qualquer período</option>
+              <option *ngFor="let p of vm.PERIODS" [value]="p">{{ p }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button class="btn-secondary" (click)="clearConcluidaFilters()">Limpar</button>
+          <button (click)="applyConcluidaFilters()">Aplicar</button>
+        </div>
+      </div>
+
+      <!-- Paged list -->
+      <ng-container *ngIf="vm.concluidas$ | async as all">
+        <div class="empty-state" *ngIf="all.length === 0 && !(vm.isLoading$ | async)">
+          Sem despesas concluídas.
+        </div>
+
+        <div class="transacoes-list">
+          <div *ngFor="let t of paginate(all, concluidaPage)" class="transacao-item card">
+
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="transacao-icon concluido-icon">
+              <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" stroke="currentColor" stroke-width="1.2"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7.5 12.5l2.5 2.5L16.5 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                    stroke-linejoin="round" fill="none"/>
+            </svg>
+
+            <div class="transacao-details">
+              <p class="transacao-descricao text-large">{{ t.descricao }}</p>
+              <span class="transacao-meta text-muted text-small">
+                {{ t.categoria.icon }} {{ t.categoria.nome }}
+                <span *ngIf="t.conta"> • {{ t.conta.nome }}</span>
+              </span>
+
+              <!-- Actions (left) for concluded items (no conclude button) -->
+              <div class="transacao-actions">
+                <a class="btn-edit-small" [routerLink]="['/despesas-recorrentes/editar-transacao', t.id]" title="Editar"
+                   aria-label="Editar transação">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                      stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+
+                <button class="btn-delete-small" title="Eliminar" aria-label="Eliminar transação"
+                        (click)="vm.deleteTransacao(t.id)">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M3 6h18M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6M10 6V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"
+                          stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+
+            </div>
+
+            <div class="transacao-values">
+              <p class="transacao-valor text-large text-negative">
+                - {{ t.valor | number:'1.2-2' }} {{ t.moeda === 'EUR' ? '€' : t.moeda }}
+              </p>
+              <span class="transacao-data text-muted text-small">{{ vm.formatData(t.dia, t.mes) }} {{ t.ano }}</span>
+              <span class="status-badge"
+                    [class.status-badge--pendente]="t.status === 'Pendente'"
+                    [class.status-badge--concluido]="t.status === 'Concluído'">
+                {{ t.status }}
+              </span>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="pagination" *ngIf="totalPages(all) > 1">
+          <button class="pagination-btn" (click)="concluidaPage = concluidaPage - 1" [disabled]="concluidaPage === 1">
+            ‹
+          </button>
+          <span class="pagination-info">{{ concluidaPage }} / {{ totalPages(all) }}</span>
+          <button class="pagination-btn" (click)="concluidaPage = concluidaPage + 1"
+                  [disabled]="concluidaPage === totalPages(all)">›
+          </button>
+        </div>
+      </ng-container>
+    </div>
+
+  </div>
+</section>
+
+
+

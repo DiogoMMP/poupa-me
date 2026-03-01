@@ -16,11 +16,6 @@ export default interface ICategoriaController {
     getCategoriaByDomainId(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
     /**
-     * Retrieves a Categoria by name
-     */
-    getCategoriaByNome(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
-
-    /**
      * Retrieves all Categorias
      */
     getAllCategorias(req: Request, res: Response, next: NextFunction): Promise<Response | void>;

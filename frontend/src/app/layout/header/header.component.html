@@ -1,0 +1,22 @@
+<header class="app-header">
+
+  <a routerLink="/" class="logo-link">
+    <img src="/logos/logo_sem_fundo.png" alt="logo" class="logo">
+    <h1>Poupa-Me</h1>
+  </a>
+
+  <!-- Banco Selector -->
+  <div class="banco-selector">
+    <select
+      #bankSel
+      class="select-banco"
+      (change)="onBancoChange(bankSel.value)"
+    >
+      <option value="" [selected]="!selectedBancoId()">Selecionar Banco</option>
+      <option *ngFor="let banco of bancos()" [value]="banco.id" [selected]="banco.id === selectedBancoId()">
+        {{ banco.icon }} {{ banco.nome }}
+      </option>
+    </select>
+  </div>
+
+</header>

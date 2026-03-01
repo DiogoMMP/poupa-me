@@ -224,11 +224,26 @@ export default (app: Router) => {
    *     tags:
    *       - CartaoCredito
    *     summary: Get all cartoes
+   *     description: Returns list of cartoes for the authenticated user. Optionally filter by banco.
    *     security:
    *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: bancoId
+   *         required: false
+   *         schema:
+   *           type: string
+   *         description: Optional banco domain ID to filter cartoes by banco
+   *         example: "BNC00000000001"
    *     responses:
    *       200:
    *         description: List of cartoes
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/CartaoCredito'
    */
   route.get('/', isAuth, (req, res, next) => ctrl.getAllCartoes(req as AuthenticatedRequest, res, next));
 

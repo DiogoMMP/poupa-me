@@ -1,0 +1,45 @@
+/* Shared button styles for the app (used by physical resources pages) */
+.primary-btn {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.primary-btn:hover:not([disabled]) { background-color: #0056b3; }
+.primary-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+/* Professional resource-specific variants */
+.resource-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.56rem 1.05rem;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(2, 6, 23, 0.08);
+  font-weight: 700;
+}
+.resource-save-btn .icon { width:16px; height:16px; display:inline-block; }
+.resource-save-btn[disabled] { opacity: 0.7; box-shadow: none; }
+
+.resource-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+}
+.resource-cancel-btn .icon { width:14px; height:14px; display:inline-block; }
+
+/* small icon helper */
+.btn-icon { width: 16px; height: 16px; display: inline-block; }
+
+/* responsive: ensure buttons stack on very small screens */
+@media (max-width: 520px) {
+  .actions { flex-direction: column; gap: 0.5rem; }
+  .action-group { flex-direction: column; align-items: stretch; }
+  .action-btn, .primary-btn, .secondary-btn, .add-btn { width: 100%; justify-content: center; }
+}

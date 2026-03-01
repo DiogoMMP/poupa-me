@@ -67,58 +67,22 @@ export default class CategoriaRepo implements ICategoriaRepo {
     }
 
     /**
-     * Updates an existing Categoria entity in the database. It first converts the domain Categoria object to a persistence format
-     * using the CategoriaMap. Then it creates a new entity instance and saves it to the database, which will perform an update
-     * if the entity already exists. After saving, it maps the saved entity back to the domain model and returns it. If any error occurs during this process,
-     * it logs the error and rethrows it.
-     * @param categoria - The Categoria domain entity that needs to be updated in the database. This object will be
-     * mapped to a persistence format before being updated.
-     * @param nome
-     * @returns A Promise that resolves to the updated Categoria domain entity. If the update operation is successful,
-     * the method returns the Categoria object as it exists in the domain model after being updated. If there is an
-     * error during the update operation, it logs the error and rethrows it.
+     * Updates an existing Categoria entity in the database, located by its domain ID.
+     * @param categoria - The Categoria domain entity with updated values.
+     * @param id - The domain ID of the Categoria to update.
      */
-    public async update(categoria: Categoria, nome: string): Promise<Categoria> {
+    public async update(categoria: Categoria, id: string): Promise<Categoria> {
         try {
             const raw = CategoriaMap.toPersistence(categoria);
 
-            // If caller provided the previous name, prefer locating by that name to update
-            if (nome) {
-                // perform update by nome to avoid creating duplicates
-                await this.repo.createQueryBuilder()
-                    .update(CategoriaEntity)
-                    .set({ nome: raw.nome as string, icon: raw.icon as string })
-                    .where('nome = :oldNome', { oldNome: nome })
-                    .execute();
+            await this.repo.createQueryBuilder()
+                .update(CategoriaEntity)
+                .set({ nome: raw.nome as string, icon: raw.icon as string })
+                .where('domain_id = :domainId', { domainId: id })
+                .execute();
 
-                // After update, reload by the new nome
-                const saved = await this.repo.findOne({ where: { nome: raw.nome as string } });
-                if (!saved) throw new Error('Failed to find updated categoria by nome');
-                const domain = await CategoriaMap.toDomain(saved);
-                if (!domain) throw new Error('Failed to map updated categoria to domain');
-                return domain;
-            }
-
-            // Otherwise, fallback to update by domainId if present
-            if (raw.domainId) {
-                await this.repo.createQueryBuilder()
-                    .update(CategoriaEntity)
-                    .set({ nome: raw.nome as string, icon: raw.icon as string })
-                    .where('domain_id = :domainId', { domainId: raw.domainId })
-                    .execute();
-
-                const saved = await this.repo.findOne({ where: { domainId: raw.domainId as string } });
-                if (!saved) throw new Error('Failed to find updated categoria by domainId');
-                const domain = await CategoriaMap.toDomain(saved);
-                if (!domain) throw new Error('Failed to map updated categoria to domain');
-                return domain;
-            }
-
-            // If no nome and no domainId, fallback to save (this may insert)
-            const entity = this.repo.create(raw as unknown as CategoriaEntity);
-            const saved = await this.repo.save(entity);
-
-            if (!saved) throw new Error('Failed to update categoria');
+            const saved = await this.repo.findOne({ where: { domainId: id } });
+            if (!saved) throw new Error('Failed to find updated categoria by domainId');
             const domain = await CategoriaMap.toDomain(saved);
             if (!domain) throw new Error('Failed to map updated categoria to domain');
             return domain;
@@ -129,33 +93,18 @@ export default class CategoriaRepo implements ICategoriaRepo {
     }
 
     /**
-     * Deletes a Categoria entity from the database based on the provided nome. It uses the repository's delete
-     * method to remove the record that matches the given nome. If any error occurs during this process, it logs
-     * the error and rethrows it.
-     * @param nome - The nome of the Categoria to delete.
+     * Deletes a Categoria entity from the database by its domain ID.
+     * @param id - The domain ID of the Categoria to delete.
      */
-    public async deleteByName(nome: string): Promise<void> {
+    public async deleteById(id: string): Promise<void> {
         try {
-            await this.repo.delete({ nome });
+            await this.repo.delete({ domainId: id });
         } catch (err) {
-            this.logger.error('CategoriaRepo.deleteByName error: %o', err);
+            this.logger.error('CategoriaRepo.deleteById error: %o', err);
             throw err;
         }
     }
 
-    /**
-     * Finds a Categoria entity in the database by its name. It uses the repository's findOne method to retrieve the record
-     * that matches the given name. If a record is found, it maps the persistence entity back to the domain model and returns it.
-     * If no record is found, it returns null. If any error occurs during this process, it logs the error and rethrows it.
-     * @param name - The name of the Categoria to find.
-     * @returns A Promise that resolves to the found Categoria domain entity or null if no record is found. If there is an
-     * error during the find operation, it logs the error and rethrows it.
-     */
-    public async findByName(name: string): Promise<Categoria | null> {
-        const row = await this.repo.findOne({ where: { nome: name } });
-        if (!row) return null;
-        return await CategoriaMap.toDomain(row);
-    }
 
     /**
      * Finds all Categoria entities in the database. It uses the repository's find method to retrieve all records,

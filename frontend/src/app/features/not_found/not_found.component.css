@@ -1,0 +1,67 @@
+/* Position the content area explicitly to the right of the sidebar so centering is reliable */
+.not_found {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
+  height: 100vh;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;      /* vertical centering */
+  justify-content: center;  /* horizontal centering within content area */
+  text-align: center;
+  background: transparent;
+}
+
+/* inner wrapper that constrains and centers the text */
+.container {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+}
+
+.display-1 {
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  line-height: 0.95;
+  color: var(--brand-accent);
+}
+
+.lead {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--brand-text);
+  opacity: 0.95;
+  font-weight: 600;
+}
+
+/* Reduce left offset for smaller screens */
+@media (max-width: 1024px) {
+  .not_found {
+    left: var(--sidebar-width-tablet);
+    width: calc(100% - var(--sidebar-width-tablet));
+  }
+}
+
+/* On narrow mobile screens allow full width */
+@media (max-width: 540px) {
+  .not_found {
+    left: 0;
+    right: 0;
+    width: 100%;
+    padding-left: 1rem; /* small inner padding */
+    padding-right: 1rem;
+  }
+  .container {
+    padding: 1.5rem 0.5rem;
+  }
+}

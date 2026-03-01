@@ -33,5 +33,17 @@ export default interface IDespesaRecorrenteRepo {
      * Finds all active DespesaRecorrentes for a user
      */
     findActiveByUserId(userId: string): Promise<DespesaRecorrente[]>;
+
+    /**
+     * Finds DespesaRecorrentes that have valor and diaDoMes defined,
+     * filtered to those whose origin account belongs to the given bank
+     */
+    findWithValor(userId: string, bancoId: string): Promise<DespesaRecorrente[]>;
+
+    /**
+     * Finds DespesaRecorrentes that have no valor and no diaDoMes (icon/nome only),
+     * filtered to those whose origin account belongs to the given bank
+     */
+    findWithoutValor(userId: string, bancoId: string): Promise<DespesaRecorrente[]>;
 }
 

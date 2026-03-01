@@ -40,7 +40,8 @@ export default class BancoRepo implements IBancoRepo {
                 domainId,
                 nome: String(raw.nome),
                 icon: String(raw.icon),
-                userDomainId: String(raw.user_domain_id)
+                userDomainId: String(raw.user_domain_id),
+                contasCartoesSelecionados: raw.contas_cartoes_selecionados as string[] | null
             });
 
             const saved = await this.repo.save(entity);
@@ -65,7 +66,8 @@ export default class BancoRepo implements IBancoRepo {
                 .update(BancoEntity)
                 .set({
                     nome: String(raw.nome),
-                    icon: String(raw.icon)
+                    icon: String(raw.icon),
+                    contasCartoesSelecionados: raw.contas_cartoes_selecionados as string[] | null
                 })
                 .where('domain_id = :domainId', { domainId: raw.domainId })
                 .execute();

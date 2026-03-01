@@ -1,0 +1,68 @@
+<div class="page-container">
+  <div class="form-card">
+    <div class="form-header">
+      <h1 class="form-title">Pagar Cartão de Crédito</h1>
+      <p class="form-subtitle">Pague o cartão e configure o próximo período.</p>
+    </div>
+
+    <div *ngIf="vm.isLoading$ | async" class="loading-state">A carregar...</div>
+
+    <ng-container *ngIf="!(vm.isLoading$ | async)">
+      <ng-container *ngIf="(vm.cartao$ | async) as cartao">
+        <div class="card-summary">
+          <h3>{{ cartao.nome }}</h3>
+          <div class="card-summary-details">
+            <div class="card-summary-row">
+              <span class="text-muted">Valor a Pagar</span>
+              <span class="text-large">
+                <ng-container *ngIf="(vm.extrato$ | async) as extrato; else semExtrato">
+                  {{ extrato.saldoAtual.valor | number:'1.2-2' }} {{ extrato.saldoAtual.moeda === 'EUR' ? '€' : extrato.saldoAtual.moeda }}
+                </ng-container>
+                <ng-template #semExtrato>—</ng-template>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-content">
+          <div class="form-field" formGroupName="periodo">
+            <label class="form-label">Próximo Período</label>
+            <div class="row-controls">
+              <label for="dataInicio" class="form-label">Início: </label>
+              <input
+                type="date"
+                id="dataInicio"
+                formControlName="dataInicio"
+                class="form-input">
+
+              <label for="dataFim" class="form-label">Fim: </label>
+              <input
+                type="date"
+                id="dataFim"
+                formControlName="dataFim"
+                class="form-input">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" [disabled]="form.invalid || (vm.isLoading$ | async)">
+              <svg width="16" height="16" viewBox="0 0 24 24">
+                <path
+                  d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"
+                  fill="currentColor"/>
+              </svg>
+              <span>Pagar</span>
+            </button>
+
+            <button type="button" routerLink="/cartoes-credito" class="btn-secondary">Cancelar</button>
+          </div>
+        </form>
+      </ng-container>
+
+      <div *ngIf="!(vm.cartao$ | async)" class="empty-state">
+        <p>Cartão não encontrado.</p>
+        <button type="button" routerLink="/cartoes-credito">Voltar</button>
+      </div>
+    </ng-container>
+  </div>
+</div>

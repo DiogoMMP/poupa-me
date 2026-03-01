@@ -23,6 +23,8 @@ export interface ITransacaoDTO {
     status: string;
     conta?: IContaDTO;
     cartaoCredito?: ICartaoCreditoDTO;
+    contaDestino?: IContaDTO;
+    contaPoupanca?: IContaDTO;
     userId: string;
 }
 
@@ -33,8 +35,9 @@ export interface ITransacaoInputDTO {
     categoriaId: string;
     contaId?: string;
     cartaoCreditoId?: string;
-    contaDestinoId?: string; // Only for Despesa Mensal - conta that will receive the monthly expense
-    userId?: string; // will be set by controller from authenticated user
+    contaDestinoId?: string; // Only for Despesa Mensal
+    contaPoupancaId?: string; // Only for Poupança - the savings account
+    userId?: string;
 }
 
 export interface ITransacaoReembolsoDTO {
@@ -56,5 +59,6 @@ export interface ITransacaoUpdateDTO {
     status?: string;
     contaId?: string;
     cartaoCreditoId?: string;
-    contaDestinoId?: string; // For Despesa Mensal
+    contaDestinoId?: string;
+    contaPoupancaId?: string;
 }

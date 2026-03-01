@@ -31,7 +31,7 @@ const upload = multer({
  *       properties:
  *         message:
  *           type: string
- *           example: "Successfully imported: entradas, saídas, despesas mensais"
+ *           example: "Successfully imported: entradas, saídas"
  *     ImportError:
  *       type: object
  *       properties:
@@ -138,35 +138,29 @@ export default (app: Router) => {
      *     summary: Import transactions from CSV files
      *     description: |
      *       Unified endpoint to import transactions (Entradas and/or Saídas) from Notion CSV exports.
-     *       Optionally accepts a third file for monthly expenses (Despesas Mensais).
      *
      *       **CSV Headers:**
      *       - **Entradas:** `Nome,Categoria,Conta,Data,Despesa na Conta,Reembolso,Saiu,Valor,...`
      *       - **Saídas:** `Nome,Categoria,Conta,Data,Despesa no Cartão,Valor,...`
-     *       - **Despesas Mensais:** `Despesa,Valor`
      *
      *       **Features:**
      *       - Auto-detects if target is a Card (contains "Cartão") or Account
      *       - Creates categories if they don't exist
-     *       - Unified logic for both entradas and saidas
      *       - Detects duplicates
+     *       - Saídas matching known monthly expense names are created as Despesa Mensal automatically
      *
      *       **Transaction Status:**
      *       - **Entrada:** Always "Concluído"
      *       - **Saída:** Always "Concluído"
      *       - **Crédito:** "Concluído" by default, "Pendente" if within provided period
      *       - **Reembolso:** "Concluído" by default, "Pendente" if within provided period
-     *       - **Despesa Mensal:** Always "Concluído"
+     *       - **Despesa Mensal:** "Pendente" by default, "Concluído" if matching Entrada exists same month
      *
      *       **Period Handling:**
      *       If `periodoInicio` and `periodoFim` are provided, Crédito and Reembolso transactions
      *       with dates within that period will be marked as "Pendente" instead of "Concluído".
      *
-     *       **Monthly Expenses (Despesas Mensais):**
-     *       - Origin account (contaOrigemId): Where money comes from
-     *       - Destination account: "Despesas Mensais" (created automatically)
-     *
-     *       You can upload 1, 2, or 3 files simultaneously, or send CSV content as JSON strings.
+     *       You can upload 1 or 2 files simultaneously, or send CSV content as JSON strings.
      *
      *       Requires authentication. Admin only.
      *     security:
@@ -188,18 +182,10 @@ export default (app: Router) => {
      *                 type: string
      *                 format: binary
      *                 description: CSV file with expense transactions (optional)
-     *               despesasMensais:
-     *                 type: string
-     *                 format: binary
-     *                 description: CSV file with monthly expenses (optional)
      *               userId:
      *                 type: string
      *                 description: User domain ID who owns the transactions
      *                 example: "USR00000000001"
-     *               contaOrigemId:
-     *                 type: string
-     *                 description: Origin account ID for monthly expenses - where money comes from (required if despesasMensais provided)
-     *                 example: "CNT00000000001"
      *               periodoInicio:
      *                 type: string
      *                 format: date
@@ -222,17 +208,10 @@ export default (app: Router) => {
      *               saidasCsvContent:
      *                 type: string
      *                 description: Raw CSV content for saidas as string (optional)
-     *               despesasMensaisCsvContent:
-     *                 type: string
-     *                 description: Raw CSV content for monthly expenses as string (optional)
      *               userId:
      *                 type: string
      *                 description: User domain ID who owns the transactions
      *                 example: "USR00000000001"
-     *               contaOrigemId:
-     *                 type: string
-     *                 description: Origin account ID for monthly expenses (required if despesasMensaisCsvContent provided)
-     *                 example: "CNT00000000001"
      *               periodoInicio:
      *                 type: string
      *                 format: date
@@ -265,8 +244,7 @@ export default (app: Router) => {
         authorize([Role.Admin]),
         upload.fields([
             { name: 'entradas', maxCount: 1 },
-            { name: 'saidas', maxCount: 1 },
-            { name: 'despesasMensais', maxCount: 1 }
+            { name: 'saidas', maxCount: 1 }
         ]),
         (req, res, next) => ctrl.importTransacoes(req as AuthenticatedRequest, res, next)
     );

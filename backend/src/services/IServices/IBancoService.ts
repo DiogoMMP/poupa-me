@@ -19,38 +19,43 @@ export default interface IBancoService {
      * @param bancoId - Domain ID of the Banco to update
      * @param dto - Data for updating the Banco
      * @param userId - User domain ID (for authorization)
+     * @param userRole - User role (Admin bypasses ownership check)
      * @returns Result containing the updated Banco DTO or error
      */
-    updateBanco(bancoId: string, dto: IUpdateBancoDTO, userId: string): Promise<Result<IBancoDTO>>;
+    updateBanco(bancoId: string, dto: IUpdateBancoDTO, userId: string, userRole?: string): Promise<Result<IBancoDTO>>;
 
     /**
      * Deletes a Banco
      * @param bancoId - Domain ID of the Banco to delete
      * @param userId - User domain ID (for authorization)
+     * @param userRole - User role (Admin bypasses ownership check)
      * @returns Result indicating success or error
      */
-    deleteBanco(bancoId: string, userId: string): Promise<Result<void>>;
+    deleteBanco(bancoId: string, userId: string, userRole?: string): Promise<Result<void>>;
 
     /**
      * Gets a Banco by ID
      * @param bancoId - Domain ID of the Banco
      * @param userId - User domain ID (for authorization)
+     * @param userRole - User role (Admin bypasses ownership check)
      * @returns Result containing the Banco DTO or error
      */
-    getBanco(bancoId: string, userId: string): Promise<Result<IBancoDTO>>;
+    getBanco(bancoId: string, userId: string, userRole?: string): Promise<Result<IBancoDTO>>;
 
     /**
-     * Gets all Bancos for a user
+     * Gets all Bancos for a user (or all if Admin)
      * @param userId - User domain ID
+     * @param userRole - User role (Admin sees all bancos)
      * @returns Result containing array of Banco DTOs or error
      */
-    getAllBancos(userId: string): Promise<Result<IBancoDTO[]>>;
+    getAllBancos(userId: string, userRole?: string): Promise<Result<IBancoDTO[]>>;
 
     /**
      * Gets the dashboard for a specific bank with its totals
      * @param bancoId - Domain ID of the Banco
      * @param userId - User domain ID (for authorization)
+     * @param userRole - User role (Admin can access any banco's dashboard)
      * @returns Result containing dashboard data for the specific bank
      */
-    getDashboard(bancoId: string, userId: string): Promise<Result<IDashboardDTO>>;
+    getDashboard(bancoId: string, userId: string, userRole?: string): Promise<Result<IDashboardDTO>>;
 }

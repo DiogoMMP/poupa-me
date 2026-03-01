@@ -1,0 +1,10 @@
+<nav class="nav" aria-label="Primary">
+  <ul class="nav-list">
+    <li class="nav-item" *ngFor="let item of menu()">
+      <a [routerLink]="item.route || '/'" class="nav-link" routerLinkActive="active">
+        <span *ngIf="item.icon" class="nav-icon"><img [src]="item.icon" alt="" class="nav-icon-img"/></span>
+        <span class="nav-label">{{ item.labelKey }}</span>
+      </a>
+    </li>
+  </ul>
+</nav>

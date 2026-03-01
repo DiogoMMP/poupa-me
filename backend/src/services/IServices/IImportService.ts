@@ -44,20 +44,17 @@ export default interface IImportService {
      * @param userId - User domain ID who owns the transactions
      * @returns Result indicating success or error message
      */
-    importSaidas(csvContent: string, userId: string): Promise<Result<void>>;
+    importSaidas(csvContent: string, userId: string, entradasVistas?: Set<string>): Promise<Result<void>>;
 
     /**
-     * Imports monthly expenses (Despesas Mensais) from CSV content.
-     * CSV Headers: Despesa,Valor
-     *
-     * Creates transactions with type "Despesa Mensal" and sets the destination account to "Despesas Mensais".
-     * All monthly expenses are marked as "Concluído".
-     *
-     * @param csvContent - Raw CSV file content as string
-     * @param userId - User domain ID who owns the transactions
-     * @param contaOrigemId - Origin account ID where the expense comes from (e.g., bank account)
-     * @returns Result indicating success or error message
+     * Imports both entradas and saídas together, sharing session state for correct status detection.
+     * Always processes entradas first, then saídas with the collected entradasVistas.
      */
-    importDespesasMensais(csvContent: string, userId: string, contaOrigemId: string): Promise<Result<void>>;
+    importTransacoesCompleto(
+        entradasCsv: string | undefined,
+        saidasCsv: string | undefined,
+        userId: string,
+        periodo?: { inicio: Date; fim: Date }
+    ): Promise<Result<string[]>>;
 }
 

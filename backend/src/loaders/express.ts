@@ -1,6 +1,7 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import session from 'express-session';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import routes from '../api/index.js';
@@ -30,6 +31,23 @@ export default ({ app }: { app: express.Application }) => {
   }));
 
   app.use(cookieParser());
+
+  /**
+   * Session Configuration
+   * Configure express-session for session-based authentication
+   */
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'poupa-me-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production', // true in production (requires HTTPS)
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      sameSite: 'lax'
+    }
+  }));
+
   app.use(express.json());
 
   const isLocalDevelopment = process.env.NODE_ENV === 'development';
@@ -100,22 +118,25 @@ ${isLocalDevelopment ? `
   /**
    * Swagger Auto-Authentication Middleware
    * Injeta o utilizador Admin para facilitar testes locais
+   * NOTA: Apenas ativa quando o request vem DIRETAMENTE do Swagger (/docs)
    */
   if (isLocalDevelopment) {
     app.use(config.api.prefix, (req: any, res, next) => {
       const referer = req.headers['referer'] || '';
-      const isFromSwagger = referer.toLowerCase().includes('/docs') || req.cookies['from-swagger'];
+      // APENAS ativa se o referer contém /docs (request vem do Swagger)
+      const isFromSwagger = referer.toLowerCase().includes('/docs');
 
-      // Só injeta se não houver um token real presente
-      if (isFromSwagger && (!req.cookies || !req.cookies['token'])) {
+      // Só injeta se vier do Swagger E não houver sessão real
+      if (isFromSwagger && !req.session?.user) {
         if (!req.currentUser) {
+          // id left undefined so userId filters are skipped in repo queries (repo checks `if (userId)`)
+          // and create operations fall back to the conta/cartao owner id
           req.currentUser = {
-            id: 'swagger-dev',
+            id: undefined as unknown as string,
             name: 'Swagger Dev',
-            role: 'Admin', // Garante acesso aos agregados de Conta e Transação
+            role: 'Admin',
             isActive: true
           };
-          console.log('[DEV] Swagger auto-auth: Injected Admin for PoupaMe');
         }
       }
       next();

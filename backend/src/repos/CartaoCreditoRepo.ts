@@ -304,23 +304,28 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
     }
 
     /**
-     * Finds all CartaoCredito domain entities, optionally filtered by userId. If userId is provided, only CartaoCredito
-     * records associated with that user will be returned. If no userId is provided, all CartaoCredito records will be returned.
+     * Finds all CartaoCredito domain entities, optionally filtered by userId and bancoId. If userId is provided, only CartaoCredito
+     * records associated with that user will be returned. If bancoId is provided, only CartaoCredito records associated with that banco will be returned.
      * @param userId - Optional userId to filter CartaoCredito records by user association.
+     * @param bancoId - Optional bancoId to filter CartaoCredito records by banco association.
      * @returns An array of CartaoCredito domain entities matching the filter criteria.
      */
-    public async findAll(userId?: string): Promise<CartaoCredito[]> {
+    public async findAll(userId?: string, bancoId?: string): Promise<CartaoCredito[]> {
         try {
             let rows: CartaoCreditoEntity[];
+            const qb = this.repo.createQueryBuilder('c')
+                .leftJoinAndSelect('c.contaPagamento', 'contaPagamento')
+                .orderBy('c.id', 'ASC');
+
             if (userId) {
-                rows = await this.repo.createQueryBuilder('c')
-                    .leftJoinAndSelect('c.contaPagamento', 'contaPagamento')
-                    .where('c.user_domain_id = :userId', {userId})
-                    .orderBy('c.id', 'ASC')
-                    .getMany();
-            } else {
-                rows = await this.repo.find({relations: ['contaPagamento'], order: {id: 'ASC'}});
+                qb.andWhere('c.user_domain_id = :userId', { userId });
             }
+            if (bancoId) {
+                qb.andWhere('c.banco_id = :bancoId', { bancoId });
+            }
+
+            // eslint-disable-next-line prefer-const
+            rows = await qb.getMany();
 
             const res: CartaoCredito[] = [];
             for (const r of rows) {

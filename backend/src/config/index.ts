@@ -27,15 +27,6 @@ export default {
         prefix: '/api',
     },
 
-    /**
-     * Main API configuration for inter-module communication.
-     * The OEM module communicates with the main C# backend via REST API calls
-     * for authentication and authorization (IAM-based, RBAC/ABAC approach).
-     */
-    mainApi: {
-        baseUrl: process.env.MAIN_API_URL || 'http://localhost:5137',
-    },
-
     repos: {
         user: {
             name: 'UserRepo',

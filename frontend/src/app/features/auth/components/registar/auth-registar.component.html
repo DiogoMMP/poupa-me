@@ -1,0 +1,75 @@
+<section class="auth">
+  <div class="auth-overlay" role="dialog" aria-modal="true" aria-labelledby="registarTitle">
+    <div class="auth-card" role="document">
+
+      <h1 id="registarTitle" class="auth-title">Criar Conta</h1>
+      <p class="auth-sub">Preencha os dados para se registar</p>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="auth-actions">
+
+        <!-- Nome field -->
+        <div class="form-group">
+          <label for="nameInput">Nome</label>
+          <input
+            type="text"
+            id="nameInput"
+            formControlName="name"
+            class="form-input"
+            placeholder="O seu nome"
+            [class.invalid]="form.get('name')?.invalid && form.get('name')?.touched"/>
+          <span class="error-hint" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
+            Nome obrigatório (mínimo 2 caracteres)
+          </span>
+        </div>
+
+        <!-- Email field -->
+        <div class="form-group">
+          <label for="emailInput">Email</label>
+          <input
+            type="email"
+            id="emailInput"
+            formControlName="email"
+            class="form-input"
+            placeholder="seu@email.com"
+            [class.invalid]="form.get('email')?.invalid && form.get('email')?.touched"/>
+          <span class="error-hint" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
+            Email inválido
+          </span>
+        </div>
+
+        <!-- Password field -->
+        <div class="form-group">
+          <label for="passwordInput">Password</label>
+          <input
+            type="password"
+            id="passwordInput"
+            formControlName="password"
+            class="form-input"
+            placeholder="••••••••"
+            [class.invalid]="form.get('password')?.invalid && form.get('password')?.touched"/>
+          <span class="error-hint" *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
+            Mínimo 6 caracteres
+          </span>
+        </div>
+
+        <!-- Error message -->
+        <div *ngIf="vm.error()" class="error" role="alert">{{ vm.error() }}</div>
+
+        <!-- Submit button -->
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="vm.loading() || form.invalid">
+          <span *ngIf="!vm.loading()">Criar Conta</span>
+          <span *ngIf="vm.loading()">A registar...</span>
+        </button>
+
+        <p class="auth-switch">Já tem conta? <a routerLink="/auth/entrar">Entrar</a></p>
+
+      </form>
+
+      <small class="auth-foot">© {{ year }} Diogo Pereira. Todos os direitos reservados.</small>
+    </div>
+  </div>
+</section>
+

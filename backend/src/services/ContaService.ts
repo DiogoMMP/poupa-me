@@ -128,13 +128,15 @@ export default class ContaService implements IContaService {
     }
 
     /**
-     * Finds all Contas, optionally filtered by a user ID. If a user ID is provided, only Contas associated with that user will be returned. If no user ID is provided, all Contas will be returned.
+     * Finds all Contas, optionally filtered by a user ID and banco ID. If a user ID is provided, only Contas associated with that user will be returned.
+     * If a banco ID is provided, only Contas associated with that banco will be returned. If neither is provided, all Contas will be returned.
      * @param userId - Optional user ID to filter Contas by. If provided, only Contas with a matching user_domain_id will be returned.
+     * @param bancoId - Optional banco ID to filter Contas by. If provided, only Contas with a matching banco_id will be returned.
      * @returns A Result object containing an array of Conta DTOs on success, or an error message on failure.
      */
-    public async findAllContas(userId?: string): Promise<Result<IContaDTO[]>> {
+    public async findAllContas(userId?: string, bancoId?: string): Promise<Result<IContaDTO[]>> {
         try {
-            const contas = await this.contaRepo.findAll(userId);
+            const contas = await this.contaRepo.findAll(userId, bancoId);
             return Result.ok<IContaDTO[]>(contas.map(c => ContaMap.toDTO(c)));
         } catch (err) {
             this.logger.error('ContaService.findAllContas error: %o', err);

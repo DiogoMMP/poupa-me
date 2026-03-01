@@ -1,0 +1,269 @@
+<section class="page-container">
+
+  <div class="page-header">
+    <h1 class="page-title">Transações</h1>
+
+    <div class="page-actions">
+      <div class="nova-transacao-wrapper">
+        <button class="nova-transacao-btn" (click)="toggleCreateMenu($event)">
+          <svg class="nova-transacao-icon" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5V19M5 12H19" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Nova Transação
+        </button>
+
+        <div class="nova-transacao-menu" *ngIf="showCreateMenu" (click)="$event.stopPropagation()">
+          <a href="/transacoes/criar-entradas">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Entrada
+          </a>
+          <div class="menu-divider"></div>
+          <a href="/transacoes/criar-saidas">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Saída
+          </a>
+
+          <!-- only show credit/reembolso when there are cards -->
+          <ng-container *ngIf="(vm.cartoes$ | async)?.length">
+            <div class="menu-divider"></div>
+            <a href="/transacoes/criar-credito">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M3 10h18M7 15h2m4 0h2M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Crédito
+            </a>
+            <div class="menu-divider"></div>
+            <a href="/transacoes/criar-reembolso">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M9 14l-4-4 4-4M5 10h11a4 4 0 0 1 0 8h-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Reembolso
+            </a>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="vm.isLoading$ | async">A carregar...</div>
+
+  <div class="transacoes-layout"
+       [class.transacoes-layout--single]="!(vm.cartoes$ | async)?.length">
+
+    <!-- ══════════ LEFT COLUMN - ACCOUNTS ══════════ -->
+    <div class="transacoes-column">
+
+      <div class="section-header">
+        <h3 class="section-title">Transações de Contas</h3>
+        <button class="filter-toggle-btn"
+                (click)="showContaFilters = !showContaFilters"
+                [class.active]="showContaFilters">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M3 7H21M6 12H18M10 17H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Filtros
+          <span class="filter-badge" *ngIf="hasActiveContaFilters()">●</span>
+        </button>
+      </div>
+
+      <!-- Account Filters -->
+      <div class="filter-panel" *ngIf="showContaFilters">
+        <div class="filter-row">
+          <div class="filter-field">
+            <label class="filter-label">Conta</label>
+            <select [(ngModel)]="contaFilterForm.contaId">
+              <option value="">Todas as contas</option>
+              <option *ngFor="let c of vm.contas$ | async" [value]="c.id">{{ c.nome }}</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="filter-label">Categoria</label>
+            <select [(ngModel)]="contaFilterForm.categoriaId">
+              <option value="">Todas as categorias</option>
+              <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">{{ cat.icon }} {{ cat.nome }}</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="filter-label">Período</label>
+            <select [(ngModel)]="contaFilterForm.period">
+              <option value="">Qualquer período</option>
+              <option *ngFor="let p of vm.PERIODS" [value]="p">{{ p }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button class="btn-secondary" (click)="clearContaFilters()">Limpar</button>
+          <button (click)="applyContaFilters()">Aplicar</button>
+        </div>
+      </div>
+
+      <!-- Paged list -->
+      <ng-container *ngIf="vm.contaTransacoes$ | async as all">
+        <div class="empty-state" *ngIf="all.length === 0">Sem transações de contas.</div>
+
+        <div class="transacoes-list">
+          <div *ngFor="let t of paginate(all, contaPage)" class="transacao-item card">
+
+            <svg *ngIf="t.tipo === 'Entrada'" width="24" height="24" viewBox="0 0 24 24" fill="none" class="transacao-icon entradas-icon">
+              <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg *ngIf="t.tipo === 'Saída'" width="24" height="24" viewBox="0 0 24 24" fill="none" class="transacao-icon saidas-icon">
+              <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+
+            <div class="transacao-details">
+              <p class="transacao-descricao text-large">{{ t.descricao }}</p>
+              <span class="transacao-meta text-muted text-small">
+                {{ t.categoria.icon }} {{ t.categoria.nome }}<span *ngIf="t.conta"> • {{ t.conta.nome }}</span>
+              </span>
+
+              <!-- ── Actions (left) ── -->
+              <div class="transacao-actions">
+                <a class="btn-edit-small" [routerLink]="['/transacoes/editar', t.id]" title="Editar" aria-label="Editar transação">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+                <button class="btn-delete-small" title="Eliminar" aria-label="Eliminar transação" (click)="onDelete(t)">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6M10 6V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="transacao-values">
+              <p class="transacao-valor text-large"
+                 [class.text-positive]="t.tipo === 'Entrada'"
+                 [class.text-negative]="t.tipo === 'Saída'">
+                {{ t.tipo === 'Entrada' ? '+' : '-' }} {{ t.valor | number:'1.2-2' }} {{ t.moeda === 'EUR' ? '€' : t.moeda }}
+              </p>
+              <span class="transacao-data text-muted text-small">{{ vm.formatData(t.dia, t.mes) }} {{ t.ano }}</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Accounts Pagination -->
+        <div class="pagination" *ngIf="totalPages(all) > 1">
+          <button class="pagination-btn" (click)="contaPage = contaPage - 1" [disabled]="contaPage === 1">‹</button>
+          <span class="pagination-info">{{ contaPage }} / {{ totalPages(all) }}</span>
+          <button class="pagination-btn" (click)="contaPage = contaPage + 1" [disabled]="contaPage === totalPages(all)">›</button>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- ══════════ RIGHT COLUMN - CARDS ══════════ -->
+    <div class="transacoes-column" *ngIf="(vm.cartoes$ | async)?.length">
+
+      <div class="section-header">
+        <h3 class="section-title">Transações de Cartões</h3>
+        <button class="filter-toggle-btn"
+                (click)="showCartaoFilters = !showCartaoFilters"
+                [class.active]="showCartaoFilters">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M3 7H21M6 12H18M10 17H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Filtros
+          <span class="filter-badge" *ngIf="hasActiveCartaoFilters()">●</span>
+        </button>
+      </div>
+
+      <!-- Card Filters -->
+      <div class="filter-panel" *ngIf="showCartaoFilters">
+        <div class="filter-row">
+          <div class="filter-field">
+            <label class="filter-label">Cartão</label>
+            <select [(ngModel)]="cartaoFilterForm.cartaoId">
+              <option value="">Todos os cartões</option>
+              <option *ngFor="let c of vm.cartoes$ | async" [value]="c.id">{{ c.nome }}</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="filter-label">Categoria</label>
+            <select [(ngModel)]="cartaoFilterForm.categoriaId">
+              <option value="">Todas as categorias</option>
+              <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">{{ cat.icon }} {{ cat.nome }}</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="filter-label">Estado</label>
+            <select [(ngModel)]="cartaoFilterForm.status">
+              <option value="">Todos os estados</option>
+              <option *ngFor="let s of vm.STATUSES" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="filter-label">Período</label>
+            <select [(ngModel)]="cartaoFilterForm.period">
+              <option value="">Qualquer período</option>
+              <option *ngFor="let p of vm.PERIODS" [value]="p">{{ p }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button class="btn-secondary" (click)="clearCartaoFilters()">Limpar</button>
+          <button (click)="applyCartaoFilters()">Aplicar</button>
+        </div>
+      </div>
+
+      <!-- Paged list -->
+      <ng-container *ngIf="vm.cartaoTransacoes$ | async as all">
+        <div class="empty-state" *ngIf="all.length === 0">Sem transações de cartões.</div>
+
+        <div class="transacoes-list">
+          <div *ngFor="let t of paginate(all, cartaoPage)" class="transacao-item card">
+
+            <svg *ngIf="t.tipo === 'Crédito'" width="24" height="24" viewBox="0 0 24 24" fill="none" class="transacao-icon saidas-icon">
+              <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg *ngIf="t.tipo === 'Reembolso'" width="24" height="24" viewBox="0 0 24 24" fill="none" class="transacao-icon entradas-icon">
+              <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+
+            <div class="transacao-details">
+              <p class="transacao-descricao text-large">{{ t.descricao }}</p>
+              <span class="transacao-meta text-muted text-small">
+                {{ t.categoria.icon }} {{ t.categoria.nome }}<span *ngIf="t.cartaoCredito"> • {{ t.cartaoCredito.nome }}</span>
+              </span>
+
+              <!-- ── Actions (left) ── -->
+              <div class="transacao-actions">
+                <a class="btn-edit-small" [routerLink]="['/transacoes/editar', t.id]" title="Editar" aria-label="Editar transação">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+                <button class="btn-delete-small" title="Eliminar" aria-label="Eliminar transação" (click)="onDelete(t)">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6M10 6V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="transacao-values">
+              <p class="transacao-valor text-large"
+                 [class.text-positive]="t.tipo === 'Reembolso'"
+                 [class.text-negative]="t.tipo === 'Crédito'">
+                {{ t.tipo === 'Reembolso' ? '+' : '-' }} {{ t.valor | number:'1.2-2' }} {{ t.moeda === 'EUR' ? '€' : t.moeda }}
+              </p>
+              <span class="transacao-data text-muted text-small">{{ vm.formatData(t.dia, t.mes) }} {{ t.ano }}</span>
+              <span class="status-badge"
+                    [class.status-badge--pendente]="t.status === 'Pendente'"
+                    [class.status-badge--concluido]="t.status === 'Concluído'">
+                {{ t.status }}
+              </span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Paginação Cartões -->
+        <div class="pagination" *ngIf="totalPages(all) > 1">
+          <button class="pagination-btn" (click)="cartaoPage = cartaoPage - 1" [disabled]="cartaoPage === 1">‹</button>
+          <span class="pagination-info">{{ cartaoPage }} / {{ totalPages(all) }}</span>
+          <button class="pagination-btn" (click)="cartaoPage = cartaoPage + 1" [disabled]="cartaoPage === totalPages(all)">›</button>
+        </div>
+      </ng-container>
+    </div>
+
+  </div>
+</section>
+

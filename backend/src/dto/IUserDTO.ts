@@ -21,3 +21,8 @@ export interface IUserUpdateDTO {
   name?: string;
   password?: string;
 }
+
+export interface IUserChangeRoleDTO {
+  role: string;
+}
+

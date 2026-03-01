@@ -1,0 +1,113 @@
+<div class="page-container">
+  <div class="form-card">
+    <div class="form-header">
+      <h1 class="form-title">Editar Transação</h1>
+      <p class="form-subtitle">Atualize os campos da transação</p>
+    </div>
+
+    <div *ngIf="vm.isLoading$ | async" class="loading-state">A carregar...</div>
+
+    <form *ngIf="!(vm.isLoading$ | async)" [formGroup]="form" (ngSubmit)="onSubmit()" class="form-content">
+
+      <!-- Data -->
+      <div class="form-field">
+        <label for="data" class="form-label">Data</label>
+        <input
+          type="date"
+          id="data"
+          formControlName="data"
+          class="form-input">
+        <div class="field-error" *ngIf="form.get('data')?.touched && form.get('data')?.invalid">Data é obrigatória.</div>
+      </div>
+
+      <!-- Descrição -->
+      <div class="form-field">
+        <label for="descricao" class="form-label">Descrição</label>
+        <input
+          type="text"
+          id="descricao"
+          formControlName="descricao"
+          class="form-input"
+          placeholder="Descrição">
+        <div class="field-error" *ngIf="form.get('descricao')?.touched && form.get('descricao')?.invalid">Descrição é obrigatória.</div>
+      </div>
+
+      <!-- Valor -->
+      <div class="form-field" formGroupName="valor">
+        <label class="form-label">Valor</label>
+        <div class="row-controls">
+          <input
+            type="number"
+            id="valor"
+            formControlName="valor"
+            class="form-input"
+            placeholder="Valor"
+            min="0.01"
+            step="0.01">
+          <input
+            type="text"
+            id="moeda"
+            formControlName="moeda"
+            class="form-input"
+            placeholder="EUR">
+        </div>
+        <div class="field-error" *ngIf="form.get('valor.valor')?.touched && form.get('valor.valor')?.invalid">Valor inválido (mín 0.01).</div>
+      </div>
+
+      <!-- Categoria -->
+      <div class="form-field">
+        <label class="form-label">Categoria</label>
+        <select formControlName="categoriaId" class="form-select">
+          <option value="" disabled>Selecione uma categoria</option>
+          <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">
+            {{ cat.icon }} {{ cat.nome }}
+          </option>
+        </select>
+        <div class="field-error" *ngIf="form.get('categoriaId')?.touched && form.get('categoriaId')?.invalid">Categoria é obrigatória.</div>
+      </div>
+
+      <!-- Conta / Cartão selection (one will be prefilled by the loaded transaction) -->
+      <ng-container *ngIf="vm.transacao$ | async as transacao">
+        <div class="form-field" *ngIf="transacao && transacao.tipo !== 'Crédito' && transacao.tipo !== 'Reembolso'">
+          <label class="form-label">Conta</label>
+          <select formControlName="contaId" class="form-select">
+            <option value="">Nenhuma / Selecionar conta</option>
+            <option *ngFor="let conta of vm.contas$ | async" [value]="conta.id">
+              {{ conta.icon }} {{ conta.nome }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field" *ngIf="transacao && (transacao.tipo === 'Crédito' || transacao.tipo === 'Reembolso')">
+          <label class="form-label">Cartão</label>
+          <select formControlName="cartaoCreditoId" class="form-select">
+            <option value="">Nenhum / Selecionar cartão</option>
+            <option *ngFor="let c of vm.cartoes$ | async" [value]="c.id">{{ c.icon }} {{ c.nome }}</option>
+          </select>
+        </div>
+      </ng-container>
+
+      <div class="form-field">
+        <label class="form-label">Estado</label>
+        <select formControlName="status" class="form-select">
+          <option value="Pendente">Pendente</option>
+          <option value="Concluído">Concluído</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="form.invalid || (vm.isLoading$ | async)">
+          <svg width="16" height="16" viewBox="0 0 24 24">
+            <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z" fill="currentColor"/>
+          </svg>
+          Guardar
+        </button>
+
+        <button type="button" routerLink="/transacoes" class="btn-secondary">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
