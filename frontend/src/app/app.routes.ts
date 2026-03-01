@@ -40,7 +40,9 @@ export const routes: Routes = [
 
       { path: 'categorias', loadChildren: () => import('./features/categorias/categorias.routes').then(m => m.routes), data: { allowedRoles: ['Admin'] } },
 
-      //{ path: 'profile', loadChildren: () => import('./features/profile/profile.routes').then(m => m.routes), data: { allowedRoles: ['Admin'] } },
+      { path: 'utilizadores', loadChildren: () => import('./features/utilizadores/utilizadores.routes').then(m => m.routes), data: { allowedRoles: ['Admin'] } },
+
+      { path: 'perfil', loadChildren: () => import('./features/perfil/perfil.routes').then(m => m.routes), data: { allowedRoles: ['Admin', 'User'] } },
 
       // Admin user creation (lazy-loaded feature)
       { path: 'admin', loadChildren: () => import('./features/admin/admin.routes').then(m => m.routes), data: { allowedRoles: ['Admin'] } },

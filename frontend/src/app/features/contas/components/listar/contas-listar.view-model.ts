@@ -4,7 +4,7 @@ import { ContasService } from '../../services/contas.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { ContasModel } from '../../models/contas.model';
 import { ContasMapper } from '../../mappers/contas.mapper';
-import { AuthService } from '../../../../services/auth.service';
+import { AuthService } from '../../../auth/services/auth.service';
 import { SelectedBancoService } from '../../../../services/selected-banco.service';
 
 /**

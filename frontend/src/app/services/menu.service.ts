@@ -1,5 +1,5 @@
 import {Injectable, signal, computed} from '@angular/core';
-import {Role} from './auth.service';
+import {Role} from '../features/auth/services/auth.service';
 
 /**
  * Menu item definition.
@@ -80,10 +80,10 @@ export class MenuService {
     },
 
     {
-      id: 'Usuários',
-      labelKey: 'Usuários',
+      id: 'Utilizadores',
+      labelKey: 'Utilizadores',
       icon: '/icons/usuarios.svg',
-      route: '/usuarios',
+      route: '/utilizadores',
       roles: ['Admin']
     }
   ]);

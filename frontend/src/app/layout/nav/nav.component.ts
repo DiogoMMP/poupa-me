@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/c
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { MenuService } from '../../services/menu.service';
-import { AuthService, Role } from '../../services/auth.service';
+import { AuthService, Role } from '../../features/auth/services/auth.service';
 
 /**
  * Navigation component displaying the menu based on user role.

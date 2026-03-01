@@ -1,8 +1,9 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthFeatureService } from '../../services/auth-feature.service';
-import { AuthService } from '../../../../services/auth.service';
+import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../../../services/notification.service';
+import { SelectedBancoService } from '../../../../services/selected-banco.service';
 import { AuthMapper } from '../../mappers/auth.mapper';
 import { RegisterDTO } from '../../dto/auth.dto';
 
@@ -21,6 +22,7 @@ export class AuthRegistarViewModel {
   private featureService = inject(AuthFeatureService);
   private authService = inject(AuthService);
   private notification = inject(NotificationService);
+  private selectedBanco = inject(SelectedBancoService);
   private router = inject(Router);
 
   readonly loading = signal(false);
@@ -42,6 +44,8 @@ export class AuthRegistarViewModel {
               role: response.user.role as any,
               locale: 'pt'
             });
+            // Restore this user's previously selected banco (new user will have none)
+            this.selectedBanco.initForUser(response.user.id);
             this.notification.success(`Conta criada! Bem-vindo, ${response.user.name}!`);
             this.loading.set(false);
             void this.router.navigate(['/dashboard']);

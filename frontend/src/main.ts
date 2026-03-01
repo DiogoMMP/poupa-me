@@ -2,7 +2,7 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { APP_INITIALIZER, inject } from '@angular/core';
-import { AuthService } from './app/services/auth.service';
+import { AuthService } from './app/features/auth/services/auth.service';
 
 import { App } from './app/app';
 import { routes } from './app/app.routes';

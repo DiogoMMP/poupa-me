@@ -6,7 +6,7 @@ import { BancosModel } from '../../models/bancos.model';
 import { BancosMapper } from '../../mappers/bancos.mapper';
 import { DashboardModel } from '../../models/dashboard.model';
 import { DashboardMapper } from '../../mappers/dashboard.mapper';
-import { AuthService } from '../../../../services/auth.service';
+import { AuthService } from '../../../auth/services/auth.service';
 
 /**
  * ViewModel for the lister component of Bancos. Responsible for loading the list of bancos and their dashboard data.

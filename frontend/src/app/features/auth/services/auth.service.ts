@@ -9,8 +9,8 @@ import {
 import { firstValueFrom, Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
-import { UsersService } from './users.service';
-import { SelectedBancoService } from './selected-banco.service';
+import { UtilizadoresService } from '../../utilizadores/services/utilizadores.service';
+import { SelectedBancoService } from '../../../services/selected-banco.service';
 
 export type Role = 'Admin' | 'Guest' | 'User'
 
@@ -27,7 +27,7 @@ export interface User {
 export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
-  private users = inject(UsersService);
+  private users = inject(UtilizadoresService);
   private selectedBanco = inject(SelectedBancoService);
 
   user = signal<User | null>(null);
@@ -37,9 +37,12 @@ export class AuthService {
 
   async loadCurrentUser(): Promise<void> {
     try {
-      // use UsersService to get current user
       const u = await firstValueFrom(this.users.getCurrent());
       this.user.set(u as any);
+      // Restore the banco the user had selected before the page refresh
+      if (u && (u as any).id) {
+        this.selectedBanco.initForUser((u as any).id);
+      }
     } catch (err) {
       this.user.set(null);
     }

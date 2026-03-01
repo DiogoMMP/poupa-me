@@ -4,7 +4,7 @@ import { CartoesCreditoService } from '../../services/cartoes-credito.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { CartoesCreditoModel } from '../../models/cartoes-credito.model';
 import { CartoesCreditoMapper } from '../../mappers/cartoes-credito.mapper';
-import { AuthService } from '../../../../services/auth.service';
+import { AuthService } from '../../../auth/services/auth.service';
 import { SelectedBancoService } from '../../../../services/selected-banco.service';
 import { ContasService } from '../../../contas/services/contas.service';
 import { ExtratoCartaoDTO } from '../../dto/cartoes-credito.dto';

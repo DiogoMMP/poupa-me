@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { Service, Inject } from 'typedi';
 import type IUserController from './IControllers/IUserController.js';
 import type IUserService from '../services/IServices/IUserService.js';
-import type { IUserRegistrationDTO, IUserLoginDTO, IUserUpdateDTO } from '../dto/IUserDTO.js';
+import type { IUserRegistrationDTO, IUserLoginDTO, IUserUpdateDTO, IUserChangeRoleDTO } from '../dto/IUserDTO.js';
 
 /**
  * AuthController handles user-related HTTP requests such as registration, login, and user management.
@@ -172,6 +172,26 @@ export default class AuthController implements IUserController {
             if (!email) return res.status(400).json({ error: 'Email is required to locate user' });
 
             const result = await this.authService.updateUser(inputDTO, email);
+            if (result.isFailure) return res.status(400).json({ error: result.error });
+            return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Changes the role of a user identified by email.
+     */
+    public async changeRole(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            let email = (req.params.email || req.query.email) as string;
+            if (email) email = decodeURIComponent(String(email)).trim();
+            if (!email) return res.status(400).json({ error: 'Email is required' });
+
+            const dto = req.body as IUserChangeRoleDTO;
+            if (!dto?.role) return res.status(400).json({ error: 'Role is required' });
+
+            const result = await this.authService.changeRole(email, dto);
             if (result.isFailure) return res.status(400).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) {

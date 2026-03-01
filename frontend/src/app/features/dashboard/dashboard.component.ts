@@ -1,7 +1,7 @@
 import {Component, ChangeDetectionStrategy, inject, OnInit, HostListener} from '@angular/core';
 import { CommonModule, NgStyle } from '@angular/common';
 import {RouterModule, Routes} from '@angular/router';
-import {AuthService} from '../../services/auth.service';
+import {AuthService} from '../auth/services/auth.service';
 import { signal } from '@angular/core';
 import { DashboardViewModel } from './dashboard.view-model';
 

@@ -1,7 +1,7 @@
 import {Component, ChangeDetectionStrategy, inject} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {Router, RouterModule} from '@angular/router';
-import {AuthService} from '../../services/auth.service';
+import {AuthService} from '../../features/auth/services/auth.service';
 import {NotificationService} from '../../services/notification.service';
 /**
  * Footer component displaying application footer information.
@@ -60,6 +60,6 @@ export class FooterComponent {
   goToProfile(ev: Event) {
     ev.preventDefault();
     const returnUrl = this.currentRouter.url || '/';
-    this.router.navigate(['/profile'], { state: { returnUrl } });
+    this.router.navigate(['/perfil'], { state: { returnUrl } });
   }
 }

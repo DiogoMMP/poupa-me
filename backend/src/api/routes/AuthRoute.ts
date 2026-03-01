@@ -254,6 +254,45 @@ export default (app: Router) => {
 
   /**
    * @openapi
+   * /auth/{email}/role:
+   *   patch:
+   *     tags:
+   *       - Auth
+   *     summary: Change a user's role
+   *     description: Changes the role of a user identified by email. Admin only.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: email
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [role]
+   *             properties:
+   *               role:
+   *                 type: string
+   *                 example: "Admin"
+   *     responses:
+   *       200:
+   *         description: Updated user
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/User'
+   *       400:
+   *         description: Validation error
+   */
+  route.patch('/:email/role', isAuth, authorize([Role.Admin]), (req, res, next) => ctrl.changeRole(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
    * /auth/{email}:
    *   patch:
    *     tags:

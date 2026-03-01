@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { CanActivateChild, Router, UrlTree, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { AuthService } from '../features/auth/services/auth.service';
 import { MenuService } from '../services/menu.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';

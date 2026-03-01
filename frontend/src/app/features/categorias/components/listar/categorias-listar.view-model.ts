@@ -4,7 +4,7 @@ import { CategoriasService } from '../../services/categorias.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { CategoriasModel } from '../../models/categorias.model';
 import { CategoriasMapper } from '../../mappers/categorias.mapper';
-import { AuthService } from '../../../../services/auth.service';
+import { AuthService } from '../../../auth/services/auth.service';
 
 /**
  * ViewModel for the categorias list component.
