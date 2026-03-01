@@ -49,7 +49,7 @@ export default class BancoController implements IBancoController {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const bancoId = req.params.id;
+            const bancoId = req.params.id as string;
             if (!bancoId) {
                 return res.status(400).json({ error: 'Banco ID is required' });
             }
@@ -84,7 +84,7 @@ export default class BancoController implements IBancoController {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const bancoId = req.params.id;
+            const bancoId = req.params.id as string;
             if (!bancoId) {
                 return res.status(400).json({ error: 'Banco ID is required' });
             }
@@ -119,7 +119,7 @@ export default class BancoController implements IBancoController {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const bancoId = req.params.id;
+            const bancoId = req.params.id as string;
             if (!bancoId) {
                 return res.status(400).json({ error: 'Banco ID is required' });
             }
@@ -178,7 +178,7 @@ export default class BancoController implements IBancoController {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const bancoId = req.params.id;
+            const bancoId = req.params.id as string;
             if (!bancoId) {
                 return res.status(400).json({ error: 'Banco ID is required' });
             }

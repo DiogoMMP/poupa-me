@@ -48,7 +48,7 @@ export default class DespesaRecorrenteController implements IDespesaRecorrenteCo
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const despesaId = req.params.id;
+            const despesaId = req.params.id as string;
             if (!despesaId) {
                 return res.status(400).json({ error: 'Despesa ID is required' });
             }
@@ -83,7 +83,7 @@ export default class DespesaRecorrenteController implements IDespesaRecorrenteCo
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const despesaId = req.params.id;
+            const despesaId = req.params.id as string;
             if (!despesaId) {
                 return res.status(400).json({ error: 'Despesa ID is required' });
             }
@@ -117,7 +117,7 @@ export default class DespesaRecorrenteController implements IDespesaRecorrenteCo
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const despesaId = req.params.id;
+            const despesaId = req.params.id as string;
             if (!despesaId) {
                 return res.status(400).json({ error: 'Despesa ID is required' });
             }
@@ -227,7 +227,7 @@ export default class DespesaRecorrenteController implements IDespesaRecorrenteCo
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const despesaId = req.params.id;
+            const despesaId = req.params.id as string;
             if (!despesaId) {
                 return res.status(400).json({ error: 'Despesa ID is required' });
             }

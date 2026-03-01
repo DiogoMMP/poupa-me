@@ -122,7 +122,7 @@ export default class TransacaoController implements ITransacaoController {
 
     public async concluirPoupanca(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const id = req.params.id;
+            const id = req.params.id as string;
             if (!id) return res.status(400).json({ error: 'ID is required' });
             const result = await this.transacaoService.concluirPoupanca(id);
             if (result.isFailure) return res.status(400).json({ error: result.error });
