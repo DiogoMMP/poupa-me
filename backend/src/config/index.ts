@@ -10,18 +10,17 @@ if (envFound.error) {
     throw new Error("⚠️  Couldn't find .env file  ⚠️");
 }
 
+if (envFound.error && process.env.NODE_ENV === 'development') {
+    throw new Error("⚠️  Couldn't find .env file  ⚠️");
+}
+
 export default {
-    port: parseInt(process.env.PORT || '3000', 10),
+    port: parseInt(process.env.PORT || '10000', 10),
 
-    // You can add your database URI, JWT secret, etc here
-    databaseURL: process.env.MONGODB_URI,
-
-    // Postgres connection URL (preferred for new Postgres loader).
-    // Default to a local Postgres DB named 'poupe-me' if POSTGRES_URL is not set.
-    postgresURL: process.env.POSTGRES_URL || process.env.DATABASE_URL || 'postgresql://postgres@localhost:5432/poupe-me',
+    postgresURL: process.env.POSTGRES_URL || process.env.DATABASE_URL,
 
     logs: {
-        level: process.env.LOG_LEVEL || 'silly',
+        level: process.env.LOG_LEVEL || 'info',
     },
     api: {
         prefix: '/api',
