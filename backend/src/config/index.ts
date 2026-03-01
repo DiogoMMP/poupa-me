@@ -4,14 +4,13 @@
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
 const envFound = dotenv.config();
+
 if (envFound.error) {
-    // This error should crash whole process
-
-    throw new Error("⚠️  Couldn't find .env file  ⚠️");
-}
-
-if (envFound.error && process.env.NODE_ENV === 'development') {
-    throw new Error("⚠️  Couldn't find .env file  ⚠️");
+    if (process.env.NODE_ENV === 'development') {
+        throw new Error("⚠️  Couldn't find .env file  ⚠️");
+    } else {
+        console.info("ℹ️  No .env file found, using system environment variables.");
+    }
 }
 
 export default {
