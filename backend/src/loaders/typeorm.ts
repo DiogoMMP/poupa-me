@@ -20,7 +20,10 @@ export default async function createTypeOrmDataSource(): Promise<DataSource> {
         url: config.postgresURL,
         entities: [UserEntity, CategoriaEntity, TransacaoEntity, ContaEntity, CartaoCreditoEntity, BancoEntity, DespesaRecorrenteEntity],
         synchronize: true, // for dev only; change to migrations in prod
-        logging: false
+        logging: false,
+        ssl: {
+            rejectUnauthorized: false
+        }
     });
 
     try {
