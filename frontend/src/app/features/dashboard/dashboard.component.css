@@ -13,6 +13,8 @@
   align-items: center;
   margin-bottom: 2rem;
   gap: 1.5rem;
+  position: relative;
+  z-index: 10;
 }
 
 /* Boas-vindas section - left side */
@@ -241,6 +243,8 @@
 .transacoes-section {
   display: flex;
   flex-direction: column;
+  min-width: 0; /* prevent grid blowout */
+  overflow: hidden;
 }
 
 /* === CARTÕES SECTION === */
@@ -307,7 +311,7 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .dashboard {
-    padding: 1.5rem;
+    padding: 1rem;
   }
 
   .dashboard_header {
@@ -324,44 +328,73 @@
     font-size: 1.5rem;
   }
 
-
   .second-row {
     grid-template-columns: 1fr;
   }
+
+  .contas-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .dashboard {
-    padding: 1rem;
+    padding: 0.8rem 0.75rem 1rem;
+    box-sizing: border-box;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .dashboard_header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
   }
 
   .dashboard_title {
-    font-size: 1.3rem;
+    font-size: 1.15rem;
   }
 
   .boas-vindas p {
-    font-size: 0.9rem;
+    font-size: 0.82rem;
   }
 
   .actions-header {
+    width: 100%;
     flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* first-row stacks vertically and never overflows */
+  .first-row {
+    flex-direction: column;
+    padding: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .first-row__divider {
+    width: 100%;
+    height: 1px;
   }
 
   .resumo-value {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
   }
 
-  .dashboard_section {
-    padding: 1.25rem;
+  .second-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
-  .cartao-item {
-    padding: 0.875rem;
+  .contas-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .section-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
     gap: 0.5rem;
   }
 }

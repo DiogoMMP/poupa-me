@@ -1,14 +1,25 @@
-﻿﻿<div class="app-shell">
+﻿<div class="app-shell">
 
-  <!-- Sidebar esquerda com header, nav e footer -->
-  <aside class="sidebar">
+  <!-- Mobile overlay — closes sidebar on tap -->
+  <div class="sidebar-overlay"
+       [class.visible]="sidebarOpen()"
+       (click)="closeSidebar()">
+  </div>
+
+  <!-- Sidebar esquerda -->
+  <aside class="sidebar" [class.open]="sidebarOpen()">
     <app-header></app-header>
-    <app-nav></app-nav>
+    <app-nav (click)="closeSidebar()"></app-nav>
     <app-footer></app-footer>
   </aside>
 
-  <!-- Conteúdo principal à direita -->
+  <!-- Conteúdo principal -->
   <div class="main-wrapper">
+    <!-- Mobile hamburger button -->
+    <button class="hamburger" (click)="toggleSidebar()" aria-label="Abrir menu">
+      <span></span><span></span><span></span>
+    </button>
+
     <!-- global notifications -->
     <app-notifications></app-notifications>
 

@@ -44,3 +44,24 @@
 .select-banco {
   width: 95%;
 }
+
+@media (max-width: 768px) {
+  .app-header {
+    min-height: 100px; /* reduce height on mobile */
+    padding: 0.5rem 0.25rem; /* further reduce padding on mobile */
+    gap: 0.5rem;
+  }
+
+  .logo-link {
+    justify-content: center; /* center logo on mobile */
+    padding-left: 0; /* remove left padding on mobile */
+  }
+
+  .banco-selector {
+    width: 98%;
+  }
+
+  .select-banco {
+    width: 98%;
+  }
+}

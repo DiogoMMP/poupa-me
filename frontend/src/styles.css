@@ -613,12 +613,37 @@ textarea::placeholder {
   border-radius: 20px;
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 100px rgba(97, 237, 214, 0.2);
   max-width: 450px;
-  width: 100%;
+  width: fit-content;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .emoji-modal-backdrop {
+    padding: 0.5rem;
+    align-items: flex-end;
+  }
+
+  .emoji-modal {
+    max-width: calc(100vw - 1rem);
+    width: calc(100vw - 1rem);
+    max-height: 90vh;
+    border-radius: 16px 16px 12px 12px;
+    overflow: visible;
+  }
+
+  .emoji-modal-header {
+    padding: 0.9rem 1rem;
+  }
+
+  .emoji-modal-body {
+    padding: 0.5rem;
+    overflow: auto;
+  }
 }
 
 @keyframes modalSlideUp {
@@ -832,6 +857,22 @@ textarea::placeholder {
   width: 20% !important;
   max-width: 20% !important;
   box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .form-field:not([formGroupName="periodo"]) > .row-controls > .form-input:first-child {
+    flex: 1 1 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  .form-field:not([formGroupName="periodo"]) > .row-controls > .form-input:last-child {
+    flex: 0 0 72px !important;
+    width: 72px !important;
+    max-width: 72px !important;
+    min-width: 0 !important;
+  }
 }
 
 /* Ensure emoji groups remain with small button and flexible input */
@@ -1105,6 +1146,39 @@ input[type="radio"]:focus {
   font-size: 0.875rem;
 }
 
+/* ── Mobile: keep the row layout but tighten it ── */
+@media (max-width: 600px) {
+  .transacao-item {
+    grid-template-columns: auto auto 1fr auto;
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .transacao-descricao {
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .transacao-meta {
+    font-size: 0.72rem;
+  }
+
+  .transacao-valor {
+    font-size: 0.82rem;
+  }
+
+  .transacao-data {
+    font-size: 0.72rem;
+  }
+
+  .transacao-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
 /* ── Filter toggle button ────────────────────────────── */
 .filter-toggle-btn {
   display: inline-flex;
@@ -1376,7 +1450,7 @@ input[type="radio"]:focus {
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   overflow: hidden;
-  z-index: 200;
+  z-index: 1000;
   animation: fadeSlideDown 0.15s ease;
 }
 
