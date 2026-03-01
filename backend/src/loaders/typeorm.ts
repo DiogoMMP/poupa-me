@@ -18,11 +18,22 @@ export default async function createTypeOrmDataSource(): Promise<DataSource> {
     const dataSource = new DataSource({
         type: 'postgres',
         url: config.postgresURL,
-        entities: [UserEntity, CategoriaEntity, TransacaoEntity, ContaEntity, CartaoCreditoEntity, BancoEntity, DespesaRecorrenteEntity],
-        synchronize: true, // for dev only; change to migrations in prod
+        entities: [
+            UserEntity,
+            CategoriaEntity,
+            TransacaoEntity,
+            ContaEntity,
+            CartaoCreditoEntity,
+            BancoEntity,
+            DespesaRecorrenteEntity
+        ],
+        synchronize: true,
         logging: false,
-        ssl: {
-            rejectUnauthorized: false
+        ssl: true,
+        extra: {
+            ssl: {
+                rejectUnauthorized: false
+            }
         }
     });
 
