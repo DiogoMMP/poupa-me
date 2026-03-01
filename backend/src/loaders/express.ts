@@ -91,7 +91,16 @@ ${isLocalDevelopment ? `
 `}
         `,
       },
-      servers: [{ url: `http://localhost:${config.port}${config.api.prefix}` }],
+      servers: [
+        {
+          url: `https://poupa-me-api.onrender.com/${config.api.prefix}`,
+          description: 'Servidor de Produção (Render)',
+        },
+        {
+          url: `http://localhost:${config.port}${config.api.prefix}`,
+          description: 'Servidor Local',
+        }
+      ],
       components: {
         securitySchemes: {
           bearerAuth: {
