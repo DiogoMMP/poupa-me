@@ -1,34 +1,31 @@
-// tsconfig.json
 {
   "compilerOptions": {
-    /* Modern JavaScript & Compatibility: */
-    "target": "ES2022", // Good baseline for modern Node.js
-    "lib": ["ES2022"], // ⚠️ CHANGED: Removed "DOM" (Node.js doesn't have browser APIs)
+    "target": "ES2022",
+    "lib": ["ES2022"],
 
-    /* Module System Settings: */
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "rootDir": "src",
     "outDir": "dist",
 
-    /* Strict Type-Checking: */
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "skipLibCheck": true,
+    "skipLibCheck": true, // Essencial para ignorar conflitos em libs externas
 
-    /* File Consistency & Import Handling */
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "verbatimModuleSyntax": true, // Keeps your imports strict (requires 'import type')
-    "allowImportingTsExtensions": false, // Correct: Must be false to emit to 'dist'
 
-    /* JS Handling */
-    "allowJs": false, // Changed to false for a clean TypeScript project
+    /* ⚠️ AJUSTE AQUI: Desativamos o verbatimModuleSyntax para maior compatibilidade */
+    "verbatimModuleSyntax": false,
+
+    /* ⚠️ ADIÇÃO: Garantir que ele olha para os tipos instalados */
+    "typeRoots": ["./node_modules/@types"],
+
+    "allowJs": false,
     "checkJs": false,
 
-    // REQUIRED for TypeDI and Bulletproof Architecture
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
 
@@ -38,12 +35,8 @@
   "include": ["src/**/*.ts"],
   "exclude": [
     "node_modules",
-    "node_modules/**",
     "dist",
-    "dist/**",
     "coverage",
-    "coverage/**",
-    "coverage/**/*",
     "**/*.spec.ts",
     "**/*.test.ts"
   ]
