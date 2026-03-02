@@ -54,7 +54,7 @@ export default class ImportService implements IImportService {
             'julho': 6, 'agosto': 7, 'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11
         };
         const cleaned = dateStr.replace(/<[^>]*>/g, '').trim().toLowerCase();
-        const match = cleaned.match(/(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/);
+        const match = cleaned.match(/(\d{1,2})\s+de\s+([\w\u00C0-\u024F]+)\s+de\s+(\d{4})/);
         if (!match || match.length < 4) return null;
 
         const day = parseInt(match[1] || '0', 10);
