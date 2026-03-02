@@ -103,11 +103,17 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                 bancoId: raw.banco_id ?? null
             };
 
-            // Unique name check
+            // Unique name check scoped to the same bank
             if (nome) {
-                const existingByName = await this.repo.createQueryBuilder('c')
-                    .where('LOWER(c.nome) = LOWER(:nome)', {nome})
-                    .getOne();
+                const bancoId = entityObj.bancoId as string | null ?? null;
+                const qb = this.repo.createQueryBuilder('c')
+                    .where('LOWER(c.nome) = LOWER(:nome)', {nome});
+                if (bancoId) {
+                    qb.andWhere('c.bancoId = :bancoId', {bancoId});
+                } else {
+                    qb.andWhere('c.bancoId IS NULL');
+                }
+                const existingByName = await qb.getOne();
 
                 if (existingByName) {
                     if (existingByName.userDomainId === userDomainId) {

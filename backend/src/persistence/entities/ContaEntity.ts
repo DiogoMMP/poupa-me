@@ -3,7 +3,7 @@ import {TransacaoEntity} from "./TransacaoEntity.js";
 import {BancoEntity} from "./BancoEntity.js";
 
 @Entity({name: 'conta'})
-@Unique(['nome'])
+@Unique(['nome', 'bancoId'])
 export class ContaEntity {
     @PrimaryGeneratedColumn()
     id!: number;

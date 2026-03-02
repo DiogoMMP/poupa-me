@@ -14,7 +14,7 @@ import { ContaEntity } from './ContaEntity.js';
 import { BancoEntity } from './BancoEntity.js';
 
 @Entity({ name: 'cartao_credito' })
-@Unique(['nome'])
+@Unique(['nome', 'bancoId'])
 export class CartaoCreditoEntity {
     @PrimaryGeneratedColumn()
     id!: number;

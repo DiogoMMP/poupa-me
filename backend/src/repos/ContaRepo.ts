@@ -67,11 +67,17 @@ export default class ContaRepo implements IContaRepo {
                 bancoId: raw.banco_id ?? null
             };
 
-            // Check for existing account with same name (global uniqueness in DB)
+            // Check for existing account with same name within the same bank
             if (nome) {
-                const existingByName = await this.repo.createQueryBuilder('c')
-                    .where('LOWER(c.nome) = LOWER(:nome)', { nome })
-                    .getOne();
+                const bancoId = entityObj.bancoId as string | null ?? null;
+                const qb = this.repo.createQueryBuilder('c')
+                    .where('LOWER(c.nome) = LOWER(:nome)', { nome });
+                if (bancoId) {
+                    qb.andWhere('c.bancoId = :bancoId', { bancoId });
+                } else {
+                    qb.andWhere('c.bancoId IS NULL');
+                }
+                const existingByName = await qb.getOne();
 
                 if (existingByName) {
                     // If the existing by-name belongs to the same user, update and return it
