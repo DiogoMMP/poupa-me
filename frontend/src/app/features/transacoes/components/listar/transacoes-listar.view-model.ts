@@ -47,8 +47,8 @@ export class TransacoesListViewModel {
   readonly contas$ = new BehaviorSubject<ContasModel[]>([]);
   readonly categorias$ = new BehaviorSubject<CategoriasDTO[]>([]);
 
-  contaFilters: ContaFilters = { categoriaId: '', contaId: '', period: '' };
-  cartaoFilters: CartaoFilters = { categoriaId: '', cartaoId: '', status: '', period: '' };
+  contaFilters: ContaFilters = { categoriaId: '', contaId: '', period: 'Este Mês' };
+  cartaoFilters: CartaoFilters = { categoriaId: '', cartaoId: '', status: '', period: 'Este Mês' };
 
   readonly PERIODS: PeriodFilter[] = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'];
   readonly STATUSES = ['Pendente', 'Concluído'];
@@ -166,7 +166,7 @@ export class TransacoesListViewModel {
   }
 
   clearContaFilters(): void {
-    this.contaFilters = { categoriaId: '', contaId: '', period: '' };
+    this.contaFilters = { categoriaId: '', contaId: '', period: 'Este Mês' };
     this.loadContaTransacoes();
   }
 
@@ -267,7 +267,7 @@ export class TransacoesListViewModel {
   }
 
   clearCartaoFilters(): void {
-    this.cartaoFilters = { categoriaId: '', cartaoId: '', status: '', period: '' };
+    this.cartaoFilters = { categoriaId: '', cartaoId: '', status: '', period: 'Este Mês' };
     this.loadCartaoTransacoes();
   }
 

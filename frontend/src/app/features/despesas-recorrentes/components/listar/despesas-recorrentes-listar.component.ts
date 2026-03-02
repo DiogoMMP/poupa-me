@@ -21,8 +21,8 @@ export class DespesasRecorrentesListComponent implements OnInit {
   private router = inject(Router);
 
   // Filter form state
-  pendenteFilterForm: DespesaFilters = { categoriaId: '', period: '' };
-  concluidaFilterForm: DespesaFilters = { categoriaId: '', period: '' };
+  pendenteFilterForm: DespesaFilters = { categoriaId: '', period: 'Este Mês' };
+  concluidaFilterForm: DespesaFilters = { categoriaId: '', period: 'Este Mês' };
 
   // Toggle filter panels
   showPendenteFilters = false;
@@ -61,7 +61,7 @@ export class DespesasRecorrentesListComponent implements OnInit {
 
   clearPendenteFilters(): void {
     this.pendentePage = 1;
-    this.pendenteFilterForm = { categoriaId: '', period: '' };
+    this.pendenteFilterForm = { categoriaId: '', period: 'Este Mês' };
     this.vm.clearPendenteFilters();
   }
 
@@ -78,7 +78,7 @@ export class DespesasRecorrentesListComponent implements OnInit {
 
   clearConcluidaFilters(): void {
     this.concluidaPage = 1;
-    this.concluidaFilterForm = { categoriaId: '', period: '' };
+    this.concluidaFilterForm = { categoriaId: '', period: 'Este Mês' };
     this.vm.clearConcluidaFilters();
   }
 

@@ -37,8 +37,8 @@ export class DespesasRecorrentesListViewModel {
 
   readonly categorias$ = new BehaviorSubject<CategoriasDTO[]>([]);
 
-  pendenteFilters: DespesaFilters = { categoriaId: '', period: '' };
-  concluidaFilters: DespesaFilters = { categoriaId: '', period: '' };
+  pendenteFilters: DespesaFilters = { categoriaId: '', period: 'Este Mês' };
+  concluidaFilters: DespesaFilters = { categoriaId: '', period: 'Este Mês' };
 
   /** Set of transaction ids currently being processed to prevent duplicate clicks */
   private busyIds = new Set<string>();
@@ -129,7 +129,7 @@ export class DespesasRecorrentesListViewModel {
   }
 
   clearPendenteFilters(): void {
-    this.pendenteFilters = { categoriaId: '', period: '' };
+    this.pendenteFilters = { categoriaId: '', period: 'Este Mês' };
     this.loadPendentes();
   }
 
@@ -178,7 +178,7 @@ export class DespesasRecorrentesListViewModel {
   }
 
   clearConcluidaFilters(): void {
-    this.concluidaFilters = { categoriaId: '', period: '' };
+    this.concluidaFilters = { categoriaId: '', period: 'Este Mês' };
     this.loadConcluidas();
   }
 

@@ -19,8 +19,8 @@ export class TransacoesListComponent implements OnInit {
   public vm = inject(TransacoesListViewModel);
 
   // Local form state for filters (bound via ngModel)
-  contaFilterForm: ContaFilters = { categoriaId: '', contaId: '', period: '' };
-  cartaoFilterForm: CartaoFilters = { categoriaId: '', cartaoId: '', status: '', period: '' };
+  contaFilterForm: ContaFilters = { categoriaId: '', contaId: '', period: 'Este Mês' };
+  cartaoFilterForm: CartaoFilters = { categoriaId: '', cartaoId: '', status: '', period: 'Este Mês' };
 
   // Toggle filter panels
   showContaFilters = false;
@@ -66,7 +66,7 @@ export class TransacoesListComponent implements OnInit {
   /** Clear account filters */
   clearContaFilters(): void {
     this.contaPage = 1;
-    this.contaFilterForm = { categoriaId: '', contaId: '', period: '' };
+    this.contaFilterForm = { categoriaId: '', contaId: '', period: 'Este Mês' };
     this.vm.clearContaFilters();
   }
 
@@ -81,7 +81,7 @@ export class TransacoesListComponent implements OnInit {
   /** Clear card filters */
   clearCartaoFilters(): void {
     this.cartaoPage = 1;
-    this.cartaoFilterForm = { categoriaId: '', cartaoId: '', status: '', period: '' };
+    this.cartaoFilterForm = { categoriaId: '', cartaoId: '', status: '', period: 'Este Mês' };
     this.vm.clearCartaoFilters();
   }
 

@@ -44,9 +44,6 @@ export const routes: Routes = [
 
       { path: 'perfil', loadChildren: () => import('./features/perfil/perfil.routes').then(m => m.routes), data: { allowedRoles: ['Admin', 'User'] } },
 
-      // Admin user creation (lazy-loaded feature)
-      { path: 'admin', loadChildren: () => import('./features/admin/admin.routes').then(m => m.routes), data: { allowedRoles: ['Admin'] } },
-
       // Not authorized route (accessible without matching other feature routes)
       { path: 'not-authorized', loadChildren: () => import('./features/not_authorized/not_authorized.component').then(m => m.routes) },
       { path: '**', loadChildren: () => import('./features/not_found/not_found.component').then(m => m.routes) }

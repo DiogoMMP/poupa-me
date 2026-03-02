@@ -1,14 +1,14 @@
 ﻿import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { UserDTO } from '../../admin/data/users.model';
 import { EditarUtilizadorDTO, UtilizadorDTO } from '../dto/utilizadores.dto';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class UtilizadoresService {
   private http = inject(HttpClient);
-  private authBase = '/api/auth';
-  private apiBase = '/api';
+  private authBase = `${environment.apiBaseUrl}/auth`;
+  private apiBase = environment.apiBaseUrl;
 
   // Logout (POST /api/auth/logout)
   logout(): Observable<any> {
@@ -16,8 +16,8 @@ export class UtilizadoresService {
   }
 
   // Get current authenticated user (GET /api/me)
-  getCurrent(): Observable<UserDTO> {
-    return this.http.get<UserDTO>(`${this.apiBase}/me`, { withCredentials: true });
+  getCurrent(): Observable<UtilizadorDTO> {
+    return this.http.get<UtilizadorDTO>(`${this.apiBase}/me`, { withCredentials: true });
   }
 
   getAll(): Observable<UtilizadorDTO[]> {

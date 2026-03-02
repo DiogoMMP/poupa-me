@@ -3,12 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { PerfilDTO, AtualizarPerfilDTO } from '../dto/perfil.dto';
 import { AuthService } from '../../auth/services/auth.service';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class PerfilService {
   private http = inject(HttpClient);
   private auth = inject(AuthService);
-  private authBase = '/api/auth';
+  private authBase = `${environment.apiBaseUrl}/auth`;
 
   // GET /api/auth/:id — returns the full user with email
   getCurrent(): Observable<PerfilDTO> {
