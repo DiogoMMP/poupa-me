@@ -1,9 +1,10 @@
 import { AuthResponseDTO } from '../dto/auth.dto';
-import { AuthUserModel, AuthResponse } from '../models/auth.model';
+import { AuthResponse } from '../models/auth.model';
 
 export class AuthMapper {
   static toUserModel(dto: AuthResponseDTO): AuthResponse {
     return {
+      token: dto.token,
       user: {
         id: dto.user.id,
         name: dto.user.name,

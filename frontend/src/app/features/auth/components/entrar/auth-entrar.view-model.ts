@@ -36,6 +36,10 @@ export class AuthEntrarViewModel {
     this.featureService.login(dto).subscribe({
       next: responseDTO => {
         const response = AuthMapper.toUserModel(responseDTO);
+        // Persist JWT token for subsequent API requests
+        if (response.token) {
+          this.authService.setToken(response.token);
+        }
         this.authService.user.set({
           id: response.user.id,
           name: response.user.name,

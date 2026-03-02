@@ -13,6 +13,7 @@ export interface RegisterDTO {
 
 /** Response received from both login and register */
 export interface AuthResponseDTO {
+  token?: string;
   user: {
     id: string;
     email: string;

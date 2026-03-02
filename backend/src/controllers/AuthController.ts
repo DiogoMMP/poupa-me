@@ -43,9 +43,9 @@ export default class AuthController implements IUserController {
             const result = await this.authService.login(inputDTO);
             if (result.isFailure) return res.status(401).json({ error: result.error });
 
-            const { user } = result.getValue();
+            const { token, user } = result.getValue();
 
-            // Store user in session (no token needed for session-based auth)
+            // Store user in session
             req.session.user = {
                 id: user.id,
                 email: user.email,
@@ -53,7 +53,7 @@ export default class AuthController implements IUserController {
                 role: user.role
             };
 
-            return res.status(200).json({ user });
+            return res.status(200).json({ token, user });
         } catch (e) {
             next(e);
         }

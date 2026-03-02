@@ -21,24 +21,51 @@ export interface AuthenticatedRequest extends Request {
 }
 
 /**
- * Authentication middleware that validates session-based authentication.
+ * Authentication middleware that supports both JWT Bearer tokens and session-based auth.
  *
  * Behavior:
  * - In development, if `req.currentUser` is already set (Swagger auto-auth) we skip verification.
- * - Checks if req.session.user exists (populated by express-session after login)
- * - On success, `req.currentUser` is populated with the session user data and next() is called.
+ * - First checks the Authorization header for a Bearer JWT token.
+ * - Falls back to checking req.session.user (express-session).
+ * - On success, `req.currentUser` is populated and next() is called.
  */
 const isAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
         // In development, if Swagger auto-auth already set currentUser, skip validation
-        // Note: id may be undefined for Swagger admin (no userId filter applied in repos)
         if (process.env.NODE_ENV === 'development' && req.currentUser) {
-            // Skip session validation for Swagger auto-auth
             next();
             return;
         }
 
-        // Check if user is authenticated via session
+        // --- JWT Bearer token authentication ---
+        const authHeader = req.headers['authorization'];
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.slice(7);
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const jwtModule: any = await import('jsonwebtoken');
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+                const verifyFn: Function | undefined = jwtModule.verify || jwtModule.default?.verify;
+                if (typeof verifyFn === 'function') {
+                    const secret = process.env.JWT_SECRET || 'changeme';
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const payload: any = verifyFn(token, secret);
+                    req.currentUser = {
+                        id: payload.sub as string,
+                        email: payload.email,
+                        role: payload.role || 'User',
+                        isActive: true
+                    };
+                    next();
+                    return;
+                }
+            } catch (jwtError) {
+                Logger.debug('isAuth: invalid JWT token: %o', jwtError);
+                // Fall through to session check
+            }
+        }
+
+        // --- Session-based authentication ---
         if (!req.session || !req.session.user) {
             res.status(401).json({
                 status: 401,
@@ -55,7 +82,9 @@ const isAuth = async (req: AuthenticatedRequest, res: Response, next: NextFuncti
             name: sessionUser.name,
             email: sessionUser.email,
             role: sessionUser.role || 'User',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             locale: (sessionUser as any).locale,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             isActive: (sessionUser as any).isActive !== false
         };
 

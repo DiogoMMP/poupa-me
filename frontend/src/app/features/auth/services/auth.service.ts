@@ -1,6 +1,5 @@
 import { Injectable, signal, inject } from '@angular/core';
 import {
-  HttpClient,
   HttpErrorResponse,
   HttpRequest,
   HttpEvent,
@@ -25,15 +24,33 @@ export interface User {
   providedIn: 'root'
 })
 export class AuthService {
-  private http = inject(HttpClient);
   private router = inject(Router);
   private users = inject(UtilizadoresService);
   private selectedBanco = inject(SelectedBancoService);
+
+  private readonly TOKEN_KEY = 'auth_token';
 
   user = signal<User | null>(null);
 
   // flag to indicate initializeAuth has completed
   initialized = signal(false);
+
+  setToken(token: string): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(this.TOKEN_KEY, token);
+    }
+  }
+
+  getToken(): string | null {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage.getItem(this.TOKEN_KEY);
+  }
+
+  clearToken(): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(this.TOKEN_KEY);
+    }
+  }
 
   async loadCurrentUser(): Promise<void> {
     try {
@@ -60,6 +77,7 @@ export class AuthService {
   logout(): void {
     // Clear client state immediately so UI updates without waiting for network
     this.user.set(null);
+    this.clearToken();
 
     // Clear selected banco from localStorage so next user starts fresh
     this.selectedBanco.clearSelection();
@@ -99,23 +117,27 @@ export class AuthService {
 
   // HTTP interceptor logic - adds credentials and handles 401/403 errors
   handleHttpInterceptor(request: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> {
-    // Ensure cookies are sent with every request (for session-based auth)
-    const cloned = request.clone({ withCredentials: true });
+    const token = this.getToken();
+
+    // Build headers: always send cookies, and add Bearer token when available
+    let headers = request.headers;
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    const cloned = request.clone({ withCredentials: true, headers });
 
     return next(cloned).pipe(
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
           this.clearUser();
-          // Only redirect to login after initialization completed. If initializeAuth
-          // is still running (initialized() === false), don't perform navigation here;
-          // the app will allow route guards or later logic to handle navigation.
+          this.clearToken();
+          // Only redirect to login after initialization completed.
           if (this.initialized()) {
             setTimeout(() => this.router.navigate(['/entrar']), 0);
           }
         } else if (error.status === 403) {
-          // Do not clear user on 403; just navigate to not authorized page
           setTimeout(() => {
-            // Avoid repeated navigations
             if (this.router.url !== '/not-authorized') this.router.navigate(['/not-authorized']);
           }, 0);
         }

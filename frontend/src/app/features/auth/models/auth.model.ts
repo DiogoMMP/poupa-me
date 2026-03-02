@@ -25,5 +25,6 @@ export interface RegisterCredentials {
 
 /** Response after successful auth */
 export interface AuthResponse {
+  token?: string;
   user: AuthUserModel;
 }
