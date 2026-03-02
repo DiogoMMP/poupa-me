@@ -3,6 +3,7 @@ import { Service, Inject } from 'typedi';
 import type IUserController from './IControllers/IUserController.js';
 import type IUserService from '../services/IServices/IUserService.js';
 import type { IUserRegistrationDTO, IUserLoginDTO, IUserUpdateDTO, IUserChangeRoleDTO } from '../dto/IUserDTO.js';
+import type { AuthenticatedRequest } from '../api/middlewares/isAuth.js';
 
 /**
  * AuthController handles user-related HTTP requests such as registration, login, and user management.
@@ -60,22 +61,35 @@ export default class AuthController implements IUserController {
     }
 
     /**
-     * Gets the current logged-in user from the session.
-     * @param req - Express request object with session data.
-     * @param res - Express response object.
-     * @param next - Express next function for error handling.
+     * Gets the current logged-in user from the session or JWT token.
+     * Relies on the isAuth middleware to populate req.currentUser.
      */
     public async getCurrentUser(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            if (!req.session.user) {
+            const authReq = req as AuthenticatedRequest;
+            const currentUser = authReq.currentUser;
+
+            if (!currentUser) {
                 return res.status(401).json({ error: 'Not authenticated' });
             }
 
-            // Return user from session
+            // Try to get full user details (including name) from the service
+            const result = await this.authService.getUserByDomainId(currentUser.id);
+            if (!result.isFailure) {
+                const user = result.getValue();
+                return res.status(200).json({
+                    id: user.id,
+                    name: user.name,
+                    role: user.role,
+                    locale: 'pt'
+                });
+            }
+
+            // Fallback: return what we have from the token/session
             return res.status(200).json({
-                id: req.session.user.id,
-                name: req.session.user.name,
-                role: req.session.user.role,
+                id: currentUser.id,
+                name: currentUser.name ?? '',
+                role: currentUser.role,
                 locale: 'pt'
             });
         } catch (e) {

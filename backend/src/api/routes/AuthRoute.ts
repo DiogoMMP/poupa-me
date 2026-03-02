@@ -88,7 +88,7 @@ export default (app: Router) => {
    *       401:
    *         description: Not authenticated
    */
-  app.get('/me', (req, res, next) => ctrl.getCurrentUser(req, res, next));
+  app.get('/me', isAuth, (req, res, next) => ctrl.getCurrentUser(req, res, next));
 
   /**
    * @openapi
