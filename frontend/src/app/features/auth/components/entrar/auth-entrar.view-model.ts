@@ -40,12 +40,15 @@ export class AuthEntrarViewModel {
         if (response.token) {
           this.authService.setToken(response.token);
         }
-        this.authService.user.set({
+        const userObj = {
           id: response.user.id,
           name: response.user.name,
           role: response.user.role as any,
           locale: 'pt'
-        });
+        };
+        this.authService.user.set(userObj);
+        // Persist user to localStorage so refresh restores the session
+        this.authService.setUserToStorage(userObj);
         // Restore this user's previously selected banco
         this.selectedBanco.initForUser(response.user.id);
         this.notification.success(`Bem-vindo, ${response.user.name}!`);

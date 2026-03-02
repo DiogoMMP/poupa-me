@@ -1,4 +1,5 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, signal, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import {
   HttpErrorResponse,
   HttpRequest,
@@ -27,8 +28,14 @@ export class AuthService {
   private router = inject(Router);
   private users = inject(UtilizadoresService);
   private selectedBanco = inject(SelectedBancoService);
+  private platformId = inject(PLATFORM_ID);
 
   private readonly TOKEN_KEY = 'auth_token';
+  private readonly USER_KEY = 'auth_user';
+
+  private get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
 
   user = signal<User | null>(null);
 
@@ -36,32 +43,71 @@ export class AuthService {
   initialized = signal(false);
 
   setToken(token: string): void {
-    if (typeof localStorage !== 'undefined') {
+    if (this.isBrowser) {
       localStorage.setItem(this.TOKEN_KEY, token);
     }
   }
 
   getToken(): string | null {
-    if (typeof localStorage === 'undefined') return null;
+    if (!this.isBrowser) return null;
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
   clearToken(): void {
-    if (typeof localStorage !== 'undefined') {
+    if (this.isBrowser) {
       localStorage.removeItem(this.TOKEN_KEY);
+    }
+  }
+
+  setUserToStorage(u: User): void {
+    if (this.isBrowser) {
+      localStorage.setItem(this.USER_KEY, JSON.stringify(u));
+    }
+  }
+
+  getUserFromStorage(): User | null {
+    if (!this.isBrowser) return null;
+    try {
+      const raw = localStorage.getItem(this.USER_KEY);
+      return raw ? (JSON.parse(raw) as User) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  clearUserFromStorage(): void {
+    if (this.isBrowser) {
+      localStorage.removeItem(this.USER_KEY);
     }
   }
 
   async loadCurrentUser(): Promise<void> {
     try {
       const u = await firstValueFrom(this.users.getCurrent());
-      this.user.set(u as any);
-      // Restore the banco the user had selected before the page refresh
-      if (u && (u as any).id) {
-        this.selectedBanco.initForUser((u as any).id);
+      const userObj: User = {
+        id: (u as any).id,
+        name: (u as any).name,
+        role: (u as any).role,
+        locale: (u as any).locale ?? 'pt'
+      };
+      this.user.set(userObj);
+      this.setUserToStorage(userObj);
+      if (userObj.id) {
+        this.selectedBanco.initForUser(userObj.id);
       }
     } catch (err) {
-      this.user.set(null);
+      // Backend unreachable or session/token expired — try localStorage fallback
+      const saved = this.getUserFromStorage();
+      if (saved && this.getToken()) {
+        // We have a saved user and token; restore the session from local state
+        this.user.set(saved);
+        this.selectedBanco.initForUser(saved.id);
+      } else {
+        // No valid local state — clear everything
+        this.user.set(null);
+        this.clearUserFromStorage();
+        this.clearToken();
+      }
     }
   }
 
@@ -75,29 +121,35 @@ export class AuthService {
   }
 
   logout(): void {
-    // Clear client state immediately so UI updates without waiting for network
     this.user.set(null);
     this.clearToken();
-
-    // Clear selected banco from localStorage so next user starts fresh
+    this.clearUserFromStorage();
     this.selectedBanco.clearSelection();
 
-    // Notify backend to clear session cookie via UsersService; ignore errors
     firstValueFrom(this.users.logout()).catch(() => {
       // ignore
     });
   }
 
-  // Initialize auth by loading current user from session
+  // Initialize auth — restore from localStorage first, then validate with backend
   async initializeAuth(): Promise<void> {
+    // Immediately restore user from localStorage so the UI doesn't flash "not logged in"
+    if (this.isBrowser) {
+      const saved = this.getUserFromStorage();
+      const token = this.getToken();
+      if (saved && token) {
+        this.user.set(saved);
+        this.selectedBanco.initForUser(saved.id);
+      }
+    }
+
+    // Then validate/refresh from backend (updates name, role, etc.)
     try {
       await this.loadCurrentUser();
     } catch {
       this.clearUser();
     }
 
-    // During APP_INITIALIZER this.router.url may not reflect the requested browser path
-    // so use window.location.pathname when available to detect deep links.
     const browserPath = (typeof window !== 'undefined' && window.location && window.location.pathname)
       ? window.location.pathname
       : (this.router.url || '/');
@@ -106,20 +158,17 @@ export class AuthService {
     const isLogin = url.startsWith('/entrar');
     const u = this.user();
 
-    // If user is already authenticated and on login page, redirect to home
     if (u && isLogin) {
       setTimeout(() => this.router.navigate(['/']), 0);
     }
 
-    // mark initialization complete
     this.initialized.set(true);
   }
 
-  // HTTP interceptor logic - adds credentials and handles 401/403 errors
+  // HTTP interceptor — adds Bearer token and handles 401/403
   handleHttpInterceptor(request: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> {
     const token = this.getToken();
 
-    // Build headers: always send cookies, and add Bearer token when available
     let headers = request.headers;
     if (token) {
       headers = headers.set('Authorization', `Bearer ${token}`);
@@ -132,7 +181,7 @@ export class AuthService {
         if (error.status === 401) {
           this.clearUser();
           this.clearToken();
-          // Only redirect to login after initialization completed.
+          this.clearUserFromStorage();
           if (this.initialized()) {
             setTimeout(() => this.router.navigate(['/entrar']), 0);
           }
@@ -146,3 +195,5 @@ export class AuthService {
     );
   }
 }
+
+
