@@ -165,7 +165,7 @@
                 <div class="transacao-values">
                   <p class="transacao-valor text-large"
                      [class.text-positive]="t.tipo === 'Entrada' || t.tipo === 'Reembolso'"
-                     [class.text-negative]="t.tipo === 'Saída' || t.tipo === 'Crédito'">
+                     [class.text-negative]="t.tipo === 'Saída' || t.tipo === 'Crédito' || t.tipo === 'Despesa Mensal'">
                     {{ (t.tipo === 'Entrada' || t.tipo === 'Reembolso') ? '+' : '-' }} {{ t.valor | number:'1.2-2' }} {{ t.moeda === 'EUR' ? '€' : t.moeda }}
                   </p>
                   <span
