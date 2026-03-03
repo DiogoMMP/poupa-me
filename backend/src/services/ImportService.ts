@@ -275,7 +275,17 @@ export default class ImportService implements IImportService {
             if (rows.length < 2) return Result.fail<void>('Empty CSV');
 
             const existingCategorias = await this.categoriaRepo.findAll();
-            const existingContas = await this.contaRepo.findAll(userId, bancoId);
+            // Load accounts filtered by bank for source account matching.
+            // Also load ALL user accounts (no bancoId filter) so that shared/virtual accounts like
+            // "Despesas Mensais" and "Conta Poupança" (which may have no banco_id) are always found.
+            const existingContasBanco = bancoId ? await this.contaRepo.findAll(userId, bancoId) : [];
+            const allUserContas = await this.contaRepo.findAll(userId);
+            // Merge: bank-specific accounts first (preferred), then any extra accounts not in that set
+            const bancoContaIds = new Set(existingContasBanco.map(c => c.id.toString()));
+            const existingContas = [
+                ...existingContasBanco,
+                ...allUserContas.filter(c => !bancoContaIds.has(c.id.toString()))
+            ];
             const existingCartoes = await this.cartaoRepo.findAll(userId, bancoId);
             const allTransacoes = await this.transacaoRepo.findAll(userId);
 
