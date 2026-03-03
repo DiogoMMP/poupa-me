@@ -66,9 +66,14 @@ export default class ImportController implements IImportController {
             const userId = req.body.userId;
             const periodoInicio = req.body.periodoInicio;
             const periodoFim = req.body.periodoFim;
+            const bancoId = req.body.bancoId;
 
             if (!userId) {
                 return res.status(400).json({ error: 'userId is required' });
+            }
+
+            if (!bancoId) {
+                return res.status(400).json({ error: 'bancoId is required' });
             }
 
             let entradasCsvContent: string | undefined;
@@ -99,7 +104,8 @@ export default class ImportController implements IImportController {
                 entradasCsvContent,
                 saidasCsvContent,
                 userId,
-                periodo
+                periodo,
+                bancoId
             );
 
             if (result.isFailure) {

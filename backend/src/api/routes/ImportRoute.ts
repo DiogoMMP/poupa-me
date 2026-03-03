@@ -173,6 +173,7 @@ export default (app: Router) => {
      *             type: object
      *             required:
      *               - userId
+     *               - bancoId
      *             properties:
      *               entradas:
      *                 type: string
@@ -186,6 +187,10 @@ export default (app: Router) => {
      *                 type: string
      *                 description: User domain ID who owns the transactions
      *                 example: "USR00000000001"
+     *               bancoId:
+     *                 type: string
+     *                 description: Banco domain ID to restrict which accounts/cards are used
+     *                 example: "BNC00000000001"
      *               periodoInicio:
      *                 type: string
      *                 format: date
@@ -201,6 +206,7 @@ export default (app: Router) => {
      *             type: object
      *             required:
      *               - userId
+     *               - bancoId
      *             properties:
      *               entradasCsvContent:
      *                 type: string
@@ -212,6 +218,10 @@ export default (app: Router) => {
      *                 type: string
      *                 description: User domain ID who owns the transactions
      *                 example: "USR00000000001"
+     *               bancoId:
+     *                 type: string
+     *                 description: Banco domain ID to restrict which accounts/cards are used
+     *                 example: "BNC00000000001"
      *               periodoInicio:
      *                 type: string
      *                 format: date

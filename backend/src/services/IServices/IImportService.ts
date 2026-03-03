@@ -28,9 +28,10 @@ export default interface IImportService {
      * @param csvContent - Raw CSV file content as string
      * @param userId - User domain ID who owns the transactions
      * @param periodo - Optional period { inicio: Date, fim: Date } to mark Crédito/Reembolso as Pendente
+     * @param bancoId - Optional Banco domain ID to restrict which accounts/cards are used
      * @returns Result indicating success or error message
      */
-    importEntradas(csvContent: string, userId: string, periodo?: { inicio: Date; fim: Date }): Promise<Result<void>>;
+    importEntradas(csvContent: string, userId: string, periodo?: { inicio: Date; fim: Date }, bancoId?: string): Promise<Result<void>>;
 
     /**
      * Imports expense transactions (Saídas) from CSV content.
@@ -42,9 +43,11 @@ export default interface IImportService {
      *
      * @param csvContent - Raw CSV file content as string
      * @param userId - User domain ID who owns the transactions
+     * @param entradasVistas - Optional set of "Nome" values from imported Entradas to determine if Saídas should be marked as Pendente or Concluído
+     * @param bancoId - Optional Banco domain ID to restrict which accounts/cards are used
      * @returns Result indicating success or error message
      */
-    importSaidas(csvContent: string, userId: string, entradasVistas?: Set<string>): Promise<Result<void>>;
+    importSaidas(csvContent: string, userId: string, entradasVistas?: Set<string>, bancoId?: string): Promise<Result<void>>;
 
     /**
      * Imports both entradas and saídas together, sharing session state for correct status detection.
@@ -54,7 +57,8 @@ export default interface IImportService {
         entradasCsv: string | undefined,
         saidasCsv: string | undefined,
         userId: string,
-        periodo?: { inicio: Date; fim: Date }
+        periodo?: { inicio: Date; fim: Date },
+        bancoId?: string
     ): Promise<Result<string[]>>;
 }
 

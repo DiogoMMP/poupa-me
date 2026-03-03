@@ -215,12 +215,12 @@ export default class ImportService implements IImportService {
         }
     }
 
-    public async importEntradas(csvContent: string, userId: string, periodo?: { inicio: Date; fim: Date }): Promise<Result<void>> {
-        return this.importTransacoes(csvContent, userId, 'entradas', periodo);
+    public async importEntradas(csvContent: string, userId: string, periodo?: { inicio: Date; fim: Date }, bancoId?: string): Promise<Result<void>> {
+        return this.importTransacoes(csvContent, userId, 'entradas', periodo, undefined, undefined, undefined, bancoId);
     }
 
-    public async importSaidas(csvContent: string, userId: string, entradasVistas?: Set<string>): Promise<Result<void>> {
-        return this.importTransacoes(csvContent, userId, 'saidas', undefined, entradasVistas);
+    public async importSaidas(csvContent: string, userId: string, entradasVistas?: Set<string>, bancoId?: string): Promise<Result<void>> {
+        return this.importTransacoes(csvContent, userId, 'saidas', undefined, entradasVistas, undefined, undefined, bancoId);
     }
 
     /**
@@ -231,7 +231,8 @@ export default class ImportService implements IImportService {
         entradasCsv: string | undefined,
         saidasCsv: string | undefined,
         userId: string,
-        periodo?: { inicio: Date; fim: Date }
+        periodo?: { inicio: Date; fim: Date },
+        bancoId?: string
     ): Promise<Result<string[]>> {
         const entradasVistas = new Set<string>();
         const results: string[] = [];
@@ -241,13 +242,13 @@ export default class ImportService implements IImportService {
         const saidasRows = saidasAllRows.slice(1);
 
         if (entradasCsv) {
-            const r = await this.importTransacoes(entradasCsv, userId, 'entradas', periodo, entradasVistas, saidasRows, saidasAllRows[0]);
+            const r = await this.importTransacoes(entradasCsv, userId, 'entradas', periodo, entradasVistas, saidasRows, saidasAllRows[0], bancoId);
             if (r.isFailure) return Result.fail<string[]>(`Entradas: ${r.error}`);
             results.push('entradas');
         }
 
         if (saidasCsv) {
-            const r = await this.importTransacoes(saidasCsv, userId, 'saidas', undefined, entradasVistas);
+            const r = await this.importTransacoes(saidasCsv, userId, 'saidas', undefined, entradasVistas, undefined, undefined, bancoId);
             if (r.isFailure) return Result.fail<string[]>(`Saídas: ${r.error}`);
             results.push('saídas');
         }
@@ -266,15 +267,16 @@ export default class ImportService implements IImportService {
         periodo?: { inicio: Date; fim: Date },
         entradasVistas?: Set<string>,
         saidasRows?: string[][],
-        saidasHeader?: string[]
+        saidasHeader?: string[],
+        bancoId?: string
     ): Promise<Result<void>> {
         try {
             const rows = this.parseCSV(csvContent);
             if (rows.length < 2) return Result.fail<void>('Empty CSV');
 
             const existingCategorias = await this.categoriaRepo.findAll();
-            const existingContas = await this.contaRepo.findAll(userId);
-            const existingCartoes = await this.cartaoRepo.findAll(userId);
+            const existingContas = await this.contaRepo.findAll(userId, bancoId);
+            const existingCartoes = await this.cartaoRepo.findAll(userId, bancoId);
             const allTransacoes = await this.transacaoRepo.findAll(userId);
 
             // Session set to accumulate seen entries/exits for status matching
