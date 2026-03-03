@@ -236,11 +236,12 @@ export default class ImportService implements IImportService {
         const entradasVistas = new Set<string>();
         const results: string[] = [];
 
-        // Pre-parse saidas rows so entradas can look up cartao for Reembolso
-        const saidasRows = saidasCsv ? this.parseCSV(saidasCsv).slice(1) : [];
+        // Pre-parse saidas rows so entradas can look up cartao for Reembolso (include header row)
+        const saidasAllRows = saidasCsv ? this.parseCSV(saidasCsv) : [];
+        const saidasRows = saidasAllRows.slice(1);
 
         if (entradasCsv) {
-            const r = await this.importTransacoes(entradasCsv, userId, 'entradas', periodo, entradasVistas, saidasRows);
+            const r = await this.importTransacoes(entradasCsv, userId, 'entradas', periodo, entradasVistas, saidasRows, saidasAllRows[0]);
             if (r.isFailure) return Result.fail<string[]>(`Entradas: ${r.error}`);
             results.push('entradas');
         }
@@ -264,7 +265,8 @@ export default class ImportService implements IImportService {
         fileType: 'entradas' | 'saidas',
         periodo?: { inicio: Date; fim: Date },
         entradasVistas?: Set<string>,
-        saidasRows?: string[][]
+        saidasRows?: string[][],
+        saidasHeader?: string[]
     ): Promise<Result<void>> {
         try {
             const rows = this.parseCSV(csvContent);
@@ -301,6 +303,10 @@ export default class ImportService implements IImportService {
                 }
             }
 
+            const headers = (rows[0] || []).map(h => h.toLowerCase().trim());
+            const valorColIndex = headers.indexOf('valor');
+            const saiuColIndex = headers.indexOf('saiu?');
+
             const dataRows = rows.slice(1);
 
             for (const row of dataRows) {
@@ -309,9 +315,11 @@ export default class ImportService implements IImportService {
                 const contaStr = this.cleanName(row[2] || '');
                 const dataStr = row[3] || '';
 
-                // Different column positions for entries vs exits
-                const saiuStr = fileType === 'entradas' ? (row[6] || '').toLowerCase() : '';
-                const valorStr = fileType === 'entradas' ? (row[7] || '') : (row[5] || '');
+                // Use the "Valor" column if found in headers, otherwise fall back to previous hardcoded indices
+                const saiuStr = fileType === 'entradas' ? ((saiuColIndex >= 0 ? row[saiuColIndex] : row[6]) || '').toLowerCase() : '';
+                const valorStr = valorColIndex >= 0
+                    ? (row[valorColIndex] || '')
+                    : (fileType === 'entradas' ? (row[7] || '') : (row[5] || ''));
 
                 if (!nome || !contaStr || !valorStr) continue;
 
@@ -709,12 +717,17 @@ export default class ImportService implements IImportService {
 
                 if (tipo === 'Reembolso' && saidasRows) {
                     contaFinal = conta ?? undefined;
+                    // Determine the valor column index from the saídas header
+                    const saidasValorColIndex = saidasHeader
+                        ? saidasHeader.map(h => h.toLowerCase().trim()).indexOf('valor')
+                        : -1;
                     // Find matching row in saidas CSV: same name, same month/year, same valor, and conta is a cartão
                     const saidaMatch = saidasRows.find(r => {
                         const saidaNome = this.cleanName(r[0] || '');
                         const saidaContaStr = this.cleanName(r[2] || '');
                         const saidaDataStr = r[3] || '';
-                        const saidaValorStr = r[5] || '';
+                        // Use "Valor" column if found, otherwise fall back to column 5
+                        const saidaValorStr = saidasValorColIndex >= 0 ? (r[saidasValorColIndex] || '') : (r[5] || '');
                         if (!saidaNome || !saidaContaStr) return false;
                         const saidaIsCard = saidaContaStr.toLowerCase().includes('cartão') || saidaContaStr.toLowerCase().includes('cartao');
                         if (!saidaIsCard) return false;
