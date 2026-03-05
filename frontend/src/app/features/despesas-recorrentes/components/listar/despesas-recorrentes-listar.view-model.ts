@@ -37,7 +37,7 @@ export class DespesasRecorrentesListViewModel {
 
   readonly categorias$ = new BehaviorSubject<CategoriasDTO[]>([]);
 
-  pendenteFilters: DespesaFilters = { categoriaId: '', period: 'Este Mês' };
+  pendenteFilters: DespesaFilters = { categoriaId: '', period: '' };
   concluidaFilters: DespesaFilters = { categoriaId: '', period: 'Este Mês' };
 
   /** Set of transaction ids currently being processed to prevent duplicate clicks */
@@ -90,25 +90,11 @@ export class DespesasRecorrentesListViewModel {
     const f = this.pendenteFilters;
     const bancoId = this.bancoId ?? undefined;
 
-    // Period filter
-    if (f.period && !f.categoriaId) {
-      this.transacoesService.getDespesaRecorrenteByPeriod(f.period, bancoId).subscribe({
-        next: dtos => {
-          this.pendentes$.next(TransacoesMapper.toModelArray(dtos).filter(t => t.status === 'Pendente'));
-          this.isLoading$.next(false);
-        },
-        error: () => { this.notification.error('Falha ao filtrar despesas pendentes'); this.isLoading$.next(false); }
-      });
-      return;
-    }
-
-    // Categoria filter (or both)
+    // Categoria filter
     if (f.categoriaId) {
       this.transacoesService.getDespesaRecorrenteByCategoria(f.categoriaId, bancoId).subscribe({
         next: dtos => {
-          let all = TransacoesMapper.toModelArray(dtos).filter(t => t.status === 'Pendente');
-          if (f.period) all = this.filterByPeriod(all, f.period);
-          this.pendentes$.next(all);
+          this.pendentes$.next(TransacoesMapper.toModelArray(dtos).filter(t => t.status === 'Pendente'));
           this.isLoading$.next(false);
         },
         error: () => { this.notification.error('Falha ao filtrar despesas pendentes'); this.isLoading$.next(false); }
@@ -129,7 +115,7 @@ export class DespesasRecorrentesListViewModel {
   }
 
   clearPendenteFilters(): void {
-    this.pendenteFilters = { categoriaId: '', period: 'Este Mês' };
+    this.pendenteFilters = { categoriaId: '', period: '' };
     this.loadPendentes();
   }
 

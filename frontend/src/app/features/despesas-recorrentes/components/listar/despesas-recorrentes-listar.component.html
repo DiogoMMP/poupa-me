@@ -71,13 +71,6 @@
               <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">{{ cat.icon }} {{ cat.nome }}</option>
             </select>
           </div>
-          <div class="filter-field">
-            <label class="filter-label">Período</label>
-            <select [(ngModel)]="pendenteFilterForm.period">
-              <option value="">Qualquer período</option>
-              <option *ngFor="let p of vm.PERIODS" [value]="p">{{ p }}</option>
-            </select>
-          </div>
         </div>
         <div class="filter-actions">
           <button class="btn-secondary" (click)="clearPendenteFilters()">Limpar</button>

@@ -146,9 +146,12 @@ export default class ImportService implements IImportService {
 
                 if (isCard) {
                     // Create or update credit card (CartaoCredito)
-                    const existingCartao = existingCartoes.find(c =>
-                        c.nome.value.toLowerCase() === contaName.toLowerCase()
-                    );
+                    // When bancoId is given, only match cards within the same bank
+                    const existingCartao = existingCartoes.find(c => {
+                        if (c.nome.value.toLowerCase() !== contaName.toLowerCase()) return false;
+                        if (bancoId) return c.bancoId === bancoId;
+                        return true;
+                    });
 
                     if (!existingCartao) {
                         // Create new CartaoCredito
@@ -183,9 +186,12 @@ export default class ImportService implements IImportService {
                     }
                 } else {
                     // Create or update Account (Conta)
-                    const existingConta = existingContas.find(c =>
-                        c.nome.value.toLowerCase() === contaName.toLowerCase()
-                    );
+                    // When bancoId is given, only match accounts within the same bank
+                    const existingConta = existingContas.find(c => {
+                        if (c.nome.value.toLowerCase() !== contaName.toLowerCase()) return false;
+                        if (bancoId) return c.bancoId === bancoId;
+                        return true;
+                    });
 
                     if (!existingConta) {
                         const novoSaldo = Dinheiro.create(balance, 'EUR');
@@ -275,16 +281,18 @@ export default class ImportService implements IImportService {
             if (rows.length < 2) return Result.fail<void>('Empty CSV');
 
             const existingCategorias = await this.categoriaRepo.findAll();
-            // Load accounts filtered by bank for source account matching.
-            // Also load ALL user accounts (no bancoId filter) so that shared/virtual accounts like
-            // "Despesas Mensais" and "Conta Poupança" (which may have no banco_id) are always found.
-            const existingContasBanco = bancoId ? await this.contaRepo.findAll(userId, bancoId) : [];
+            // Load accounts filtered by bank (strict: only accounts belonging to the given bank).
+            // Also load ALL user accounts so that shared/virtual accounts like "Despesas Mensais" and
+            // "Conta Poupança" (which have no banco_id) are always found when needed.
+            const existingContasBanco = bancoId ? await this.contaRepo.findAll(userId, bancoId) : await this.contaRepo.findAll(userId);
             const allUserContas = await this.contaRepo.findAll(userId);
-            // Merge: bank-specific accounts first (preferred), then any extra accounts not in that set
+            // existingContas is used for finding source accounts: prefer bank-specific, but special
+            // accounts (no bancoId) from allUserContas are also included for Despesas Mensais / Poupança.
             const bancoContaIds = new Set(existingContasBanco.map(c => c.id.toString()));
             const existingContas = [
                 ...existingContasBanco,
-                ...allUserContas.filter(c => !bancoContaIds.has(c.id.toString()))
+                // Include accounts with no bancoId (shared/virtual) from the full list
+                ...allUserContas.filter(c => !bancoContaIds.has(c.id.toString()) && !c.bancoId)
             ];
             const existingCartoes = await this.cartaoRepo.findAll(userId, bancoId);
             const allTransacoes = await this.transacaoRepo.findAll(userId);
@@ -359,12 +367,16 @@ export default class ImportService implements IImportService {
                 // Extract the actual account/card name from the HTML-like string
                 const extractedName = (contaStr.split('(')[0] ?? contaStr).trim();
 
-                // Find matching account or card by checking if the CSV string contains the entity name
+                // Find matching account or card by checking if the CSV string contains the entity name.
+                // When bancoId is provided, prefer accounts from that bank; accounts with no bancoId
+                // (shared/virtual like "Despesas Mensais") are always eligible.
                 const conta = existingContas.find(c => {
                     const entityName = c.nome.value.toLowerCase();
                     const searchStr = extractedName.toLowerCase();
-                    // Check both directions: entity name in CSV string OR CSV string in entity name
-                    return searchStr.includes(entityName) || entityName.includes(searchStr);
+                    if (!searchStr.includes(entityName) && !entityName.includes(searchStr)) return false;
+                    // If a bancoId filter is active, only match accounts that belong to that bank OR have no bank
+                    if (bancoId) return c.bancoId === bancoId || !c.bancoId;
+                    return true;
                 });
 
                 const cartao = existingCartoes.find(c => {
