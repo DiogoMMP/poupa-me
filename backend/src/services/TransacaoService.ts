@@ -405,8 +405,16 @@ export default class TransacaoService implements ITransacaoService {
             (updatedTransacao as unknown as Record<string, unknown>)['userDomainId'] =
                 (transacao as unknown as Record<string, unknown>)['userDomainId'];
 
-            // Balances were already updated when the transaction was created (subtract from origem, add to destino).
-            // Concluding only changes the status — no balance changes needed.
+            // When created, money was subtracted from origin and added to contaDestino.
+            // When concluding, we subtract from contaDestino (the expense is now actually paid out).
+            const contaDestinoFresh = await this.contaRepo.findById(transacao.contaDestino!.id.toString());
+            if (!contaDestinoFresh) return Result.fail<ITransacaoDTO>('Destination Account not found');
+
+            const subtractResult = contaDestinoFresh.subtrairSaldo(transacao.valor);
+            if (subtractResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractResult.error));
+
+            await this.contaRepo.update(contaDestinoFresh);
+
             const savedTransacao = await this.transacaoRepo.update(updatedTransacao);
 
             return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
