@@ -142,7 +142,7 @@ export default class DespesaRecorrenteController implements IDespesaRecorrenteCo
     }
 
     /**
-     * GET /despesa-recorrente - Get all DespesaRecorrentes for authenticated user
+     * GET /despesa-recorrente?bancoId=:bancoId - Get all DespesaRecorrentes for authenticated user, optionally filtered by bank
      */
     public async getAllDespesas(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
@@ -151,7 +151,8 @@ export default class DespesaRecorrenteController implements IDespesaRecorrenteCo
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const result = await this.despesaService.getAllDespesas(userId);
+            const bancoId = req.query.bancoId as string | undefined;
+            const result = await this.despesaService.getAllDespesas(userId, bancoId);
 
             if (result.isFailure) {
                 return res.status(400).json({ error: result.error });

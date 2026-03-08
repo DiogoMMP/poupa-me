@@ -184,7 +184,7 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
         id?: UniqueEntityID
     ): Result<Transacao> {
         const typeResult = Tipo.create("Reembolso");
-        const statusResult = Status.create("Concluído");
+        const statusResult = Status.create("Pendente");
 
         const combine = Result.combine([typeResult, statusResult]);
         if (combine.isFailure) return Result.fail<Transacao>(combine.errorValue() as string);

@@ -250,18 +250,23 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
     }
 
     /**
-     * Find all recurring expenses for a user
+     * Find all recurring expenses for a user, optionally filtered by bank (via origin account)
      */
-    public async findAll(userId: string): Promise<DespesaRecorrente[]> {
+    public async findAll(userId: string, bancoId?: string): Promise<DespesaRecorrente[]> {
         try {
-            const rows = await this.repo.createQueryBuilder('d')
+            const qb = this.repo.createQueryBuilder('d')
                 .leftJoinAndSelect('d.categoria', 'categoria')
                 .leftJoinAndSelect('d.contaOrigem', 'contaOrigem')
                 .leftJoinAndSelect('d.contaDestino', 'contaDestino')
                 .leftJoinAndSelect('d.contaPoupanca', 'contaPoupanca')
                 .where('d.user_domain_id = :userId', { userId })
-                .orderBy('d.id', 'ASC')
-                .getMany();
+                .orderBy('d.id', 'ASC');
+
+            if (bancoId) {
+                qb.andWhere('contaOrigem.banco_id = :bancoId', { bancoId });
+            }
+
+            const rows = await qb.getMany();
 
             const res: DespesaRecorrente[] = [];
             for (const r of rows) {

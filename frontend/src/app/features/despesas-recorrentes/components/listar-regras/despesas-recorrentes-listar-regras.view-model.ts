@@ -4,6 +4,7 @@ import { DespesasRecorrentesService } from '../../services/despesas-recorrentes.
 import { NotificationService } from '../../../../services/notification.service';
 import { DespesasRecorrentesMapper } from '../../mappers/despesas-recorrentes.mapper';
 import { DespesaRecorrenteModel } from '../../models/despesas-recorrentes.model';
+import { SelectedBancoService } from '../../../../services/selected-banco.service';
 
 /**
  * ViewModel for the despesas recorrentes list component.
@@ -12,10 +13,20 @@ import { DespesaRecorrenteModel } from '../../models/despesas-recorrentes.model'
 export class DespesasRecorrentesListarRegrasViewModel {
   private service = inject(DespesasRecorrentesService);
   private notification = inject(NotificationService);
+  private selectedBanco = inject(SelectedBancoService);
 
   // State
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
   readonly regras$ = new BehaviorSubject<DespesaRecorrenteModel[]>([]);
+
+  constructor() {
+    // Reload when selected bank changes
+    this.selectedBanco.selectedBancoId$.subscribe(() => this.loadData());
+  }
+
+  get bancoId(): string | null {
+    return this.selectedBanco.currentBancoId;
+  }
 
   /**
    * Loads the list of despesas recorrentes regras. This method is called when the component initializes and can be
@@ -23,7 +34,8 @@ export class DespesasRecorrentesListarRegrasViewModel {
    */
   loadData(): void {
     this.isLoading$.next(true);
-    this.service.getAll().subscribe({
+    const bancoId = this.bancoId ?? undefined;
+    this.service.getAll(bancoId).subscribe({
       next: (dtos) => {
         this.regras$.next(DespesasRecorrentesMapper.toModelArray(dtos));
         this.isLoading$.next(false);

@@ -15,7 +15,7 @@ export class DespesasRecorrentesListarRegrasComponent implements OnInit {
   public vm = inject(DespesasRecorrentesListarRegrasViewModel);
 
   ngOnInit(): void {
-    this.vm.loadData();
+    // loadData is triggered by selectedBancoId$ subscription in the ViewModel constructor
   }
 
   deleteRegra(id: string): void {

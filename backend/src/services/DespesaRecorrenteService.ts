@@ -164,9 +164,9 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
         }
     }
 
-    public async getAllDespesas(userId: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
+    public async getAllDespesas(userId: string, bancoId?: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
         try {
-            const despesas = await this.despesaRepo.findAll(userId);
+            const despesas = await this.despesaRepo.findAll(userId, bancoId);
             return Result.ok<IDespesaRecorrenteDTO[]>(despesas.map(d => DespesaRecorrenteMap.toDTO(d)));
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.getAllDespesas error: %o', err);

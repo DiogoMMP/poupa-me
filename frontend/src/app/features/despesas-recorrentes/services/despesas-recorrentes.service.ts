@@ -10,8 +10,12 @@ export class DespesasRecorrentesService {
 
   constructor(private http: HttpClient) {}
 
-  /** Get all recurring expense rules for the authenticated user */
-  getAll(): Observable<DespesaRecorrenteDTO[]> {
+  /** Get all recurring expense rules for the authenticated user, optionally filtered by bank */
+  getAll(bancoId?: string): Observable<DespesaRecorrenteDTO[]> {
+    if (bancoId) {
+      const params = new HttpParams().set('bancoId', bancoId);
+      return this.http.get<DespesaRecorrenteDTO[]>(this.baseUrl, { params, withCredentials: true });
+    }
     return this.http.get<DespesaRecorrenteDTO[]>(this.baseUrl, { withCredentials: true });
   }
 

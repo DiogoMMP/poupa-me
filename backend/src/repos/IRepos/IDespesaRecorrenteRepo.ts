@@ -25,9 +25,9 @@ export default interface IDespesaRecorrenteRepo {
     findById(despesaId: string): Promise<DespesaRecorrente | null>;
 
     /**
-     * Finds all DespesaRecorrentes for a user
+     * Finds all DespesaRecorrentes for a user, optionally filtered by bank
      */
-    findAll(userId: string): Promise<DespesaRecorrente[]>;
+    findAll(userId: string, bancoId?: string): Promise<DespesaRecorrente[]>;
 
     /**
      * Finds all active DespesaRecorrentes for a user

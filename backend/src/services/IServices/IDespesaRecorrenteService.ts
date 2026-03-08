@@ -27,9 +27,9 @@ export default interface IDespesaRecorrenteService {
     getDespesa(despesaId: string, userId: string): Promise<Result<IDespesaRecorrenteDTO>>;
 
     /**
-     * Gets all DespesaRecorrentes for a user
+     * Gets all DespesaRecorrentes for a user, optionally filtered by bank
      */
-    getAllDespesas(userId: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
+    getAllDespesas(userId: string, bancoId?: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
 
     /**
      * Gets DespesaRecorrentes that have valor + diaDoMes defined,
