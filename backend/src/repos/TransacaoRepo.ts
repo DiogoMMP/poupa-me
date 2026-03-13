@@ -470,7 +470,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
         try {
             const row = await this.repo.findOne({
                 where: { domainId: transacaoId },
-                relations: ['categoria', 'conta', 'contaDestino', 'cartaoCredito']
+                relations: ['categoria', 'conta', 'contaDestino', 'contaPoupanca', 'cartaoCredito']
             });
             if (!row) return null;
             // include user_domain_id in raw for mapping

@@ -278,6 +278,7 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
                 }
                 result = await this.transacaoService.createPoupanca({
                     ...transacaoInput,
+                    contaDestinoId: regra.contaDestinoId.toString(),
                     contaPoupancaId: regra.contaPoupancaId.toString()
                 });
             } else {
@@ -328,6 +329,7 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
                 }
                 result = await this.transacaoService.createPoupanca({
                     ...baseDTO,
+                    contaDestinoId: regra.contaDestinoId.toString(),
                     contaPoupancaId: regra.contaPoupancaId.toString()
                 });
             } else {
