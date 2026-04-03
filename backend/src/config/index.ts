@@ -62,6 +62,11 @@ export default {
         }
     },
 
+    ai: {
+        hfToken: process.env.HF_TOKEN,
+        model: 'Qwen/Qwen2.5-7B-Instruct',
+    },
+
     services: {
         auth: {
             name: 'AuthService',
@@ -101,6 +106,11 @@ export default {
         import: {
             name: 'ImportService',
             path: '../services/ImportService.js'
+        },
+
+        iaCategorizacao: {
+            name: 'IACategorizacaoService',
+            path: '../services/IACategorizacaoService.js'
         }
     },
 
@@ -143,6 +153,11 @@ export default {
         import: {
             name: 'ImportController',
             path: '../controllers/ImportController.js'
+        },
+
+        iaCategorizacao: {
+            name: 'IACategorizacaoController',
+            path: '../controllers/IACategorizacaoController.js'
         }
     },
 

@@ -27,7 +27,8 @@
           id="descricao"
           formControlName="descricao"
           class="form-input"
-          placeholder="Ex: Reembolso de compra">
+          placeholder="Ex: Reembolso de compra"
+          (blur)="onDescricaoBlur()">
       </div>
 
       <!-- Valor -->
@@ -86,4 +87,3 @@
     </form>
   </div>
 </div>
-

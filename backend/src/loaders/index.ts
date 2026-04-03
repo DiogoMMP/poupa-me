@@ -139,6 +139,18 @@ export default async ({expressApp}: { expressApp: Application }) => {
     };
 
 
+
+    const iaCategorizacaoController = {
+        name: config.controllers.iaCategorizacao.name,
+        path: config.controllers.iaCategorizacao.path
+    };
+
+    const iaCategorizacaoService = {
+        name: config.services.iaCategorizacao.name,
+        path: config.services.iaCategorizacao.path
+    }
+
+
     await dependencyInjectorLoader({
         dataSource: dataSource as any,
         schemas: [],
@@ -150,7 +162,8 @@ export default async ({expressApp}: { expressApp: Application }) => {
             cartaoController,
             bancoController,
             despesaRecorrenteController,
-            importController
+            importController,
+            iaCategorizacaoController
         ],
         repos: [
             userRepo,
@@ -169,7 +182,8 @@ export default async ({expressApp}: { expressApp: Application }) => {
             cartaoService,
             bancoService,
             despesaRecorrenteService,
-            importService
+            importService,
+            iaCategorizacaoService
         ]
     } as any);
     Logger.info('✌️ Entities, Controllers, Repositories, Services, etc. loaded');

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TransacoesCriarReembolsoViewModel } from './transacoes-criar-reembolso.view-model';
+import { IaCategorizacaoService } from '../../../ia-categorizacao/ia-categorizacao.service';
 
 @Component({
   selector: 'app-transacoes-criar-reembolso',
@@ -15,6 +16,7 @@ import { TransacoesCriarReembolsoViewModel } from './transacoes-criar-reembolso.
 export class TransacoesCriarReembolsoComponent {
   public vm = inject(TransacoesCriarReembolsoViewModel);
   private fb = inject(FormBuilder);
+  private iaCategorizacaoService = inject(IaCategorizacaoService);
 
   form: FormGroup;
 
@@ -29,6 +31,17 @@ export class TransacoesCriarReembolsoComponent {
       categoriaId: ['', Validators.required],
       cartaoCreditoId: ['', Validators.required],
     });
+  }
+
+  onDescricaoBlur() {
+    const descricao = this.form.get('descricao')?.value;
+    if (descricao) {
+      this.iaCategorizacaoService.sugerir(descricao).subscribe(categoria => {
+        if (categoria) {
+          this.form.get('categoriaId')?.setValue(categoria.id);
+        }
+      });
+    }
   }
 
   onSubmit() {

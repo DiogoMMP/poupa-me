@@ -27,7 +27,8 @@
           id="descricao"
           formControlName="descricao"
           class="form-input"
-          placeholder="Ex: Salário de Janeiro">
+          placeholder="Ex: Salário de Janeiro"
+          (blur)="onDescricaoBlur()">
       </div>
 
       <!-- Valor -->
@@ -88,4 +89,3 @@
     </form>
   </div>
 </div>
-
