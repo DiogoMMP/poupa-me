@@ -8,9 +8,14 @@ import bancoRoute from "./routes/BancoRoute.js";
 import despesaRecorrenteRoute from "./routes/DespesaRecorrenteRoute.js";
 import importRoute from "./routes/ImportRoute.js";
 import iACategorizacaoRoute from "./routes/IACategorizacaoRoute.js";
+import healthRoute from "./routes/Health.js"
 
 export default () => {
 	const app = Router();
+
+	// Register Health route
+	healthRoute(app);
+
 
 	// Register Auth routes
 	authRoute(app)
