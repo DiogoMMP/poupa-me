@@ -151,6 +151,17 @@ export default async ({expressApp}: { expressApp: Application }) => {
     }
 
 
+
+    const estatisticasController = {
+        name: config.controllers.estatisticas.name,
+        path: config.controllers.estatisticas.path
+    };
+
+    const estatisticasService = {
+        name: config.services.estatisticas.name,
+        path: config.services.estatisticas.path
+    }
+
     await dependencyInjectorLoader({
         dataSource: dataSource as any,
         schemas: [],
@@ -163,7 +174,8 @@ export default async ({expressApp}: { expressApp: Application }) => {
             bancoController,
             despesaRecorrenteController,
             importController,
-            iaCategorizacaoController
+            iaCategorizacaoController,
+            estatisticasController
         ],
         repos: [
             userRepo,
@@ -183,7 +195,8 @@ export default async ({expressApp}: { expressApp: Application }) => {
             bancoService,
             despesaRecorrenteService,
             importService,
-            iaCategorizacaoService
+            iaCategorizacaoService,
+            estatisticasService
         ]
     } as any);
     Logger.info('✌️ Entities, Controllers, Repositories, Services, etc. loaded');

@@ -44,6 +44,8 @@ export const routes: Routes = [
 
       { path: 'perfil', loadChildren: () => import('./features/perfil/perfil.routes').then(m => m.routes), data: { allowedRoles: ['Admin', 'User'] } },
 
+      { path: 'estatisticas', loadChildren: () => import('./features/estatisticas/estatisticas.routes').then(m => m.routes), data: { allowedRoles: ['Admin', 'User'] } },
+
       // Not authorized route (accessible without matching other feature routes)
       { path: 'not-authorized', loadChildren: () => import('./features/not_authorized/not_authorized.component').then(m => m.routes) },
       { path: '**', loadChildren: () => import('./features/not_found/not_found.component').then(m => m.routes) }

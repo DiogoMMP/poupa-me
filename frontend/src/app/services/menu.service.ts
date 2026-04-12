@@ -32,6 +32,14 @@ export class MenuService {
     },
 
     {
+      id: 'Estatísticas',
+      labelKey: 'Estatísticas',
+      icon: '/icons/estatisticas.svg',
+      route: '/estatisticas',
+      roles: ['Admin', 'User']
+    },
+
+    {
       id: 'Bancos',
       labelKey: 'Bancos',
       icon: '/icons/bancos.svg',

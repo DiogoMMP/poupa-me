@@ -1,0 +1,153 @@
+<section class="estatisticas">
+  <div class="estatisticas_header">
+    <div class="title" *ngIf="user() as u">
+      <h1 class="estatisticas_title">As suas Estatísticas!</h1>
+      <p *ngIf="hasBancoSelected$ | async">{{ msg() }}</p>
+    </div>
+
+    <div class="page-actions" *ngIf="hasBancoSelected$ | async">
+      <button class="filter-toggle-btn"
+              (click)="showFilters = !showFilters"
+              [class.active]="showFilters">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M3 7H21M6 12H18M10 17H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Filtros
+        <span class="filter-badge" *ngIf="hasActiveFilters()">●</span>
+      </button>
+
+      <!-- Filters -->
+      <div class="filter-panel" *ngIf="showFilters">
+        <div class="filter-row">
+          <div class="filter-field">
+            <label class="filter-label">Mês</label>
+            <select [(ngModel)]="selectedMonth">
+              <option value="">Mês Atual</option>
+              <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="filter-label">Ano</label>
+            <select [(ngModel)]="selectedYear">
+              <option value="">Ano Atual</option>
+              <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button class="btn-secondary" (click)="clearFilters()">Limpar</button>
+          <button (click)="applyFilters()">Aplicar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-container *ngIf="(hasBancoSelected$ | async); else noBancoTemplate">
+    <!-- Loading State -->
+    <div *ngIf="isLoading$ | async" class="loading-spinner">
+      A carregar dados...
+    </div>
+
+    <!-- Data Loaded State -->
+    <ng-container *ngIf="!(isLoading$ | async) && (estatisticas$ | async) as stats; else noData">
+
+      <div class="first-row">
+        <!-- Total Entradas -->
+        <div class="card">
+          <svg viewBox="0 0 24 24" fill="none" class="entradas-icon">
+            <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="resumo-financeiro">
+            <p class="resumo-label">Total Entradas</p>
+            <span class="resumo-value text-positive">+{{ stats.cashflowMensal.totalIn | number:'1.2-2' }} €</span>
+          </div>
+        </div>
+
+        <!-- Total Saídas -->
+        <div class="card">
+          <svg viewBox="0 0 24 24" fill="none" class="saidas-icon">
+            <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="resumo-financeiro">
+            <p class="resumo-label">Total Saídas</p>
+            <span class="resumo-value text-negative">-{{ stats.cashflowMensal.totalOut | number:'1.2-2' }} €</span>
+          </div>
+        </div>
+
+        <!-- Balanço Líquido -->
+        <div class="card">
+          <svg viewBox="0 0 24 24" fill="none" class="balanco-icon">
+            <path d="M6 10H10" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path
+              d="M20.8333 11H18.2308C16.4465 11 15 12.3431 15 14C15 15.6569 16.4465 17 18.2308 17H20.8333C20.9167 17 20.9583 17 20.9935 16.9979C21.5328 16.965 21.9623 16.5662 21.9977 16.0654C22 16.0327 22 15.994 22 15.9167V12.0833C22 12.006 22 11.9673 21.9977 11.9346C21.9623 11.4338 21.5328 11.035 20.9935 11.0021C20.9583 11 20.9167 11 20.8333 11Z"
+              stroke="#1C274C" stroke-width="1.5"/>
+            <path
+              d="M20.965 11C20.8873 9.1277 20.6366 7.97975 19.8284 7.17157C18.6569 6 16.7712 6 13 6H10C6.22876 6 4.34315 6 3.17157 7.17157C2 8.34315 2 10.2288 2 14C2 17.7712 2 19.6569 3.17157 20.8284C4.34315 22 6.22876 22 10 22H13C16.7712 22 18.6569 22 19.8284 20.8284C20.6366 20.0203 20.8873 18.8723 20.965 17"
+              stroke="#1C274C" stroke-width="1.5"/>
+            <path d="M6 6L9.73549 3.52313C10.7874 2.82562 12.2126 2.82562 13.2645 3.52313L17 6" stroke="#1C274C"
+                  stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M17.9912 14H18.0002" stroke="#1C274C" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"/>
+          </svg>
+          <div class="resumo-financeiro">
+            <p class="resumo-label">Balanço Líquido</p>
+            <span class="resumo-value"
+                  [ngClass]="stats.cashflowMensal.netBalance >= 0 ? 'text-positive' : 'text-negative'">
+              <span *ngIf="stats.cashflowMensal.netBalance > 0">+</span>
+              {{ stats.cashflowMensal.netBalance | number:'1.2-2' }} €
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <!-- Gastos por Categoria (Pie Chart) -->
+        <div class="chart-card">
+          <h3 class="chart-title">Gastos por Categoria</h3>
+          <div class="chart-wrapper">
+            <ngx-charts-pie-chart
+              [results]="pieChartData$ | async"
+              [legend]="false"
+              [labels]="true"
+              [doughnut]="true"
+              [arcWidth]="0.5">
+            </ngx-charts-pie-chart>
+          </div>
+        </div>
+
+        <!-- Evolução de Gastos Diários (Line Chart) -->
+        <div class="chart-card">
+          <h3 class="chart-title">Evolução de Gastos Diários</h3>
+          <div class="chart-wrapper">
+            <ngx-charts-line-chart
+              [results]="lineChartData$ | async"
+              [legend]="false"
+              [xAxis]="true"
+              [yAxis]="true"
+              [showXAxisLabel]="true"
+              [showYAxisLabel]="true"
+              xAxisLabel="Dia"
+              yAxisLabel="Valor">
+            </ngx-charts-line-chart>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #noData>
+      <div class="empty-state" *ngIf="!(isLoading$ | async)">
+        Sem dados de estatísticas para mostrar.
+      </div>
+    </ng-template>
+
+  </ng-container>
+
+  <ng-template #noBancoTemplate>
+    <div class="empty-state">
+      Selecione um banco na lista lateral para ver as estatísticas.
+    </div>
+  </ng-template>
+
+</section>

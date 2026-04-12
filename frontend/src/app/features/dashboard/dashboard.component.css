@@ -1,5 +1,4 @@
 /* Dashboard component styles */
-
 .dashboard {
   padding: 2rem;
   width: 100%;
@@ -17,7 +16,6 @@
   z-index: 10;
 }
 
-/* Boas-vindas section - left side */
 .boas-vindas {
   flex: 1;
 }
@@ -39,7 +37,6 @@
   font-family: 'Inter', sans-serif;
 }
 
-/* Actions header - right side */
 .actions-header {
   display: flex;
   gap: 0.75rem;
@@ -51,7 +48,15 @@
   width: 100%;
 }
 
-/* First row - single full-width card with 3 summary items */
+/* Generic Section Styles */
+.dashboard_section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* === First Row (Summary) === */
 .first-row {
   display: flex;
   flex-direction: row;
@@ -80,35 +85,12 @@
   flex-shrink: 0;
 }
 
-/* center icons inside the summary items and place them above the text */
-.first-row .saldo-icon,
-.first-row .entradas-icon,
-.first-row .saidas-icon {
-  width: 48px;
-  height: 48px;
-  display: block;
-  margin: 0 auto;
-}
-
 .first-row .resumo-financeiro {
   align-items: center;
   text-align: center;
 }
 
-@media (max-width: 768px) {
-  .first-row {
-    flex-direction: column;
-    padding: 1.25rem;
-  }
-
-  .first-row__divider {
-    width: 100%;
-    height: 1px;
-    align-self: auto;
-  }
-}
-
-/* === CONTAS ROW === */
+/* === Contas Row === */
 .contas-row {
   margin-bottom: 2rem;
 }
@@ -175,54 +157,7 @@
   font-family: 'Oswald', sans-serif;
 }
 
-/* Individual section card */
-.dashboard_section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-/* Icons for each section */
-.saldo-icon,
-.entradas-icon,
-.saidas-icon {
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-}
-
-.saldo-icon path   { stroke: #61edd6; }
-.entradas-icon path { stroke: #4ade80; }
-.saidas-icon  path  { stroke: #ff6b6b; }
-
-/* Resumo financeiro */
-.resumo-financeiro {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-  width: 100%;
-}
-
-.resumo-label {
-  font-size: 0.9rem;
-  color: rgba(226, 232, 240, 0.7);
-  margin: 0;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-family: 'Inter ExtraBold', sans-serif;
-}
-
-.resumo-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #e2e8f0;
-  font-family: 'Oswald', sans-serif;
-}
-
-/* === SECOND ROW - TRANSAÇÕES E CARTÕES === */
+/* === Second Row (Transações e Cartões) === */
 .second-row {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -230,7 +165,6 @@
   margin-bottom: 2rem;
 }
 
-/* When there are no cartoes, make transactions occupy full width */
 .second-row--single {
   grid-template-columns: 1fr !important;
 }
@@ -239,7 +173,7 @@
   display: none;
 }
 
-/* === TRANSAÇÕES SECTION === */
+/* Transações Section */
 .transacoes-section {
   display: flex;
   flex-direction: column;
@@ -247,7 +181,7 @@
   overflow: hidden;
 }
 
-/* === CARTÕES SECTION === */
+/* Cartões Section */
 .cartoes-section {
   display: flex;
   flex-direction: column;
@@ -308,7 +242,58 @@
   gap: 0.25rem;
 }
 
-/* Responsive adjustments */
+
+/* === Common Elements (Icons, Labels, Values) === */
+
+/* Icons */
+.saldo-icon,
+.entradas-icon,
+.saidas-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.first-row .saldo-icon,
+.first-row .entradas-icon,
+.first-row .saidas-icon {
+  display: block;
+  margin: 0 auto;
+}
+
+.saldo-icon path   { stroke: #61edd6; }
+.entradas-icon path { stroke: #4ade80; }
+.saidas-icon  path  { stroke: #ff6b6b; }
+
+/* Resumo Financeiro */
+.resumo-financeiro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.resumo-label {
+  font-size: 0.9rem;
+  color: rgba(226, 232, 240, 0.7);
+  margin: 0;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Inter ExtraBold', sans-serif;
+}
+
+.resumo-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  font-family: 'Oswald', sans-serif;
+}
+
+
+/* === Responsive Adjustments === */
+
 @media (max-width: 768px) {
   .dashboard {
     padding: 1rem;
@@ -326,6 +311,17 @@
 
   .dashboard_title {
     font-size: 1.5rem;
+  }
+
+  .first-row {
+    flex-direction: column;
+    padding: 1.25rem;
+  }
+
+  .first-row__divider {
+    width: 100%;
+    height: 1px;
+    align-self: auto;
   }
 
   .second-row {
@@ -366,7 +362,6 @@
     gap: 0.5rem;
   }
 
-  /* first-row stacks vertically and never overflows */
   .first-row {
     flex-direction: column;
     padding: 1rem;

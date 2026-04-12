@@ -111,6 +111,11 @@ export default {
         iaCategorizacao: {
             name: 'IACategorizacaoService',
             path: '../services/IACategorizacaoService.js'
+        },
+
+        estatisticas: {
+            name: 'EstatisticasService',
+            path: '../services/EstatisticasService.js'
         }
     },
 
@@ -158,6 +163,11 @@ export default {
         iaCategorizacao: {
             name: 'IACategorizacaoController',
             path: '../controllers/IACategorizacaoController.js'
+        },
+
+        estatisticas: {
+            name: 'EstatisticasController',
+            path: '../controllers/EstatisticasController.js'
         }
     },
 
