@@ -1191,6 +1191,9 @@ input[type="radio"]:focus {
   color: var(--brand-text);
   font-size: 0.8rem;
   box-shadow: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
   transition: border-color 0.2s, background 0.2s, color 0.2s;
 }
 

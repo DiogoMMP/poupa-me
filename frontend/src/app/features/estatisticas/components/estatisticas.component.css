@@ -95,6 +95,8 @@
   grid-template-columns: 1fr 2fr;
   gap: 1.5rem;
   margin-bottom: 2rem;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .chart-card {
@@ -106,6 +108,9 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .chart-title {
@@ -117,7 +122,9 @@
 
 .chart-wrapper {
   flex-grow: 1;
-  width: 100%;
+  min-width: 0; /* Allow chart to shrink in flex container */
+  max-width: 100%;
+  overflow: hidden;
   height: 300px; /* Default height */
 }
 
@@ -144,7 +151,76 @@
 }
 
 @media (max-width: 768px) {
+  .estatisticas_header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .page-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .filter-panel {
+    width: 100%;
+  }
+
   .first-row {
     grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .first-row .card {
+    align-items: center;
+    text-align: center;
+    padding: 1.25rem 1rem;
+  }
+
+  .first-row .balanco-icon,
+  .first-row .entradas-icon,
+  .first-row .saidas-icon {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto;
+  }
+
+  .resumo-value {
+    font-size: 1.25rem;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .chart-wrapper {
+    height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .estatisticas {
+    padding: 1rem;
+  }
+
+  .first-row .card {
+    padding: 1rem 0.9rem;
+  }
+
+  .estatisticas_title {
+    font-size: 1.5rem;
+  }
+
+  .title p {
+    font-size: 0.9rem;
+  }
+
+  .chart-wrapper {
+    height: 220px;
   }
 }
