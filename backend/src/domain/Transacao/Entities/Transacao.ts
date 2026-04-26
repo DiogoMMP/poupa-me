@@ -2,7 +2,7 @@ import {AggregateRoot} from "../../../core/domain/AggregateRoot.js";
 import {Descricao} from "../ValueObjects/Descricao.js";
 import {Data} from "../../Shared/ValueObjects/Data.js";
 import {Dinheiro} from "../../Shared/ValueObjects/Dinheiro.js";
-import {Tipo} from "../ValueObjects/Tipo.js";
+import {Tipo} from "../../Shared/ValueObjects/Tipo.js";
 import {Status} from "../ValueObjects/Status.js";
 import {Categoria} from "../../Categoria/Entities/Categoria.js";
 import {UniqueEntityID} from "../../../core/domain/UniqueEntityID.js";
@@ -20,7 +20,7 @@ interface TransacaoProps {
     status: Status;
     conta?: Conta;
     cartaoCredito?: CartaoCredito;
-    contaDestino?: Conta; // Only for Despesa Mensal - conta that will receive the monthly expense
+    contaDestino?: Conta; // Only for Despesa Mensal/Semanal/Anual - conta that will receive the money
     contaPoupanca?: Conta; // Only for Poupança - the savings account that receives the transfer
 }
 
@@ -198,16 +198,25 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
 
     /**
      * Specialized factory for creating a Credit transaction, which is a type of expense that is pending until confirmed
-     * @param props - The properties required to create a Transacao entity, excluding 'tipo' and 'status' which are set by default for this factory
+     * @param props - The properties required to create a Transacao entity, excluding 'tipo' and 'status' which are set
+     * by default for this factory
+     * @param imediata - if true the transaction is "Concluído", otherwise "Pendente"
      * @param id - Optional UniqueEntityID to restore/preserve domain id from persistence
      * @return A Result object containing either a valid Transacao instance or an error message if validation fails
      */
     public static createDespesaMensal(
         props: Omit<TransacaoProps, 'tipo' | 'status'>,
+        imediata: boolean,
         id?: UniqueEntityID
     ): Result<Transacao> {
         const typeResult = Tipo.create("Despesa Mensal");
-        const statusResult = Status.create("Pendente");
+        let statusResult;
+
+        if (imediata) {
+            statusResult = Status.create("Concluído")
+        } else {
+            statusResult = Status.create("Pendente")
+        }
 
         const combine = Result.combine([typeResult, statusResult]);
         if (combine.isFailure) return Result.fail<Transacao>(combine.errorValue() as string);
@@ -221,15 +230,89 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
 
     /**
      * Specialized factory for creating a Poupança transaction.
-     * Transfers money from origin account to a savings account (contaPoupanca).
-     * Starts as Pendente until confirmed.
+     * @param props - The properties required to create a Transacao entity, excluding 'tipo' and 'status' which are set
+     * by default for this factory
+     * @param imediata - if true the transaction is "Concluído", otherwise "Pendente"
+     * @param id - Optional UniqueEntityID to restore/preserve domain id from persistence
+     * @return A Result object containing either a valid Transacao instance or an error message if validation fails
      */
     public static createPoupanca(
         props: Omit<TransacaoProps, 'tipo' | 'status'>,
+        imediata: boolean,
         id?: UniqueEntityID
     ): Result<Transacao> {
         const typeResult = Tipo.create("Poupança");
-        const statusResult = Status.create("Pendente");
+        let statusResult;
+
+        if (imediata) {
+            statusResult = Status.create("Concluído")
+        } else {
+            statusResult = Status.create("Pendente")
+        }
+
+        const combine = Result.combine([typeResult, statusResult]);
+        if (combine.isFailure) return Result.fail<Transacao>(combine.errorValue() as string);
+
+        return Transacao.create({
+            ...props,
+            tipo: typeResult.getValue(),
+            status: statusResult.getValue()
+        }, id);
+    }
+
+    /**
+     * Specialized factory for creating a Despesa Semanal transaction.
+     * @param props - The properties required to create a Transacao entity, excluding 'tipo' and 'status' which are set
+     * by default for this factory
+     * @param imediata - if true the transaction is "Concluído", otherwise "Pendente"
+     * @param id - Optional UniqueEntityID to restore/preserve domain id from persistence
+     * @return A Result object containing either a valid Transacao instance or an error message if validation fails
+     */
+    public static createDespesaSemanal(
+        props: Omit<TransacaoProps, 'tipo' | 'status'>,
+        imediata: boolean,
+        id?: UniqueEntityID
+    ): Result<Transacao> {
+        const typeResult = Tipo.create("Despesa Semanal");
+        let statusResult;
+
+        if (imediata) {
+            statusResult = Status.create("Concluído")
+        } else {
+            statusResult = Status.create("Pendente")
+        }
+
+        const combine = Result.combine([typeResult, statusResult]);
+        if (combine.isFailure) return Result.fail<Transacao>(combine.errorValue() as string);
+
+        return Transacao.create({
+            ...props,
+            tipo: typeResult.getValue(),
+            status: statusResult.getValue()
+        }, id);
+    }
+
+    /**
+     * Specialized factory for creating a Despesa Anual transaction.
+     * @param props - The properties required to create a Transacao entity, excluding 'tipo' and 'status' which are set
+     * by default for this factory
+     * @param imediata - if true the transaction is "Concluído", otherwise "Pendente"
+     * @param id - Optional UniqueEntityID to restore/preserve domain id from persistence
+     * @return A Result object containing either a valid Transacao instance or an error message if validation fails
+     */
+    public static createDespesaAnual(
+        props: Omit<TransacaoProps, 'tipo' | 'status'>,
+        imediata: boolean,
+        id?: UniqueEntityID
+    ): Result<Transacao> {
+        const typeResult = Tipo.create("Despesa Anual");
+        let statusResult;
+
+        if (imediata) {
+            statusResult = Status.create("Concluído")
+        } else {
+            statusResult = Status.create("Pendente")
+        }
 
         const combine = Result.combine([typeResult, statusResult]);
         if (combine.isFailure) return Result.fail<Transacao>(combine.errorValue() as string);

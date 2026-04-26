@@ -97,7 +97,8 @@ export default class TransacaoController implements ITransacaoController {
         try {
             const inputDTO = req.body as ITransacaoInputDTO;
             inputDTO.userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.createDespesaMensal(inputDTO);
+            const imediata = inputDTO.imediata ?? false;
+            const result = await this.transacaoService.createDespesaMensal(inputDTO, imediata);
             if (result.isFailure) return res.status(400).json({ error: result.error });
             return res.status(201).json(result.getValue());
         } catch (e) {
@@ -112,7 +113,8 @@ export default class TransacaoController implements ITransacaoController {
         try {
             const inputDTO = req.body as ITransacaoInputDTO;
             inputDTO.userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.transacaoService.createPoupanca(inputDTO);
+            const imediata = inputDTO.imediata ?? false;
+            const result = await this.transacaoService.createPoupanca(inputDTO, imediata);
             if (result.isFailure) return res.status(400).json({ error: result.error });
             return res.status(201).json(result.getValue());
         } catch (e) {
@@ -172,18 +174,20 @@ export default class TransacaoController implements ITransacaoController {
     }
 
     /**
-     * Handles concluding a Despesa Mensal (change from Pendente to Concluído and subtract from destination account)
+     * Handles concluding a recurring expense (change from Pendente to Concluído and subtract from destination account)
      * @param req Express request object containing the transaction ID in the URL parameters
      * @param res Express response object used to send back the result
      * @param next Express next function for error handling
      */
-    public async concluirDespesaMensal(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+    public async concluirDespesaRecorrente(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const id = req.params.id as string;
-            if (!id) return res.status(400).json({ error: 'Transaction ID is required' });
+            const result = await this.transacaoService.concluirDespesaRecorrente(id);
 
-            const result = await this.transacaoService.concluirDespesaMensal(id);
-            if (result.isFailure) return res.status(400).json({ error: result.error });
+            if (result.isFailure) {
+                return res.status(400).json({ message: result.errorValue() });
+            }
+
             return res.status(200).json(result.getValue());
         } catch (e) {
             next(e);
@@ -493,6 +497,44 @@ export default class TransacaoController implements ITransacaoController {
             const result = await this.transacaoService.findDespesaRecorrenteByPeriod(bancoId, period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId);
             if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles the creation of a new Weekly Expense (Despesa Semanal) transaction
+     * @param req Express request object containing the transaction data in the body
+     * @param res Express response object used to send back the result
+     * @param next Express next function for error handling
+     */
+    public async createDespesaSemanal(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const inputDTO = req.body as ITransacaoInputDTO;
+            inputDTO.userId = (req as AuthenticatedRequest).currentUser?.id;
+            const imediata = inputDTO.imediata ?? false;
+            const result = await this.transacaoService.createDespesaSemanal(inputDTO, imediata);
+            if (result.isFailure) return res.status(400).json({ error: result.error });
+            return res.status(201).json(result.getValue());
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    /**
+     * Handles the creation of a new Annual Expense (Despesa Anual) transaction
+     * @param req Express request object containing the transaction data in the body
+     * @param res Express response object used to send back the result
+     * @param next Express next function for error handling
+     */
+    public async createDespesaAnual(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const inputDTO = req.body as ITransacaoInputDTO;
+            inputDTO.userId = (req as AuthenticatedRequest).currentUser?.id;
+            const imediata = inputDTO.imediata ?? false;
+            const result = await this.transacaoService.createDespesaAnual(inputDTO, imediata);
+            if (result.isFailure) return res.status(400).json({ error: result.error });
+            return res.status(201).json(result.getValue());
         } catch (e) {
             next(e);
         }

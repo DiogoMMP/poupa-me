@@ -47,12 +47,12 @@ export class DespesaRecorrenteEntity {
     @Column({ name: 'conta_origem_id' })
     contaOrigemId!: number;
 
-    @ManyToOne(() => ContaEntity)
+    @ManyToOne(() => ContaEntity, { nullable: true })
     @JoinColumn({ name: 'conta_destino_id' })
     contaDestino?: ContaEntity;
 
-    @Column({ name: 'conta_destino_id' })
-    contaDestinoId!: number;
+    @Column({ name: 'conta_destino_id', type: 'int', nullable: true })
+    contaDestinoId!: number | null;
 
     @ManyToOne(() => ContaEntity, { nullable: true })
     @JoinColumn({ name: 'conta_poupanca_id' })
@@ -69,6 +69,15 @@ export class DespesaRecorrenteEntity {
 
     @Column({ name: 'ativo', type: 'boolean', default: true })
     ativo!: boolean;
+
+    @Column({ name: 'imediata', type: 'boolean', default: false })
+    imediata!: boolean;
+
+    @Column({ name: 'dia_da_semana', type: "integer", nullable: true})
+    diaDaSemana!: number;
+
+    @Column({ name: 'mes', type: "integer", nullable: true})
+    mes!: number;
 
     @Column({ name: 'user_domain_id', type: 'varchar', length: 50 })
     userDomainId!: string;

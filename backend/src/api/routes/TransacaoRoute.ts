@@ -207,76 +207,6 @@ export default (app: Router) => {
 
   /**
    * @openapi
-   * /transacao/poupanca:
-   *   post:
-   *     tags:
-   *       - Transacao
-   *     summary: Create a Poupança (savings) transfer
-   *     description: |
-   *       Creates a new "Poupança" transaction which represents moving money into a savings account.
-   *       Requires authentication. The request body should contain the transaction data and the target savings account (contaPoupancaId).
-   *     security:
-   *       - bearerAuth: []
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             $ref: '#/components/schemas/TransacaoInput'
-   *           example:
-   *             data:
-   *               dia: 11
-   *               mes: 02
-   *               ano: 2026
-   *             descricao: "Transfer to savings"
-   *             valor:
-   *               valor: 200.00
-   *               moeda: "EUR"
-   *             categoriaId: "CAT00000000001"
-   *             contaId: "CNT00000000001"
-   *             contaPoupancaId: "CNT00000000002"
-   *     responses:
-   *       201:
-   *         description: Poupança created
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Transacao'
-   *       400:
-   *         description: Validation failed
-   */
-  route.post('/poupanca', isAuth, (req, res, next) => ctrl.createPoupanca(req as AuthenticatedRequest, res, next));
-
-  /**
-   * @openapi
-   * /transacao/poupanca/concluir/{id}:
-   *   post:
-   *     tags:
-   *       - Transacao
-   *     summary: Conclude a Poupança transaction
-   *     description: |-
-   *       Concludes a savings transfer by changing status from "Pendente" to "Concluído"
-   *       and adding the amount to the savings account (contaPoupanca).
-   *       Requires authentication.
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Domain ID of the Poupança transaction
-   *     responses:
-   *       200:
-   *         description: Poupança concluded successfully
-   *       400:
-   *         description: Invalid transaction or already concluded
-   */
-  route.post('/poupanca/concluir/:id', isAuth, (req, res, next) => ctrl.concluirPoupanca(req as AuthenticatedRequest, res, next));
-
-  /**
-   * @openapi
    * /transacao/saida:
    *   post:
    *     tags:
@@ -376,15 +306,14 @@ export default (app: Router) => {
 
   /**
    * @openapi
-   * /transacao/despesa-mensal:
+   * /transacao/poupanca:
    *   post:
    *     tags:
    *       - Transacao
-   *     summary: Create a Despesa Mensal transaction (Pendente)
-   *     description: |-
-   *       Creates a new monthly expense with status "Pendente".
-   *       Subtracts from origin account (contaId) and adds to destination account (contaDestinoId).
-   *       Requires authentication.
+   *     summary: Create a Poupança (savings) recurring transaction
+   *     description: |
+   *       Creates a recurring savings transfer transaction with status "Pendente" or "Concluído" (if imediata=true).
+   *       Requires `contaDestinoId` for the destination account and `contaPoupancaId` for the savings account.
    *     security:
    *       - bearerAuth: []
    *     requestBody:
@@ -392,69 +321,43 @@ export default (app: Router) => {
    *       content:
    *         application/json:
    *           schema:
-   *             type: object
-   *             required:
-   *               - data
-   *               - descricao
-   *               - valor
-   *               - categoriaId
-   *               - contaId
-   *               - contaDestinoId
-   *             properties:
-   *               data:
-   *                 type: object
-   *                 properties:
-   *                   dia:
-   *                     type: integer
-   *                   mes:
-   *                     type: integer
-   *                   ano:
-   *                     type: integer
-   *               descricao:
-   *                 type: string
-   *               valor:
-   *                 type: object
-   *                 properties:
-   *                   valor:
-   *                     type: number
-   *                   moeda:
-   *                     type: string
-   *               categoriaId:
-   *                 type: string
-   *               contaId:
-   *                 type: string
-   *                 description: Origin account (where money is subtracted from)
-   *               contaDestinoId:
-   *                 type: string
-   *                 description: Destination account (where money is added to)
+   *             $ref: '#/components/schemas/TransacaoInput'
    *           example:
    *             data:
    *               dia: 11
    *               mes: 02
    *               ano: 2026
-   *             descricao: "Pagamento mensal de serviço"
+   *             descricao: "Transfer to savings"
    *             valor:
-   *               valor: 30.00
+   *               valor: 200.00
    *               moeda: "EUR"
    *             categoriaId: "CAT00000000001"
    *             contaId: "CNT00000000001"
    *             contaDestinoId: "CNT00000000002"
+   *             contaPoupancaId: "CNT00000000003"
+   *             imediata: true
    *     responses:
    *       201:
-   *         description: Despesa Mensal created with status Pendente
+   *         description: Poupança created
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Transacao'
+   *       400:
+   *         description: Validation failed
    */
-  route.post('/despesa-mensal', isAuth, (req, res, next) => ctrl.createDespesaMensal(req as AuthenticatedRequest, res, next));
+  route.post('/poupanca', isAuth, (req, res, next) => ctrl.createPoupanca(req as AuthenticatedRequest, res, next));
 
   /**
    * @openapi
-   * /transacao/despesa-mensal/concluir/{id}:
+   * /transacao/poupanca/concluir/{id}:
    *   post:
    *     tags:
    *       - Transacao
-   *     summary: Conclude a Despesa Mensal transaction
+   *     summary: Conclude a Poupança transaction
    *     description: |-
-   *       Concludes a monthly expense by changing status from "Pendente" to "Concluído"
-   *       and subtracting the amount from the destination account (contaDestinoId).
+   *       Concludes a savings transfer by changing status from "Pendente" to "Concluído"
+   *       and adding the amount to the savings account (contaPoupanca).
    *       Requires authentication.
    *     security:
    *       - bearerAuth: []
@@ -464,16 +367,155 @@ export default (app: Router) => {
    *         required: true
    *         schema:
    *           type: string
-   *         description: Domain ID of the Despesa Mensal transaction
+   *         description: Domain ID of the Poupança transaction
    *     responses:
    *       200:
-   *         description: Despesa Mensal concluded successfully
+   *         description: Poupança concluded successfully
+   *       400:
+   *         description: Invalid transaction or already concluded
+   */
+  route.post('/poupanca/concluir/:id', isAuth, (req, res, next) => ctrl.concluirPoupanca(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
+   * /transacao/despesa-recorrente/despesa-mensal:
+   *   post:
+   *     tags:
+   *       - Transacao
+   *     summary: Create a Despesa Mensal recurring transaction
+   *     description: |
+   *       Creates a recurring monthly expense transaction with status "Pendente" or "Concluído" (if imediata=true).
+   *       Requires `contaDestinoId` for the destination account.
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/TransacaoInput'
+   *           example:
+   *             data:
+   *               dia: 15
+   *               mes: 5
+   *               ano: 2026
+   *             descricao: "Netflix"
+   *             valor:
+   *               valor: 15.99
+   *               moeda: EUR
+   *             categoriaId: "CAT00000000001"
+   *             contaId: "CNT00000000001"
+   *             contaDestinoId: "CNT00000000002"
+   *             imediata: true
+   *     responses:
+   *       201:
+   *         description: Recurring monthly expense created
+   */
+  route.post('/despesa-recorrente/despesa-mensal', isAuth, (req, res, next) => ctrl.createDespesaMensal(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
+   * /transacao/despesa-recorrente/despesa-semanal:
+   *   post:
+   *     tags:
+   *       - Transacao
+   *     summary: Create a Despesa Semanal recurring transaction
+   *     description: |
+   *       Creates a recurring weekly expense transaction with status "Pendente" or "Concluído" (if imediata=true).
+   *       Requires `contaDestinoId` for the destination account.
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/TransacaoInput'
+   *           example:
+   *             data:
+   *               dia: 24
+   *               mes: 4
+   *               ano: 2026
+   *             descricao: "Ginásio"
+   *             valor:
+   *               valor: 10.00
+   *               moeda: EUR
+   *             categoriaId: "CAT00000000002"
+   *             contaId: "CNT00000000001"
+   *             contaDestinoId: "CNT00000000002"
+   *             imediata: true
+   *     responses:
+   *       201:
+   *         description: Recurring weekly expense created
+   */
+  route.post('/despesa-recorrente/despesa-semanal', isAuth, (req, res, next) => ctrl.createDespesaSemanal(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
+   * /transacao/despesa-recorrente/despesa-anual:
+   *   post:
+   *     tags:
+   *       - Transacao
+   *     summary: Create a Despesa Anual recurring transaction
+   *     description: |
+   *       Creates a recurring annual expense transaction with status "Pendente" or "Concluído" (if imediata=true).
+   *       Requires `contaDestinoId` for the destination account.
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/TransacaoInput'
+   *           example:
+   *             data:
+   *               dia: 1
+   *               mes: 6
+   *               ano: 2026
+   *             descricao: "Seguro Automóvel"
+   *             valor:
+   *               valor: 350.00
+   *               moeda: EUR
+   *             categoriaId: "CAT00000000003"
+   *             contaId: "CNT00000000001"
+   *             contaDestinoId: "CNT00000000002"
+   *             imediata: true
+   *     responses:
+   *       201:
+   *         description: Recurring annual expense created
+   */
+  route.post('/despesa-recorrente/despesa-anual', isAuth, (req, res, next) => ctrl.createDespesaAnual(req as AuthenticatedRequest, res, next));
+
+  /**
+   * @openapi
+   * /transacao/despesa-recorrente/concluir/{id}:
+   *   post:
+   *     tags:
+   *       - Transacao
+   *     summary: Conclude a recurring expense transaction
+   *     description: |
+   *       Concludes a recurring expense by changing status from "Pendente" to "Concluído"
+   *       and subtracting the amount from the destination account.
+   *       Applies to Despesa Mensal, Despesa Semanal, Despesa Anual, and Poupança.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Domain ID of the recurring expense transaction
+   *     responses:
+   *       200:
+   *         description: Recurring expense concluded successfully
    *       400:
    *         description: Invalid transaction or already concluded
    *       404:
    *         description: Transaction not found
    */
-  route.post('/despesa-mensal/concluir/:id', isAuth, (req, res, next) => ctrl.concluirDespesaMensal(req as AuthenticatedRequest, res, next));
+  route.post('/despesa-recorrente/concluir/:id', isAuth, (req, res, next) => ctrl.concluirDespesaRecorrente(req as AuthenticatedRequest, res, next));
 
   // --- GET Routes: Get All by Type ---
 
@@ -637,8 +679,10 @@ export default (app: Router) => {
    *   get:
    *     tags:
    *       - Transacao
-   *     summary: Get all recurring expense transactions (Despesa Mensal + Poupança) for a specific bank
-   *     description: Returns all recurring expense transactions for accounts belonging to the given bank. Requires authentication.
+   *     summary: Get all recurring expense transactions for a specific bank
+   *     description: |
+   *       Returns all recurring expense transactions (Despesa Mensal, Despesa Semanal, Despesa Anual, Poupança)
+   *       for accounts belonging to the given bank. Requires authentication.
    *     security:
    *       - bearerAuth: []
    *     parameters:
@@ -727,7 +771,9 @@ export default (app: Router) => {
    *     tags:
    *       - Transacao
    *     summary: Get recurring expense transactions by category for a specific bank
-   *     description: Returns recurring expense transactions filtered by category for accounts belonging to the given bank. Requires authentication.
+   *     description: |
+   *       Returns recurring expense transactions (Despesa Mensal, Despesa Semanal, Despesa Anual, Poupança)
+   *       filtered by category for accounts belonging to the given bank. Requires authentication.
    *     security:
    *       - bearerAuth: []
    *     parameters:
@@ -793,7 +839,9 @@ export default (app: Router) => {
    *     tags:
    *       - Transacao
    *     summary: Get recurring expense transactions by status for a specific bank
-   *     description: Returns recurring expense transactions filtered by status for accounts belonging to the given bank. Requires authentication.
+   *     description: |
+   *       Returns recurring expense transactions (Despesa Mensal, Despesa Semanal, Despesa Anual, Poupança)
+   *       filtered by status for accounts belonging to the given bank. Requires authentication.
    *     security:
    *       - bearerAuth: []
    *     parameters:
@@ -892,8 +940,9 @@ export default (app: Router) => {
    *     tags:
    *       - Transacao
    *     summary: Get recurring expense transactions by predefined period for a specific bank
-   *     description: |-
-   *       Returns recurring expense transactions within a predefined period for accounts belonging to the given bank. Requires authentication.
+   *     description: |
+   *       Returns recurring expense transactions (Despesa Mensal, Despesa Semanal, Despesa Anual, Poupança)
+   *       within a predefined period for accounts belonging to the given bank. Requires authentication.
    *       Valid periods: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
    *     security:
    *       - bearerAuth: []

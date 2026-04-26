@@ -4,6 +4,7 @@ import type {Nome} from '../../Shared/ValueObjects/Nome.js';
 import type {Dinheiro} from '../../Shared/ValueObjects/Dinheiro.js';
 import {Result} from '../../../core/logic/Result.js';
 import {Guard} from '../../../core/logic/Guard.js';
+import {Tipo} from "../../Shared/ValueObjects/Tipo.js";
 
 /**
  * Properties for Recurring Expense
@@ -16,11 +17,15 @@ interface DespesaRecorrenteProps {
     diaDoMes?: number;      // 1-31 — Required together with valor
     categoriaId: UniqueEntityID;
     contaOrigemId: UniqueEntityID;      // Account from which money leaves (real balance)
-    contaDestinoId: UniqueEntityID;     // Account where money goes (monthly expenses account)
+    contaDestinoId?: UniqueEntityID;    // Optional when imediata=true
     contaPoupancaId?: UniqueEntityID;   // Only for "Poupança" recurrence type
-    tipo?: 'Despesa Mensal' | 'Poupança'; // default: 'Despesa Mensal'
+    tipo?: Tipo; // default: 'Despesa Mensal'
     ultimoProcessamento: Date | null;
     ativo: boolean;
+    // some new fields...
+    imediata: boolean;
+    diaDaSemana?: number;    // 1-7
+    mes?: number;           // 1-12
 }
 
 /**
@@ -57,7 +62,7 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
         return this.props.contaOrigemId;
     }
 
-    get contaDestinoId(): UniqueEntityID {
+    get contaDestinoId(): UniqueEntityID | undefined {
         return this.props.contaDestinoId;
     }
 
@@ -65,8 +70,8 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
         return this.props.contaPoupancaId;
     }
 
-    get tipo(): 'Despesa Mensal' | 'Poupança' {
-        return this.props.tipo ?? 'Despesa Mensal';
+    get tipo(): Tipo {
+        return this.props.tipo ?? Tipo.create("Despesa Mensal").getValue();
     }
 
     get ultimoProcessamento(): Date | null {
@@ -75,6 +80,18 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
 
     get ativo(): boolean {
         return this.props.ativo;
+    }
+
+    get imediata(): boolean {
+        return this.props.imediata;
+    }
+
+    get diaDaSemana(): number | undefined {
+        return this.props.diaDaSemana;
+    }
+
+    get mes(): number | undefined {
+        return this.props.mes;
     }
 
     private constructor(props: DespesaRecorrenteProps, id?: UniqueEntityID) {
@@ -111,8 +128,7 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
             {argument: props.nome, argumentName: 'nome'},
             {argument: props.icon, argumentName: 'icon'},
             {argument: props.categoriaId, argumentName: 'categoriaId'},
-            {argument: props.contaOrigemId, argumentName: 'contaOrigemId'},
-            {argument: props.contaDestinoId, argumentName: 'contaDestinoId'}
+            {argument: props.contaOrigemId, argumentName: 'contaOrigemId'}
         ];
 
         const guardResult = Guard.againstNullOrUndefinedBulk(guardedProps);
@@ -120,11 +136,38 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
             return Result.fail<DespesaRecorrente>(guardResult.message || 'Invalid DespesaRecorrente props');
         }
 
-        // valor e diaDoMes devem existir os 2 ou nenhum
+        if (props.imediata === false || props.imediata === undefined) {
+            if (!props.contaDestinoId) {
+                return Result.fail<DespesaRecorrente>('contaDestinoId is required when imediata is false');
+            }
+        }
+
+        const tipoValue = props.tipo?.value ?? "Despesa Mensal";
+
+        // Variáveis para as verificações
         const hasValor = props.valor !== undefined && props.valor !== null;
+        const hasDiaDaSemana = props.diaDaSemana !== undefined && props.diaDaSemana !== null;
         const hasDiaDoMes = props.diaDoMes !== undefined && props.diaDoMes !== null;
-        if (hasValor !== hasDiaDoMes) {
-            return Result.fail<DespesaRecorrente>('valor e diaDoMes devem ser fornecidos em conjunto ou nenhum dos dois');
+        const hasMes = props.mes !== undefined && props.mes !== null;
+
+        // Despesa Semanal
+        if (tipoValue === "Despesa Semanal" && hasValor !== hasDiaDaSemana) {
+            return Result.fail<DespesaRecorrente>('valor e diaDaSemana must be provided together or not at all');
+        }
+
+        // Despesa Mensal ou Poupança
+        if ((tipoValue === 'Despesa Mensal' || tipoValue === 'Poupança') && hasValor !== hasDiaDoMes) {
+            return Result.fail<DespesaRecorrente>('valor e diaDoMes must be provided together or not at all');
+        }
+
+        // Despesa Anual
+        if (tipoValue === 'Despesa Anual' && (hasValor || hasMes || hasDiaDoMes) && !(hasValor && hasMes && hasDiaDoMes)) {
+            return Result.fail<DespesaRecorrente>('valor, diaDoMes e mes must be provided together or not at all');
+        }
+
+        // Validate diaDaSemana when provided
+        if (hasDiaDaSemana && (props.diaDaSemana! < 1 || props.diaDaSemana! > 7)) {
+            return Result.fail<DespesaRecorrente>('diaDaSemana must be between 1 and 7');
         }
 
         // Validate diaDoMes when provided
@@ -132,21 +175,25 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
             return Result.fail<DespesaRecorrente>('diaDoMes must be between 1 and 31');
         }
 
+        // Validate mes when provided
+        if (hasMes && (props.mes! < 1 || props.mes! > 12)) {
+            return Result.fail<DespesaRecorrente>('mes must be between 1 and 12');
+        }
+
         // Poupança requires contaPoupancaId
-        if (props.tipo === 'Poupança' && !props.contaPoupancaId) {
+        if (tipoValue === 'Poupança' && !props.contaPoupancaId) {
             return Result.fail<DespesaRecorrente>('contaPoupancaId is required for Poupança recurrence');
         }
 
         // Default values
         const defaultProps: DespesaRecorrenteProps = {
             ...props,
-            tipo: props.tipo ?? 'Despesa Mensal',
+            tipo: props.tipo ?? Tipo.create("Despesa Mensal").getValue(),
             ultimoProcessamento: props.ultimoProcessamento ?? null,
-            ativo: props.ativo ?? true
+            ativo: props.ativo ?? true,
+            imediata: props.imediata ?? false,
         };
 
         return Result.ok<DespesaRecorrente>(new DespesaRecorrente(defaultProps, id));
     }
 }
-
-

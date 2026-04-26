@@ -15,7 +15,7 @@ import { Transacao } from '../domain/Transacao/Entities/Transacao.js';
 import { Descricao } from '../domain/Transacao/ValueObjects/Descricao.js';
 import { Data } from '../domain/Shared/ValueObjects/Data.js';
 import { Dinheiro } from '../domain/Shared/ValueObjects/Dinheiro.js';
-import { Tipo } from '../domain/Transacao/ValueObjects/Tipo.js';
+import { Tipo } from '../domain/Shared/ValueObjects/Tipo.js';
 import { TransacaoMap } from '../mappers/TransacaoMap.js';
 import {Status} from "../domain/Transacao/ValueObjects/Status.js";
 
@@ -287,10 +287,11 @@ export default class TransacaoService implements ITransacaoService {
      * checks for the existence of related Categoria and Conta entities, and ensures that the transaction can be registered with the account's balance.
      * Despesa Mensal only applies to Conta (bank accounts), not credit cards.
      * @param inputDTO - The data transfer object containing the necessary information to create a Despesa Mensal transaction
+     * @param imediata - If true the status is "Concluído" otherwise "Pendente"
      * @returns A Result object containing either the created Transacao DTO or an error message if the creation process
      * fails at any step, such as validation errors, missing related entities, or balance issues
      */
-    public async createDespesaMensal(inputDTO: ITransacaoInputDTO): Promise<Result<ITransacaoDTO>> {
+    public async createDespesaMensal(inputDTO: ITransacaoInputDTO, imediata?: boolean): Promise<Result<ITransacaoDTO>> {
         try {
             const descricaoResult = Descricao.create(inputDTO.descricao ?? '');
             const dataResult = Data.createFromParts(inputDTO.data.dia, inputDTO.data.mes, inputDTO.data.ano);
@@ -302,16 +303,18 @@ export default class TransacaoService implements ITransacaoService {
             const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
             if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
 
-            // Despesa Mensal requires both contaId (origin) and contaDestinoId (destination)
             if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Origin Account (contaId) is required for Despesa Mensal');
-            if (!inputDTO.contaDestinoId) return Result.fail<ITransacaoDTO>('Destination Account (contaDestinoId) is required for Despesa Mensal');
+            if (!imediata && !inputDTO.contaDestinoId) return Result.fail<ITransacaoDTO>('Destination Account (contaDestinoId) is required for Despesa Mensal');
             if (inputDTO.cartaoCreditoId) return Result.fail<ITransacaoDTO>('Despesa Mensal cannot be applied to credit cards');
 
             const conta = await this.contaRepo.findById(inputDTO.contaId);
             if (!conta) return Result.fail<ITransacaoDTO>('Origin Account not found');
 
-            const contaDestino = await this.contaRepo.findById(inputDTO.contaDestinoId);
-            if (!contaDestino) return Result.fail<ITransacaoDTO>('Destination Account not found');
+            let contaDestino = null;
+            if (!imediata) {
+                contaDestino = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+                if (!contaDestino) return Result.fail<ITransacaoDTO>('Destination Account not found');
+            }
 
             const transacaoOrError = Transacao.createDespesaMensal({
                 descricao: descricaoResult.getValue(),
@@ -319,34 +322,33 @@ export default class TransacaoService implements ITransacaoService {
                 valor: dinheiroResult.getValue(),
                 categoria: categoria,
                 conta: conta,
-                contaDestino: contaDestino
-            });
+                ...(contaDestino ? { contaDestino } : {})
+            }, imediata ?? false);
 
             if (transacaoOrError.isFailure) return Result.fail<ITransacaoDTO>(String(transacaoOrError.error));
             const transacao = transacaoOrError.getValue();
 
-            // attach owner user id
             (transacao as unknown as Record<string, unknown>)['userDomainId'] = inputDTO.userId ?? conta.userId.toString();
 
-            // Save transaction first
             const savedTransacao = await this.transacaoRepo.save(transacao);
 
-            // Load fresh account instances from repo to avoid shared object references
             const contaOrigemFresh = await this.contaRepo.findById(inputDTO.contaId);
-            const contaDestinoFresh = await this.contaRepo.findById(inputDTO.contaDestinoId!);
             if (!contaOrigemFresh) return Result.fail<ITransacaoDTO>('Origin Account not found after save');
-            if (!contaDestinoFresh) return Result.fail<ITransacaoDTO>('Destination Account not found after save');
 
-            // Subtract from origin account
             const subtractResult = contaOrigemFresh.subtrairSaldo(transacao.valor);
             if (subtractResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractResult.error));
 
-            // Add to destination account
-            const addResult = contaDestinoFresh.adicionarSaldo(transacao.valor);
-            if (addResult.isFailure) return Result.fail<ITransacaoDTO>(String(addResult.error));
+            if (!imediata && contaDestino) {
+                const contaDestinoFresh = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+                if (!contaDestinoFresh) return Result.fail<ITransacaoDTO>('Destination Account not found after save');
+
+                const addResult = contaDestinoFresh.adicionarSaldo(transacao.valor);
+                if (addResult.isFailure) return Result.fail<ITransacaoDTO>(String(addResult.error));
+
+                await this.contaRepo.update(contaDestinoFresh);
+            }
 
             await this.contaRepo.update(contaOrigemFresh);
-            await this.contaRepo.update(contaDestinoFresh);
 
             return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
         } catch (e) {
@@ -356,78 +358,261 @@ export default class TransacaoService implements ITransacaoService {
     }
 
     /**
-     * Concludes a monthly expense that is in "Pendente" status. Changes status to "Concluído" and subtracts
+     * Creates a new "Despesa Semanal" type Transacao based on the provided input DTO.
+     * Despesa Semanal only applies to Conta (bank accounts), not credit cards.
+     * @param inputDTO - The data transfer object containing the necessary information to create a Despesa Semanal transaction
+     * @param imediata - If true the status is "Concluído" otherwise "Pendente"
+     */
+    public async createDespesaSemanal(inputDTO: ITransacaoInputDTO, imediata?: boolean): Promise<Result<ITransacaoDTO>> {
+        try {
+            const descricaoResult = Descricao.create(inputDTO.descricao ?? '');
+            const dataResult = Data.createFromParts(inputDTO.data.dia, inputDTO.data.mes, inputDTO.data.ano);
+            const dinheiroResult = Dinheiro.create(Number(inputDTO.valor.valor), String(inputDTO.valor.moeda ?? 'EUR'));
+
+            const combine = Result.combine([descricaoResult, dataResult, dinheiroResult]);
+            if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
+
+            const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
+            if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
+
+            if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Origin Account (contaId) is required for Despesa Semanal');
+            if (!imediata && !inputDTO.contaDestinoId) return Result.fail<ITransacaoDTO>('Destination Account (contaDestinoId) is required for Despesa Semanal');
+            if (inputDTO.cartaoCreditoId) return Result.fail<ITransacaoDTO>('Despesa Semanal cannot be applied to credit cards');
+
+            const conta = await this.contaRepo.findById(inputDTO.contaId);
+            if (!conta) return Result.fail<ITransacaoDTO>('Origin Account not found');
+
+            let contaDestino = null;
+            if (!imediata) {
+                contaDestino = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+                if (!contaDestino) return Result.fail<ITransacaoDTO>('Destination Account not found');
+            }
+
+            const transacaoOrError = Transacao.createDespesaSemanal({
+                descricao: descricaoResult.getValue(),
+                data: dataResult.getValue(),
+                valor: dinheiroResult.getValue(),
+                categoria: categoria,
+                conta: conta,
+                ...(contaDestino ? { contaDestino } : {})
+            }, imediata ?? false);
+
+            if (transacaoOrError.isFailure) return Result.fail<ITransacaoDTO>(String(transacaoOrError.error));
+            const transacao = transacaoOrError.getValue();
+
+            (transacao as unknown as Record<string, unknown>)['userDomainId'] = inputDTO.userId ?? conta.userId.toString();
+
+            const savedTransacao = await this.transacaoRepo.save(transacao);
+
+            const contaOrigemFresh = await this.contaRepo.findById(inputDTO.contaId);
+            if (!contaOrigemFresh) return Result.fail<ITransacaoDTO>('Origin Account not found after save');
+
+            const subtractResult = contaOrigemFresh.subtrairSaldo(transacao.valor);
+            if (subtractResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractResult.error));
+
+            if (!imediata && contaDestino) {
+                const contaDestinoFresh = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+                if (!contaDestinoFresh) return Result.fail<ITransacaoDTO>('Destination Account not found after save');
+
+                const addResult = contaDestinoFresh.adicionarSaldo(transacao.valor);
+                if (addResult.isFailure) return Result.fail<ITransacaoDTO>(String(addResult.error));
+
+                await this.contaRepo.update(contaDestinoFresh);
+            }
+
+            await this.contaRepo.update(contaOrigemFresh);
+
+            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+        } catch (e) {
+            this.logger.error('TransacaoService.createDespesaSemanal error: %o', e);
+            return Result.fail<ITransacaoDTO>('Error creating despesa semanal');
+        }
+    }
+
+    /**
+     * Creates a new "Despesa Anual" type Transacao based on the provided input DTO.
+     * Despesa Anual only applies to Conta (bank accounts), not credit cards.
+     * @param inputDTO - The data transfer object containing the necessary information to create a Despesa Anual transaction
+     * @param imediata - If true the status is "Concluído" otherwise "Pendente"
+     */
+    public async createDespesaAnual(inputDTO: ITransacaoInputDTO, imediata?: boolean): Promise<Result<ITransacaoDTO>> {
+        try {
+            const descricaoResult = Descricao.create(inputDTO.descricao ?? '');
+            const dataResult = Data.createFromParts(inputDTO.data.dia, inputDTO.data.mes, inputDTO.data.ano);
+            const dinheiroResult = Dinheiro.create(Number(inputDTO.valor.valor), String(inputDTO.valor.moeda ?? 'EUR'));
+
+            const combine = Result.combine([descricaoResult, dataResult, dinheiroResult]);
+            if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
+
+            const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
+            if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
+
+            if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Origin Account (contaId) is required for Despesa Anual');
+            if (!imediata && !inputDTO.contaDestinoId) return Result.fail<ITransacaoDTO>('Destination Account (contaDestinoId) is required for Despesa Anual');
+            if (inputDTO.cartaoCreditoId) return Result.fail<ITransacaoDTO>('Despesa Anual cannot be applied to credit cards');
+
+            const conta = await this.contaRepo.findById(inputDTO.contaId);
+            if (!conta) return Result.fail<ITransacaoDTO>('Origin Account not found');
+
+            let contaDestino = null;
+            if (!imediata) {
+                contaDestino = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+                if (!contaDestino) return Result.fail<ITransacaoDTO>('Destination Account not found');
+            }
+
+            const transacaoOrError = Transacao.createDespesaAnual({
+                descricao: descricaoResult.getValue(),
+                data: dataResult.getValue(),
+                valor: dinheiroResult.getValue(),
+                categoria: categoria,
+                conta: conta,
+                ...(contaDestino ? { contaDestino } : {})
+            }, imediata ?? false);
+
+            if (transacaoOrError.isFailure) return Result.fail<ITransacaoDTO>(String(transacaoOrError.error));
+            const transacao = transacaoOrError.getValue();
+
+            (transacao as unknown as Record<string, unknown>)['userDomainId'] = inputDTO.userId ?? conta.userId.toString();
+
+            const savedTransacao = await this.transacaoRepo.save(transacao);
+
+            const contaOrigemFresh = await this.contaRepo.findById(inputDTO.contaId);
+            if (!contaOrigemFresh) return Result.fail<ITransacaoDTO>('Origin Account not found after save');
+
+            const subtractResult = contaOrigemFresh.subtrairSaldo(transacao.valor);
+            if (subtractResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractResult.error));
+
+            if (!imediata && contaDestino) {
+                const contaDestinoFresh = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+                if (!contaDestinoFresh) return Result.fail<ITransacaoDTO>('Destination Account not found after save');
+
+                const addResult = contaDestinoFresh.adicionarSaldo(transacao.valor);
+                if (addResult.isFailure) return Result.fail<ITransacaoDTO>(String(addResult.error));
+
+                await this.contaRepo.update(contaDestinoFresh);
+            }
+
+            await this.contaRepo.update(contaOrigemFresh);
+
+            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+        } catch (e) {
+            this.logger.error('TransacaoService.createDespesaAnual error: %o', e);
+            return Result.fail<ITransacaoDTO>('Error creating despesa anual');
+        }
+    }
+
+    /**
+     * Concludes a recurring expense that is in "Pendente" status. Changes status to "Concluído" and subtracts
      * the amount from the destination account (contaDestino).
-     * @param transacaoId - The domain ID of the Despesa Mensal transaction to conclude
+     * @param transacaoId - The domain ID of the recurring expense transaction to conclude
      * @returns A Result object containing either the updated Transacao DTO or an error message
      */
-    public async concluirDespesaMensal(transacaoId: string): Promise<Result<ITransacaoDTO>> {
+    public async concluirDespesaRecorrente(transacaoId: string): Promise<Result<ITransacaoDTO>> {
         try {
             const transacao = await this.transacaoRepo.findById(transacaoId);
             if (!transacao) return Result.fail<ITransacaoDTO>('Transaction not found');
 
-            if (transacao.tipo.value !== 'Despesa Mensal') {
-                return Result.fail<ITransacaoDTO>('Transaction is not a Despesa Mensal');
+            const tipo = transacao.tipo.value;
+            if (tipo !== 'Despesa Mensal' && tipo !== 'Despesa Semanal' && tipo !== 'Despesa Anual' && tipo !== 'Poupança') {
+                return Result.fail<ITransacaoDTO>('Transaction is not a recurring expense');
             }
 
             if (transacao.status.value !== 'Pendente') {
                 return Result.fail<ITransacaoDTO>('Transaction is not in Pendente status');
             }
 
-            if (!transacao.contaDestino) {
-                return Result.fail<ITransacaoDTO>('Destination account not found for this transaction');
+            if (tipo === 'Poupança') {
+                if (!transacao.contaPoupanca) {
+                    return Result.fail<ITransacaoDTO>('Savings account not found for this Poupança transaction');
+                }
+
+                const statusResult = Status.create('Concluído');
+                if (statusResult.isFailure) return Result.fail<ITransacaoDTO>(String(statusResult.error));
+
+                const updatedTransacaoOrError = Transacao.create({
+                    descricao: transacao.descricao,
+                    data: transacao.data,
+                    valor: transacao.valor,
+                    tipo: transacao.tipo,
+                    categoria: transacao.categoria,
+                    status: statusResult.getValue(),
+                    conta: transacao.conta,
+                    contaDestino: transacao.contaDestino,
+                    contaPoupanca: transacao.contaPoupanca,
+                    cartaoCredito: transacao.cartaoCredito
+                }, transacao.id);
+
+                if (updatedTransacaoOrError.isFailure) {
+                    return Result.fail<ITransacaoDTO>(String(updatedTransacaoOrError.error));
+                }
+
+                const updatedTransacao = updatedTransacaoOrError.getValue();
+
+                (updatedTransacao as unknown as Record<string, unknown>)['userDomainId'] =
+                    (transacao as unknown as Record<string, unknown>)['userDomainId'];
+
+                const contaPoupancaFresh = await this.contaRepo.findById(transacao.contaPoupanca!.id.toString());
+                if (!contaPoupancaFresh) return Result.fail<ITransacaoDTO>('Savings Account not found');
+
+                const addResult = contaPoupancaFresh.adicionarSaldo(transacao.valor);
+                if (addResult.isFailure) return Result.fail<ITransacaoDTO>(String(addResult.error));
+
+                await this.contaRepo.update(contaPoupancaFresh);
+
+                const savedTransacao = await this.transacaoRepo.update(updatedTransacao);
+
+                return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+            } else {
+                if (!transacao.contaDestino) {
+                    return Result.fail<ITransacaoDTO>('Destination account not found for this transaction');
+                }
+
+                const statusResult = Status.create('Concluído');
+                if (statusResult.isFailure) return Result.fail<ITransacaoDTO>(String(statusResult.error));
+
+                const updatedTransacaoOrError = Transacao.create({
+                    descricao: transacao.descricao,
+                    data: transacao.data,
+                    valor: transacao.valor,
+                    tipo: transacao.tipo,
+                    categoria: transacao.categoria,
+                    status: statusResult.getValue(),
+                    conta: transacao.conta,
+                    contaDestino: transacao.contaDestino,
+                    cartaoCredito: transacao.cartaoCredito
+                }, transacao.id);
+
+                if (updatedTransacaoOrError.isFailure) {
+                    return Result.fail<ITransacaoDTO>(String(updatedTransacaoOrError.error));
+                }
+
+                const updatedTransacao = updatedTransacaoOrError.getValue();
+
+                (updatedTransacao as unknown as Record<string, unknown>)['userDomainId'] =
+                    (transacao as unknown as Record<string, unknown>)['userDomainId'];
+
+                const contaDestinoFresh = await this.contaRepo.findById(transacao.contaDestino!.id.toString());
+                if (!contaDestinoFresh) return Result.fail<ITransacaoDTO>('Destination Account not found');
+
+                const subtractResult = contaDestinoFresh.subtrairSaldo(transacao.valor);
+                if (subtractResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractResult.error));
+
+                await this.contaRepo.update(contaDestinoFresh);
+
+                const savedTransacao = await this.transacaoRepo.update(updatedTransacao);
+
+                return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
             }
-
-            // Change status to Concluído by recreating the transaction
-            const statusResult = Status.create('Concluído');
-            if (statusResult.isFailure) return Result.fail<ITransacaoDTO>(String(statusResult.error));
-
-            // Recreate transacao with new status
-            const updatedTransacaoOrError = Transacao.create({
-                descricao: transacao.descricao,
-                data: transacao.data,
-                valor: transacao.valor,
-                tipo: transacao.tipo,
-                categoria: transacao.categoria,
-                status: statusResult.getValue(),
-                conta: transacao.conta,
-                contaDestino: transacao.contaDestino,
-                cartaoCredito: transacao.cartaoCredito
-            }, transacao.id);
-
-            if (updatedTransacaoOrError.isFailure) {
-                return Result.fail<ITransacaoDTO>(String(updatedTransacaoOrError.error));
-            }
-
-            const updatedTransacao = updatedTransacaoOrError.getValue();
-
-            // Attach user domain id
-            (updatedTransacao as unknown as Record<string, unknown>)['userDomainId'] =
-                (transacao as unknown as Record<string, unknown>)['userDomainId'];
-
-            // When created, money was subtracted from origin and added to contaDestino.
-            // When concluding, we subtract from contaDestino (the expense is now actually paid out).
-            const contaDestinoFresh = await this.contaRepo.findById(transacao.contaDestino!.id.toString());
-            if (!contaDestinoFresh) return Result.fail<ITransacaoDTO>('Destination Account not found');
-
-            const subtractResult = contaDestinoFresh.subtrairSaldo(transacao.valor);
-            if (subtractResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractResult.error));
-
-            await this.contaRepo.update(contaDestinoFresh);
-
-            const savedTransacao = await this.transacaoRepo.update(updatedTransacao);
-
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
         } catch (e) {
-            this.logger.error('TransacaoService.concluirDespesaMensal error: %o', e);
-            return Result.fail<ITransacaoDTO>('Error concluding despesa mensal');
+            this.logger.error('TransacaoService.concluirDespesaRecorrente error: %o', e);
+            return Result.fail<ITransacaoDTO>('Error concluding recurring expense');
         }
     }
 
     /**
      * Creates a Poupança transaction — transfers money from origin account to a savings account.
      */
-    public async createPoupanca(inputDTO: ITransacaoInputDTO): Promise<Result<ITransacaoDTO>> {
+    public async createPoupanca(inputDTO: ITransacaoInputDTO, imediata?: boolean): Promise<Result<ITransacaoDTO>> {
         try {
             const descricaoResult = Descricao.create(inputDTO.descricao ?? '');
             const dataResult = Data.createFromParts(inputDTO.data.dia, inputDTO.data.mes, inputDTO.data.ano);
@@ -440,15 +625,18 @@ export default class TransacaoService implements ITransacaoService {
             if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
 
             if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Origin Account (contaId) is required for Poupança');
-            if (!inputDTO.contaDestinoId) return Result.fail<ITransacaoDTO>('Destination Account (contaDestinoId) is required for Poupança');
+            if (!imediata && !inputDTO.contaDestinoId) return Result.fail<ITransacaoDTO>('Destination Account (contaDestinoId) is required for Poupança');
             if (!inputDTO.contaPoupancaId) return Result.fail<ITransacaoDTO>('Savings Account (contaPoupancaId) is required for Poupança');
             if (inputDTO.cartaoCreditoId) return Result.fail<ITransacaoDTO>('Poupança cannot be applied to credit cards');
 
             const conta = await this.contaRepo.findById(inputDTO.contaId);
             if (!conta) return Result.fail<ITransacaoDTO>('Origin Account not found');
 
-            const contaDestino = await this.contaRepo.findById(inputDTO.contaDestinoId);
-            if (!contaDestino) return Result.fail<ITransacaoDTO>('Destination Account (Despesas Mensais) not found');
+            let contaDestino = null;
+            if (!imediata) {
+                contaDestino = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+                if (!contaDestino) return Result.fail<ITransacaoDTO>('Destination Account (Despesas Mensais) not found');
+            }
 
             const contaPoupanca = await this.contaRepo.findById(inputDTO.contaPoupancaId);
             if (!contaPoupanca) return Result.fail<ITransacaoDTO>('Savings Account not found');
@@ -459,24 +647,26 @@ export default class TransacaoService implements ITransacaoService {
                 valor: dinheiroResult.getValue(),
                 categoria,
                 conta,
-                contaDestino,
+                ...(contaDestino ? { contaDestino } : {}),
                 contaPoupanca
-            });
+            }, imediata ?? false);
 
             if (transacaoOrError.isFailure) return Result.fail<ITransacaoDTO>(String(transacaoOrError.error));
             const transacao = transacaoOrError.getValue();
 
             (transacao as unknown as Record<string, unknown>)['userDomainId'] = inputDTO.userId ?? conta.userId.toString();
 
-            // Pendente: subtrair da conta origem, adicionar à contaDestino (Despesas Mensais)
             const subtractResult = conta.subtrairSaldo(transacao.valor);
             if (subtractResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractResult.error));
-            const addDestinoResult = contaDestino.adicionarSaldo(transacao.valor);
-            if (addDestinoResult.isFailure) return Result.fail<ITransacaoDTO>(String(addDestinoResult.error));
 
             const savedTransacao = await this.transacaoRepo.save(transacao);
             await this.contaRepo.update(conta);
-            await this.contaRepo.update(contaDestino);
+
+            if (!imediata && contaDestino) {
+                const addDestinoResult = contaDestino.adicionarSaldo(transacao.valor);
+                if (addDestinoResult.isFailure) return Result.fail<ITransacaoDTO>(String(addDestinoResult.error));
+                await this.contaRepo.update(contaDestino);
+            }
 
             return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
         } catch (e) {
@@ -528,14 +718,12 @@ export default class TransacaoService implements ITransacaoService {
             (updated as unknown as Record<string, unknown>)['userDomainId'] =
                 (transacao as unknown as Record<string, unknown>)['userDomainId'];
 
-            // Subtrair da contaDestino (Despesas Mensais) ao concluir
             if (transacao.contaDestino) {
                 const subtractDestinoResult = transacao.contaDestino.subtrairSaldo(transacao.valor);
                 if (subtractDestinoResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractDestinoResult.error));
                 await this.contaRepo.update(transacao.contaDestino);
             }
 
-            // Adicionar à conta poupança real
             const addResult = transacao.contaPoupanca.adicionarSaldo(transacao.valor);
             if (addResult.isFailure) return Result.fail<ITransacaoDTO>(String(addResult.error));
             await this.contaRepo.update(transacao.contaPoupanca);
@@ -546,7 +734,8 @@ export default class TransacaoService implements ITransacaoService {
             this.logger.error('TransacaoService.concluirPoupanca error: %o', e);
             return Result.fail<ITransacaoDTO>('Error concluding poupança');
         }
-    }    // --- Update & Delete ---
+    }
+    // --- Update & Delete ---
 
     /**
      * Reverts the impact of an Entrada or Saída transaction
@@ -614,22 +803,28 @@ export default class TransacaoService implements ITransacaoService {
     }
 
     /**
-     * Reverts the impact of a Despesa Mensal transaction (affects two accounts)
+     * Reverts the impact of a Despesa Recorrente transaction.
+     * Immediate transactions only touch the origin account; non-immediate ones also touch the destination account.
      */
-    private async revertDespesaMensalImpact(transacao: Transacao): Promise<Result<void>> {
-        if (!transacao.conta) return Result.fail<void>('Conta origem not found for Despesa Mensal');
-        if (!transacao.contaDestino) return Result.fail<void>('Conta destino not found for Despesa Mensal');
+    private async revertDespesaRecorrenteImpact(transacao: Transacao): Promise<Result<void>> {
+        if (!transacao.conta) return Result.fail<void>('Conta origem not found for Despesa Recorrente');
 
         const contaOrigem = await this.contaRepo.findById(transacao.conta.id.toString());
-        const contaDestino = await this.contaRepo.findById(transacao.contaDestino.id.toString());
         if (!contaOrigem) return Result.fail<void>('Origin account not found');
-        if (!contaDestino) return Result.fail<void>('Destination account not found');
 
-        // Impact is always: subtract origem + add destino (applied at creation, regardless of status)
-        // Revert is always the opposite: add back to origem + subtract from destino
+        // Immediate recurring expense: only revert the origin account
         const revertOrigemResult = contaOrigem.adicionarSaldo(transacao.valor);
         if (revertOrigemResult.isFailure) return Result.fail<void>(String(revertOrigemResult.error));
 
+        if (!transacao.contaDestino) {
+            await this.contaRepo.update(contaOrigem);
+            return Result.ok<void>();
+        }
+
+        const contaDestino = await this.contaRepo.findById(transacao.contaDestino.id.toString());
+        if (!contaDestino) return Result.fail<void>('Destination account not found');
+
+        // Non-immediate recurring expense: revert both origin and destination accounts
         const revertDestinoResult = contaDestino.subtrairSaldo(transacao.valor);
         if (revertDestinoResult.isFailure) return Result.fail<void>(String(revertDestinoResult.error));
 
@@ -704,20 +899,25 @@ export default class TransacaoService implements ITransacaoService {
     }
 
     /**
-     * Applies the impact of a Despesa Mensal transaction (affects two accounts).
-     * Always: subtract from origem, add to destino.
+     * Applies the impact of a Despesa Recorrente transaction.
+     * Immediate transactions only touch the origin account; non-immediate ones also touch the destination account.
      */
-    private async applyDespesaMensalImpact(transacao: Transacao): Promise<Result<void>> {
+    private async applyDespesaRecorrenteImpact(transacao: Transacao): Promise<Result<void>> {
         if (!transacao.conta) return Result.fail<void>('Conta origem not found');
-        if (!transacao.contaDestino) return Result.fail<void>('Conta destino not found');
 
         const contaOrigem = await this.contaRepo.findById(transacao.conta.id.toString());
-        const contaDestino = await this.contaRepo.findById(transacao.contaDestino.id.toString());
         if (!contaOrigem) return Result.fail<void>('Origin account not found');
-        if (!contaDestino) return Result.fail<void>('Destination account not found');
 
         const applyOrigemResult = contaOrigem.subtrairSaldo(transacao.valor);
         if (applyOrigemResult.isFailure) return Result.fail<void>(String(applyOrigemResult.error));
+
+        if (!transacao.contaDestino) {
+            await this.contaRepo.update(contaOrigem);
+            return Result.ok<void>();
+        }
+
+        const contaDestino = await this.contaRepo.findById(transacao.contaDestino.id.toString());
+        if (!contaDestino) return Result.fail<void>('Destination account not found');
 
         const applyDestinoResult = contaDestino.adicionarSaldo(transacao.valor);
         if (applyDestinoResult.isFailure) return Result.fail<void>(String(applyDestinoResult.error));
@@ -827,7 +1027,9 @@ export default class TransacaoService implements ITransacaoService {
                     revertResult = await this.revertReembolsoImpact(existing);
                     break;
                 case 'Despesa Mensal':
-                    revertResult = await this.revertDespesaMensalImpact(existing);
+                case 'Despesa Semanal':
+                case 'Despesa Anual':
+                    revertResult = await this.revertDespesaRecorrenteImpact(existing);
                     break;
                 case 'Poupança':
                     revertResult = await this.revertPoupancaImpact(existing);
@@ -887,7 +1089,9 @@ export default class TransacaoService implements ITransacaoService {
                     applyResult = await this.applyReembolsoImpact(updatedTransacao);
                     break;
                 case 'Despesa Mensal':
-                    applyResult = await this.applyDespesaMensalImpact(updatedTransacao);
+                case 'Despesa Semanal':
+                case 'Despesa Anual':
+                    applyResult = await this.applyDespesaRecorrenteImpact(updatedTransacao);
                     break;
                 case 'Poupança':
                     applyResult = await this.applyPoupancaImpact(updatedTransacao);
@@ -934,7 +1138,9 @@ export default class TransacaoService implements ITransacaoService {
                     revertResult = await this.revertReembolsoImpact(transacao);
                     break;
                 case 'Despesa Mensal':
-                    revertResult = await this.revertDespesaMensalImpact(transacao);
+                case 'Despesa Semanal':
+                case 'Despesa Anual':
+                    revertResult = await this.revertDespesaRecorrenteImpact(transacao);
                     break;
                 case 'Poupança':
                     revertResult = await this.revertPoupancaImpact(transacao);
@@ -1055,7 +1261,7 @@ export default class TransacaoService implements ITransacaoService {
 
     /**
      * Finds Entrada/Saída transactions by predefined period across all accounts.
-     * @param period - The period to filter by: 'Este Mês', 'Últimos 3 Meses', or 'Último Ano'
+     * @param period - The period to filter by: 'Este Mês', 'Últimos 3 Meses' or 'Último Ano'
      * @param userId - Optional user identifier to filter transactions by user ownership
      * @param bancoId - Optional banco domain id to filter by bank
      */

@@ -37,6 +37,7 @@ export interface ITransacaoInputDTO {
     cartaoCreditoId?: string;
     contaDestinoId?: string; // Only for Despesa Mensal
     contaPoupancaId?: string; // Only for Poupança - the savings account
+    imediata?: boolean;
     userId?: string;
 }
 

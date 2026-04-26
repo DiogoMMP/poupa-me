@@ -1,0 +1,214 @@
+{
+  "main": {
+    "id": "4af96e1ac9fa42e6",
+    "type": "split",
+    "children": [
+      {
+        "id": "b55e135d1115c6ec",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c9d15a6370938d70",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "Nova aba"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "2c28457b62f7f90c",
+    "type": "split",
+    "children": [
+      {
+        "id": "49ba5526ed3a37d2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "500d0badd5dce3f6",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de ficheiros"
+            }
+          },
+          {
+            "id": "22188543122a8938",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Procurar"
+            }
+          },
+          {
+            "id": "3551b928a162970b",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "9b0d9f112fa3c4f0",
+    "type": "split",
+    "children": [
+      {
+        "id": "cefa6ed3cccaf5ce",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "68cabb643ee1a582",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "00_Fontes/poupa-me-projeto.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks para poupa-me-projeto"
+            }
+          },
+          {
+            "id": "0390844922810e3f",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "00_Fontes/poupa-me-projeto.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Links externos de poupa-me-projeto"
+            }
+          },
+          {
+            "id": "d1ebc34bda91b115",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "726c2d29690e252e",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas as propriedades"
+            }
+          },
+          {
+            "id": "9e77a35a382885c1",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "00_Fontes/poupa-me-projeto.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Índice de poupa-me-projeto"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir Quick Switcher": false,
+      "graph:Abrir Visualização de diagrama de grafo": false,
+      "canvas:Criar novo Canvas": false,
+      "daily-notes:Abrir nota de hoje": false,
+      "templates:Inserir templates": false,
+      "command-palette:Abrir paleta de comando": false,
+      "bases:Criar nova base": false
+    }
+  },
+  "active": "500d0badd5dce3f6",
+  "lastOpenFiles": [
+    "00_Fontes/Algumas instruções.md",
+    "00_Fontes/issues.md",
+    "01_Wiki/Issues.md",
+    "Desenvolvimento.md",
+    "01_Wiki/DespesaRecorrente.md",
+    "02_Sistema/index.md",
+    "02_Sistema/index.md",
+    "02_Sistema/log.md",
+    "01_Wiki/Instruções.md",
+    "01_Wiki/User.md",
+    "01_Wiki/Categoria.md",
+    "01_Wiki/Transacao.md",
+    "01_Wiki/CartaoCredito.md",
+    "01_Wiki/Conta.md",
+    "01_Wiki/Banco.md",
+    "01_Wiki/RBAC.md",
+    "01_Wiki/DDD.md",
+    "01_Wiki/Stack Tecnológico.md",
+    "01_Wiki/Arquitetura.md",
+    "00_Fontes/Novas USs ainda não implementadas.md",
+    "00_Fontes/poupa-me-projeto.md",
+    "DespesaRecorrente.md",
+    "02_Sistema/REGRAS.md",
+    "02_Sistema/Sem título",
+    "02_Sistema",
+    "01_Wiki",
+    "00_Fontes",
+    "Bem-vindo.md",
+    "desktop.ini"
+  ]
+}

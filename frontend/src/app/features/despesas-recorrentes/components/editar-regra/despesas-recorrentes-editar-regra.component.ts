@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { createPicker } from 'picmo';
+import { Subscription } from 'rxjs';
 import { DespesasRecorrentesEditarRegraViewModel } from './despesas-recorrentes-editar-regra.view-model';
-import { UpdateDespesaRecorrenteDTO } from '../../dto/despesas-recorrentes.dto';
+import { TipoDespesaRecorrente, UpdateDespesaRecorrenteDTO } from '../../dto/despesas-recorrentes.dto';
 
 @Component({
   selector: 'app-despesas-recorrentes-editar-regra',
@@ -19,6 +20,7 @@ export class DespesasRecorrentesEditarRegraComponent implements OnInit, OnDestro
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
   private route = inject(ActivatedRoute);
+  private formSubscriptions = new Subscription();
 
   @ViewChild('emojiPickerContainer') pickerContainer!: ElementRef<HTMLElement>;
 
@@ -30,26 +32,62 @@ export class DespesasRecorrentesEditarRegraComponent implements OnInit, OnDestro
     nome:            ['', Validators.required],
     icon:            ['', Validators.required],
     tipo:            ['Despesa Mensal', Validators.required],
-    categoriaId:     ['', Validators.required],
-    contaOrigemId:   ['', Validators.required],
-    contaDestinoId:  ['', Validators.required],
+    categoriaId:     [null, Validators.required],
+    contaOrigemId:   [null, Validators.required],
+    contaDestinoId:  [null, Validators.required],
     contaPoupancaId: [null],
+    imediata:        [false],
     valor: this.fb.group({
       valor: [null],
       moeda: ['EUR']
     }),
+    diaDaSemana: [null],
     diaDoMes: [null],
+    mes: [null],
   });
+
+  get isImediata(): boolean {
+    return !!this.form.get('imediata')?.value;
+  }
 
   get isPoupanca(): boolean {
     return this.form.get('tipo')?.value === 'Poupança';
+  }
+
+  get isDespesaSemanal(): boolean {
+    return this.form.get('tipo')?.value === 'Despesa Semanal';
+  }
+
+  get isDespesaMensal(): boolean {
+    return this.form.get('tipo')?.value === 'Despesa Mensal';
+  }
+
+  get isDespesaAnual(): boolean {
+    return this.form.get('tipo')?.value === 'Despesa Anual';
   }
 
   ngOnInit(): void {
     this.regraId = this.route.snapshot.paramMap.get('id');
     if (this.regraId) this.vm.load(this.regraId);
 
-    this.vm.regra$.subscribe(regra => {
+    const imediataControl = this.form.get('imediata');
+    const tipoControl = this.form.get('tipo');
+
+    if (imediataControl) {
+      this.formSubscriptions.add(
+        imediataControl.valueChanges.subscribe((value) => this.updateContaDestinoValidator(!!value))
+      );
+      this.updateContaDestinoValidator(!!imediataControl.value, true);
+    }
+
+    if (tipoControl) {
+      this.formSubscriptions.add(
+        tipoControl.valueChanges.subscribe((value) => this.syncScheduledFields(value as TipoDespesaRecorrente))
+      );
+      this.syncScheduledFields(tipoControl.value as TipoDespesaRecorrente);
+    }
+
+    this.formSubscriptions.add(this.vm.regra$.subscribe(regra => {
       if (!regra) return;
       this.form.patchValue({
         nome:            regra.nome,
@@ -57,19 +95,64 @@ export class DespesasRecorrentesEditarRegraComponent implements OnInit, OnDestro
         tipo:            regra.tipo,
         categoriaId:     regra.categoriaId,
         contaOrigemId:   regra.contaOrigemId,
-        contaDestinoId:  regra.contaDestinoId,
+        contaDestinoId:  regra.contaDestinoId ?? null,
         contaPoupancaId: regra.contaPoupancaId ?? null,
+        imediata:        regra.imediata ?? false,
         valor: {
           valor: regra.valor?.valor ?? null,
           moeda: regra.valor?.moeda ?? 'EUR'
         },
+        diaDaSemana: regra.diaDaSemana ?? null,
         diaDoMes: regra.diaDoMes ?? null,
+        mes: regra.mes ?? null,
       });
-    });
+      this.updateContaDestinoValidator(!!regra.imediata, true);
+      this.syncScheduledFields(regra.tipo as TipoDespesaRecorrente);
+    }));
   }
 
   ngOnDestroy(): void {
+    this.formSubscriptions.unsubscribe();
     this.destroyPicker();
+  }
+
+  private updateContaDestinoValidator(imediata: boolean, preserveValue = false): void {
+    const contaDestinoControl = this.form.get('contaDestinoId');
+    if (!contaDestinoControl) return;
+
+    if (imediata) {
+      contaDestinoControl.clearValidators();
+    } else {
+      contaDestinoControl.setValidators([Validators.required]);
+    }
+
+    if (!preserveValue) {
+      contaDestinoControl.setValue(null, { emitEvent: false });
+    }
+
+    contaDestinoControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private syncScheduledFields(tipo: TipoDespesaRecorrente): void {
+    const diaDaSemanaControl = this.form.get('diaDaSemana');
+    const diaDoMesControl = this.form.get('diaDoMes');
+    const mesControl = this.form.get('mes');
+
+    if (tipo === 'Despesa Semanal') {
+      diaDoMesControl?.setValue(null, { emitEvent: false });
+      mesControl?.setValue(null, { emitEvent: false });
+      return;
+    }
+
+    if (tipo === 'Despesa Mensal' || tipo === 'Poupança') {
+      diaDaSemanaControl?.setValue(null, { emitEvent: false });
+      mesControl?.setValue(null, { emitEvent: false });
+      return;
+    }
+
+    if (tipo === 'Despesa Anual') {
+      diaDaSemanaControl?.setValue(null, { emitEvent: false });
+    }
   }
 
   initializePicker(): void {
@@ -118,6 +201,7 @@ export class DespesasRecorrentesEditarRegraComponent implements OnInit, OnDestro
     if (this.form.invalid || !this.regraId) return;
 
     const raw = this.form.value;
+    const tipo = raw.tipo as TipoDespesaRecorrente;
     const valorNum = raw.valor?.valor;
     const valorPayload = (valorNum !== null && valorNum !== undefined && valorNum !== '')
       ? { valor: Number(valorNum), moeda: raw.valor.moeda || 'EUR' }
@@ -126,13 +210,16 @@ export class DespesasRecorrentesEditarRegraComponent implements OnInit, OnDestro
     const payload: UpdateDespesaRecorrenteDTO = {
       nome:            raw.nome,
       icon:            raw.icon,
-      tipo:            raw.tipo,
+      tipo,
       categoriaId:     raw.categoriaId,
       contaOrigemId:   raw.contaOrigemId,
-      contaDestinoId:  raw.contaDestinoId,
+      contaDestinoId:  raw.imediata ? undefined : raw.contaDestinoId || undefined,
       contaPoupancaId: raw.contaPoupancaId || undefined,
+      imediata:        raw.imediata,
       valor:           valorPayload,
-      diaDoMes:        raw.diaDoMes ? Number(raw.diaDoMes) : undefined,
+      diaDaSemana:     tipo === 'Despesa Semanal' ? (raw.diaDaSemana ? Number(raw.diaDaSemana) : undefined) : undefined,
+      diaDoMes:        (tipo === 'Despesa Mensal' || tipo === 'Despesa Anual' || tipo === 'Poupança') ? (raw.diaDoMes ? Number(raw.diaDoMes) : undefined) : undefined,
+      mes:             tipo === 'Despesa Anual' ? (raw.mes ? Number(raw.mes) : undefined) : undefined,
     };
 
     this.vm.update(this.regraId, payload);

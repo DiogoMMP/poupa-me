@@ -38,6 +38,11 @@ export default interface IDespesaRecorrenteService {
     getDespesasComValor(userId: string, bancoId: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
 
     /**
+     * Gets sem-valor DespesaRecorrentes by tipo for a user, optionally filtered by bank
+     */
+    getDespesasSemValorByTipo(userId: string, tipo: string, bancoId?: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
+
+    /**
      * Gets DespesaRecorrentes without valor + diaDoMes (icon/nome only),
      * filtered to those whose origin account belongs to the given bank
      */
@@ -54,4 +59,3 @@ export default interface IDespesaRecorrenteService {
      */
     gerarTransacaoSemValor(despesaId: string, dto: IGerarTransacaoSemValorDTO, userId: string): Promise<Result<ITransacaoDTO>>;
 }
-

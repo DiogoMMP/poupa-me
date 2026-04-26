@@ -1,3 +1,6 @@
+
+export type TipoDespesaRecorrente = 'Despesa Mensal' | 'Poupança' | 'Despesa Semanal' | 'Despesa Anual';
+
 /**
  * UI model for a Despesa Recorrente (recurring expense rule)
  */
@@ -11,12 +14,15 @@ export interface DespesaRecorrenteModel {
   diaDoMes?: number;
   categoriaId: string;
   contaOrigemId: string;
-  contaDestinoId: string;
+  contaDestinoId?: string;
   contaPoupancaId?: string;
-  tipo: 'Despesa Mensal' | 'Poupança';
+  tipo: TipoDespesaRecorrente;
   ultimoProcessamento: string | null;
   ativo: boolean;
-  /** True when valor and diaDoMes are set */
+  imediata: boolean;
+  diaDaSemana?: number;
+  mes?: number;
+  /** True when a recurring expense has a value defined */
   temValor: boolean;
 }
 

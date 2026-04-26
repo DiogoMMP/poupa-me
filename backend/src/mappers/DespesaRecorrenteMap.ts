@@ -4,6 +4,7 @@ import { Nome } from '../domain/Shared/ValueObjects/Nome.js';
 import { Dinheiro } from '../domain/Shared/ValueObjects/Dinheiro.js';
 import { UniqueEntityID } from '../core/domain/UniqueEntityID.js';
 import type { IDespesaRecorrenteDTO } from '../dto/IDespesaRecorrenteDTO.js';
+import { Tipo } from '../domain/Shared/ValueObjects/Tipo.js';
 
 /**
  * Mapper for DespesaRecorrente: persistence <-> domain <-> DTO
@@ -76,7 +77,7 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
         if (!contaDestinoIdStr) {
             contaDestinoIdStr = String(r['contaDestinoId'] ?? r['conta_destino_id'] ?? '');
         }
-        const contaDestinoId = new UniqueEntityID(contaDestinoIdStr);
+        const contaDestinoId = contaDestinoIdStr ? new UniqueEntityID(contaDestinoIdStr) : undefined;
 
         // contaPoupancaId (optional - only for Poupança)
         let contaPoupancaIdStr = '';
@@ -89,12 +90,19 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
         }
         const contaPoupancaId = contaPoupancaIdStr ? new UniqueEntityID(contaPoupancaIdStr) : undefined;
 
-        const tipo = (r['tipo'] as 'Despesa Mensal' | 'Poupança') ?? 'Despesa Mensal';
+        const tipoRaw = String(r['tipo'] ?? 'Despesa Mensal');
+        const tipoResult = Tipo.create(tipoRaw);
+        if (tipoResult.isFailure) return null;
 
         const ultimoProcessamento = r['ultimoProcessamento'] ?? r['ultimo_processamento'] ?? null;
         const ultimoDate = ultimoProcessamento ? new Date(String(ultimoProcessamento)) : null;
 
         const ativo = r['ativo'] !== undefined ? Boolean(r['ativo']) : true;
+        const imediata = r['imediata'] !== undefined ? Boolean(r['imediata']) : false;
+        const diaDaSemanaRaw = r['diaDaSemana'] ?? r['dia_da_semana'];
+        const diaDaSemana = diaDaSemanaRaw !== null && diaDaSemanaRaw !== undefined ? Number(diaDaSemanaRaw) : undefined;
+        const mesRaw = r['mes'];
+        const mes = mesRaw !== null && mesRaw !== undefined ? Number(mesRaw) : undefined;
 
         const despesaOrError = DespesaRecorrente.create({
             userId,
@@ -106,9 +114,12 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
             contaOrigemId,
             contaDestinoId,
             contaPoupancaId,
-            tipo,
+            tipo: tipoResult.getValue(),
             ultimoProcessamento: ultimoDate,
-            ativo
+            ativo,
+            imediata,
+            diaDaSemana,
+            mes
         }, new UniqueEntityID(String(r['domainId'] ?? r['id'])));
 
         return despesaOrError.isSuccess ? despesaOrError.getValue() : null;
@@ -122,13 +133,16 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
             valor: despesa.valor?.value ?? null,
             moeda: despesa.valor?.moeda ?? null,
             dia_do_mes: despesa.diaDoMes ?? null,
+            dia_da_semana: despesa.diaDaSemana ?? null,
+            mes: despesa.mes ?? null,
             categoria_id: despesa.categoriaId.toString(),
             conta_origem_id: despesa.contaOrigemId.toString(),
-            conta_destino_id: despesa.contaDestinoId.toString(),
+            conta_destino_id: despesa.contaDestinoId?.toString() ?? null,
             conta_poupanca_id: despesa.contaPoupancaId?.toString() ?? null,
-            tipo: despesa.tipo,
+            tipo: despesa.tipo.value,
             ultimo_processamento: despesa.ultimoProcessamento,
             ativo: despesa.ativo,
+            imediata: despesa.imediata,
             user_domain_id: despesa.userId.toString()
         };
     }
@@ -145,12 +159,14 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
             diaDoMes: despesa.diaDoMes,
             categoriaId: despesa.categoriaId.toString(),
             contaOrigemId: despesa.contaOrigemId.toString(),
-            contaDestinoId: despesa.contaDestinoId.toString(),
+            contaDestinoId: despesa.contaDestinoId?.toString(),
             contaPoupancaId: despesa.contaPoupancaId?.toString(),
-            tipo: despesa.tipo,
+            tipo: despesa.tipo.value,
             ultimoProcessamento: despesa.ultimoProcessamento,
-            ativo: despesa.ativo
+            ativo: despesa.ativo,
+            imediata: despesa.imediata,
+            diaDaSemana: despesa.diaDaSemana,
+            mes: despesa.mes
         };
     }
 }
-

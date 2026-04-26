@@ -33,7 +33,10 @@ export class DespesasRecorrentesListViewModel {
   /** Right column — Concluído */
   readonly concluidas$ = new BehaviorSubject<TransacaoModel[]>([]);
   /** Recurring expense rules without valor/diaDoMes configured */
-  readonly despesasSemValor$ = new BehaviorSubject<DespesaRecorrenteModel[]>([]);
+  readonly despesasSemValorSemanal$ = new BehaviorSubject<DespesaRecorrenteModel[]>([]);
+  readonly despesasSemValorMensal$ = new BehaviorSubject<DespesaRecorrenteModel[]>([]);
+  readonly despesasSemValorAnual$ = new BehaviorSubject<DespesaRecorrenteModel[]>([]);
+  readonly despesasSemValorPoupanca$ = new BehaviorSubject<DespesaRecorrenteModel[]>([]);
 
   readonly categorias$ = new BehaviorSubject<CategoriasDTO[]>([]);
 
@@ -75,13 +78,37 @@ export class DespesasRecorrentesListViewModel {
 
   loadDespesasSemValor(): void {
     const bancoId = this.bancoId;
-    if (!bancoId) { this.despesasSemValor$.next([]); return; }
-    this.despesasRecorrentesService.getSemValor(bancoId).subscribe({
-      next: dtos => this.despesasSemValor$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
+    if (!bancoId) {
+      this.despesasSemValorSemanal$.next([]);
+      this.despesasSemValorMensal$.next([]);
+      this.despesasSemValorAnual$.next([]);
+      this.despesasSemValorPoupanca$.next([]);
+      return;
+    }
+    this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Semanal').subscribe({
+      next: dtos => this.despesasSemValorSemanal$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
       error: err => {
         console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err);
       }
     });
+    this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Mensal').subscribe({
+      next: dtos => this.despesasSemValorMensal$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
+      error: err => {
+        console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err);
+      }
+    });
+    this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Anual').subscribe({
+      next: dtos => this.despesasSemValorAnual$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
+      error: err => {
+        console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err);
+      }
+    });
+    this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Poupança').subscribe({
+      next: dtos => this.despesasSemValorPoupanca$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
+      error: err => {
+        console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err);
+      }
+    })
   }
 
   // ── Pendentes column ──────────────────────────────────────
@@ -219,8 +246,8 @@ export class DespesasRecorrentesListViewModel {
     }
 
     let obs$;
-    if (t.tipo === 'Despesa Mensal') {
-      obs$ = this.transacoesService.concluirDespesaMensal(t.id);
+    if (t.tipo === 'Despesa Mensal' || 'Despesa Semanal' || 'Despesa Anual') {
+      obs$ = this.transacoesService.concluirDespesaRecorrente(t.id);
     } else if (t.tipo === 'Poupança' || t.tipo === 'Poupanca') {
       obs$ = this.transacoesService.concluirPoupanca(t.id);
     } else {

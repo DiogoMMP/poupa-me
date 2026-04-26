@@ -11,6 +11,8 @@ export interface DataProps {
   ano: number;
 }
 
+export type TipoDespesaRecorrente = 'Despesa Mensal' | 'Poupança' | 'Despesa Semanal' | 'Despesa Anual';
+
 export interface DespesaRecorrenteDTO {
   id: string;
   userId: string;
@@ -20,11 +22,14 @@ export interface DespesaRecorrenteDTO {
   diaDoMes?: number;
   categoriaId: string;
   contaOrigemId: string;
-  contaDestinoId: string;
+  contaDestinoId?: string;
   contaPoupancaId?: string;
-  tipo: 'Despesa Mensal' | 'Poupança';
+  tipo: TipoDespesaRecorrente;
   ultimoProcessamento: string | null;
   ativo: boolean;
+  imediata: boolean;
+  diaDaSemana?: number;
+  mes?: number;
 }
 
 export interface CreateDespesaRecorrenteDTO {
@@ -34,10 +39,13 @@ export interface CreateDespesaRecorrenteDTO {
   diaDoMes?: number;
   categoriaId: string;
   contaOrigemId: string;
-  contaDestinoId: string;
+  contaDestinoId?: string;
   contaPoupancaId?: string;
-  tipo?: 'Despesa Mensal' | 'Poupança';
+  tipo?: TipoDespesaRecorrente;
   ativo?: boolean;
+  imediata?: boolean;
+  diaDaSemana?: number;
+  mes?: number;
 }
 
 export interface UpdateDespesaRecorrenteDTO {
@@ -49,8 +57,11 @@ export interface UpdateDespesaRecorrenteDTO {
   contaOrigemId?: string;
   contaDestinoId?: string;
   contaPoupancaId?: string;
-  tipo?: 'Despesa Mensal' | 'Poupança';
+  tipo?: TipoDespesaRecorrente;
   ativo?: boolean;
+  imediata?: boolean;
+  diaDaSemana?: number;
+  mes?: number;
 }
 
 /** Payload for POST /:id/gerar-transacao */

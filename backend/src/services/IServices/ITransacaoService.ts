@@ -40,23 +40,25 @@ export default interface ITransacaoService {
     createReembolso(inputDTO: ITransacaoReembolsoDTO): Promise<Result<ITransacaoDTO>>;
 
     /**
-     * Create and persist a Monthly Expense transaction (Despesa Mensal).
+     * Create and persist a Despesa Mensal transaction.
      * @param inputDTO - Input data for creating a Despesa Mensal transaction.
+     * @param imediata - If true the status is "Concluído" otherwise "Pendente".
      */
-    createDespesaMensal(inputDTO: ITransacaoInputDTO): Promise<Result<ITransacaoDTO>>;
+    createDespesaMensal(inputDTO: ITransacaoInputDTO, imediata?: boolean): Promise<Result<ITransacaoDTO>>;
 
     /**
-     * Conclude a monthly expense (change from Pendente to Concluído and subtract from destination account).
+     * Conclude a Despesa Recorrente (change from Pendente to Concluído and subtract from destination account).
      * @param transacaoId - The domain ID of the Despesa Mensal transaction to conclude.
      */
-    concluirDespesaMensal(transacaoId: string): Promise<Result<ITransacaoDTO>>;
+    concluirDespesaRecorrente(transacaoId: string): Promise<Result<ITransacaoDTO>>;
 
     /**
      * Create and persist a Savings transfer transaction (Poupança).
      * Transfers money from origin account to a savings account (contaPoupanca).
      * @param inputDTO - Input data (requires contaId origin and contaPoupancaId destination).
+     * @param imediata - If true the status is "Concluído" otherwise "Pendente".
      */
-    createPoupanca(inputDTO: ITransacaoInputDTO): Promise<Result<ITransacaoDTO>>;
+    createPoupanca(inputDTO: ITransacaoInputDTO, imediata?: boolean): Promise<Result<ITransacaoDTO>>;
 
     /**
      * Conclude a Poupança transaction (change from Pendente to Concluído and add to savings account).
@@ -192,4 +194,18 @@ export default interface ITransacaoService {
      * @param userId - Optional user id to scope the search to a specific user's transactions.
      */
     findDespesaRecorrenteByPeriod(bancoId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>>;
+
+    /**
+     * Create and persist a Weekly Expense transaction (Despesa Semanal).
+     * @param inputDTO - Input data for creating a Despesa Semanal transaction.
+     * @param imediata - If true the status is "Concluído" otherwise "Pendente".
+     */
+    createDespesaSemanal(inputDTO: ITransacaoInputDTO, imediata?: boolean): Promise<Result<ITransacaoDTO>>;
+
+    /**
+     * Create and persist an Annual Expense transaction (Despesa Anual).
+     * @param inputDTO - Input data for creating a Despesa Anual transaction.
+     * @param imediata - If true the status is "Concluído" otherwise "Pendente".
+     */
+    createDespesaAnual(inputDTO: ITransacaoInputDTO, imediata?: boolean): Promise<Result<ITransacaoDTO>>;
 }

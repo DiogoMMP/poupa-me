@@ -58,6 +58,16 @@ export class DespesasRecorrentesService {
   }
 
   /**
+   * Get recurring expenses that have no valor/diaDoMes/diaDaSemana/mes configured (icon/nome only) and whose origin account belongs to the given bank
+   * Matches backend route: GET /despesa-recorrente/sem-valor/por-tipo?bancoId=...&tipo=...
+   */
+  getSemValorPorTipo(bancoId: string, tipo: string): Observable<DespesaRecorrenteDTO[]> {
+    let params = new HttpParams().set('bancoId', bancoId);
+    params = params.set('tipo', tipo);
+    return this.http.get<DespesaRecorrenteDTO[]>(`${this.baseUrl}/sem-valor/por-tipo`, { params, withCredentials: true });
+  }
+
+  /**
    * Manually generate a pending transaction for a sem-valor recurring expense.
    * Matches backend route: POST /despesa-recorrente/:id/gerar-transacao
    */

@@ -4,7 +4,7 @@ import { Transacao } from '../domain/Transacao/Entities/Transacao.js';
 import { Descricao } from '../domain/Transacao/ValueObjects/Descricao.js';
 import { Data } from '../domain/Shared/ValueObjects/Data.js';
 import { Dinheiro } from '../domain/Shared/ValueObjects/Dinheiro.js';
-import { Tipo } from '../domain/Transacao/ValueObjects/Tipo.js';
+import { Tipo } from '../domain/Shared/ValueObjects/Tipo.js';
 import { Status } from '../domain/Transacao/ValueObjects/Status.js';
 import { CategoriaMap } from './CategoriaMap.js';
 import { ContaMap } from './ContaMap.js';

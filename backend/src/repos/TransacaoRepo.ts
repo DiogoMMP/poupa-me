@@ -423,7 +423,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
             const now = new Date();
             const Data = (await import('../domain/Shared/ValueObjects/Data.js')).Data;
             const Descricao = (await import('../domain/Transacao/ValueObjects/Descricao.js')).Descricao;
-            const Tipo = (await import('../domain/Transacao/ValueObjects/Tipo.js')).Tipo;
+            const Tipo = (await import('../domain/Shared/ValueObjects/Tipo.js')).Tipo;
             const Status = (await import('../domain/Transacao/ValueObjects/Status.js')).Status;
             const Dinheiro = (await import('../domain/Shared/ValueObjects/Dinheiro.js')).Dinheiro;
 
@@ -556,7 +556,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 .leftJoinAndSelect('t.conta', 'co')
                 .leftJoinAndSelect('t.contaDestino', 'cd')
                 .leftJoinAndSelect('t.contaPoupanca', 'cp')
-                .where('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
+                .where('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança', 'Despesa Semanal', 'Despesa Anual'] })
                 .andWhere('co.banco_id = :bancoId', { bancoId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
@@ -740,7 +740,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                  .leftJoinAndSelect('t.contaDestino', 'cd')
                  .leftJoinAndSelect('t.contaPoupanca', 'cp')
                  .where('c.domain_id = :domainId', { domainId: categoriaId })
-                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
+                 .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança', 'Despesa Semanal', 'Despesa Anual'] })
                  .andWhere('co.banco_id = :bancoId', { bancoId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
@@ -802,7 +802,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 .leftJoinAndSelect('t.contaDestino', 'cd')
                 .leftJoinAndSelect('t.contaPoupanca', 'cp')
                 .where('t.status = :status', { status })
-                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança', 'Despesa Semanal', 'Despesa Anual'] })
                 .andWhere('co.banco_id = :bancoId', { bancoId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();
@@ -955,7 +955,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 .leftJoinAndSelect('t.contaDestino', 'cd')
                 .leftJoinAndSelect('t.contaPoupanca', 'cp')
                 .where('(t.ano * 10000 + t.mes * 100 + t.dia) >= :startInt AND (t.ano * 10000 + t.mes * 100 + t.dia) <= :endInt', { startInt, endInt })
-                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança'] })
+                .andWhere('t.tipo IN (:...tipos)', { tipos: ['Despesa Mensal', 'Poupança', 'Despesa Semanal', 'Despesa Anual'] })
                 .andWhere('co.banco_id = :bancoId', { bancoId });
             if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
             const rows = await qb.orderBy('t.ano', 'DESC').addOrderBy('t.mes', 'DESC').addOrderBy('t.dia', 'DESC').addOrderBy('t.id', 'DESC').getMany();

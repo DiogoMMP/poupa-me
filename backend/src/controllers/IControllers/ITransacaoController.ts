@@ -15,7 +15,11 @@ export default interface ITransacaoController {
 
     createDespesaMensal(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
-    concluirDespesaMensal(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+    createDespesaSemanal(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+
+    createDespesaAnual(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
+
+    concluirDespesaRecorrente(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
     createPoupanca(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 
@@ -50,4 +54,3 @@ export default interface ITransacaoController {
     getCartaoTransactionsByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
     getDespesaRecorrenteByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 }
-

@@ -255,5 +255,32 @@ export default class DespesaRecorrenteController implements IDespesaRecorrenteCo
             next(err);
         }
     }
-}
 
+    /**
+     * GET /despesa-recorrente/sem-valor/por-tipo?tipo=:tipo&bancoId=:bancoId - Get sem-valor recurring expenses by tipo
+     */
+    public async getDespesasSemValorByTipo(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const userId = (req as AuthenticatedRequest).currentUser?.id;
+            if (!userId) {
+                return res.status(401).json({ error: 'User not authenticated' });
+            }
+
+            const tipo = req.query.tipo as string;
+            if (!tipo) {
+                return res.status(400).json({ error: 'tipo query parameter is required' });
+            }
+
+            const bancoId = req.query.bancoId as string | undefined;
+            const result = await this.despesaService.getDespesasSemValorByTipo(userId, tipo, bancoId);
+
+            if (result.isFailure) {
+                return res.status(400).json({ error: result.error });
+            }
+
+            return res.status(200).json(result.getValue());
+        } catch (err) {
+            next(err);
+        }
+    }
+}

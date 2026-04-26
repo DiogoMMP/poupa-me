@@ -6,7 +6,7 @@ export class DespesasRecorrentesMapper {
    * Map API DTO to UI model
    */
   static toModel(dto: DespesaRecorrenteDTO): DespesaRecorrenteModel {
-    const temValor = dto.valor != null && dto.diaDoMes != null;
+    const temValor = dto.valor != null;
     return {
       id: dto.id,
       userId: dto.userId,
@@ -22,6 +22,9 @@ export class DespesasRecorrentesMapper {
       tipo: dto.tipo,
       ultimoProcessamento: dto.ultimoProcessamento,
       ativo: dto.ativo,
+      imediata: dto.imediata,
+      diaDaSemana: dto.diaDaSemana,
+      mes: dto.mes,
       temValor
     };
   }

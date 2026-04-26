@@ -41,9 +41,13 @@ export default interface IDespesaRecorrenteRepo {
     findWithValor(userId: string, bancoId: string): Promise<DespesaRecorrente[]>;
 
     /**
+     * Finds sem-valor DespesaRecorrentes by tipo for a user, optionally filtered by bank
+     */
+    findByTipo(userId: string, tipo: string, bancoId?: string): Promise<DespesaRecorrente[]>;
+
+    /**
      * Finds DespesaRecorrentes that have no valor and no diaDoMes (icon/nome only),
      * filtered to those whose origin account belongs to the given bank
      */
     findWithoutValor(userId: string, bancoId: string): Promise<DespesaRecorrente[]>;
 }
-

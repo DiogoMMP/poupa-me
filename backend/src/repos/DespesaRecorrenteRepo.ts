@@ -43,9 +43,12 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
             const valorNum = raw.valor !== null && raw.valor !== undefined ? Number(raw.valor) : null;
             const moeda = raw.moeda !== null && raw.moeda !== undefined ? String(raw.moeda) : null;
             const diaDoMes = raw.dia_do_mes !== null && raw.dia_do_mes !== undefined ? Number(raw.dia_do_mes) : null;
+            const diaDaSemana = raw.dia_da_semana !== null && raw.dia_da_semana !== undefined ? Number(raw.dia_da_semana) : null;
+            const mes = raw.mes !== null && raw.mes !== undefined ? Number(raw.mes) : null;
             const userDomainId = String(raw.user_domain_id ?? '');
             const ultimoProcessamento = raw.ultimo_processamento ? new Date(String(raw.ultimo_processamento)) : null;
             const ativo = raw.ativo !== undefined ? Boolean(raw.ativo) : true;
+            const imediata = raw.imediata !== undefined ? Boolean(raw.imediata) : false;
 
             // Resolve category ID
             const categoriaIdRaw = raw.categoria_id ?? '';
@@ -65,12 +68,19 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
                 return Promise.reject(new Error('Origin account not found for recurring expense: ' + contaOrigemIdRaw));
             }
 
-            // Resolve destination account ID
-            const contaDestinoIdRaw = raw.conta_destino_id ?? '';
-            const contaDestinoRow = await contaRepo.findOne({ where: { domainId: String(contaDestinoIdRaw) } });
-            if (!contaDestinoRow) {
-                this.logger.error('DespesaRecorrenteRepo.save: destination account not found for domainId %s', contaDestinoIdRaw);
-                return Promise.reject(new Error('Destination account not found for recurring expense: ' + contaDestinoIdRaw));
+            // Resolve destination account ID (optional when immediate)
+            const contaDestinoIdRaw = raw.conta_destino_id;
+            let contaDestinoId: number | null = null;
+            if (contaDestinoIdRaw !== null && contaDestinoIdRaw !== undefined && String(contaDestinoIdRaw).trim() !== '') {
+                const contaDestinoRow = await contaRepo.findOne({ where: { domainId: String(contaDestinoIdRaw) } });
+                if (!contaDestinoRow) {
+                    this.logger.error('DespesaRecorrenteRepo.save: destination account not found for domainId %s', contaDestinoIdRaw);
+                    return Promise.reject(new Error('Destination account not found for recurring expense: ' + contaDestinoIdRaw));
+                }
+                contaDestinoId = contaDestinoRow.id;
+            } else if (!imediata) {
+                this.logger.error('DespesaRecorrenteRepo.save: destination account is required when immediate is false');
+                return Promise.reject(new Error('Destination account is required when immediate is false'));
             }
 
             // Resolve savings account ID (optional, only for "Poupança")
@@ -88,13 +98,16 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
                 valor: valorNum,
                 moeda,
                 diaDoMes,
+                diaDaSemana,
+                mes,
                 categoriaId: categoriaRow.id,
                 contaOrigemId: contaOrigemRow.id,
-                contaDestinoId: contaDestinoRow.id,
+                contaDestinoId,
                 ...(contaPoupancaId ? { contaPoupancaId } : {}),
                 tipo: String(raw.tipo ?? 'Despesa Mensal'),
                 ultimoProcessamento,
                 ativo,
+                imediata,
                 userDomainId
             };
 
@@ -138,9 +151,12 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
             const valorNum = raw.valor !== null && raw.valor !== undefined ? Number(raw.valor) : null;
             const moeda = raw.moeda !== null && raw.moeda !== undefined ? String(raw.moeda) : null;
             const diaDoMes = raw.dia_do_mes !== null && raw.dia_do_mes !== undefined ? Number(raw.dia_do_mes) : null;
+            const diaDaSemana = raw.dia_da_semana !== null && raw.dia_da_semana !== undefined ? Number(raw.dia_da_semana) : null;
+            const mes = raw.mes !== null && raw.mes !== undefined ? Number(raw.mes) : null;
             const userDomainId = String(raw.user_domain_id ?? '');
             const ultimoProcessamento = raw.ultimo_processamento ? new Date(String(raw.ultimo_processamento)) : null;
             const ativo = raw.ativo !== undefined ? Boolean(raw.ativo) : true;
+            const imediata = raw.imediata !== undefined ? Boolean(raw.imediata) : false;
 
             // Resolve IDs
             const categoriaIdRaw = raw.categoria_id ?? '';
@@ -153,9 +169,19 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
             const contaOrigemRow = await contaRepo.findOne({ where: { domainId: String(contaOrigemIdRaw) } });
             const contaOrigemId = contaOrigemRow ? contaOrigemRow.id : null;
 
-            const contaDestinoIdRaw = raw.conta_destino_id ?? '';
-            const contaDestinoRow = await contaRepo.findOne({ where: { domainId: String(contaDestinoIdRaw) } });
-            const contaDestinoId = contaDestinoRow ? contaDestinoRow.id : null;
+            const contaDestinoIdRaw = raw.conta_destino_id;
+            let contaDestinoId: number | null = null;
+            if (contaDestinoIdRaw !== null && contaDestinoIdRaw !== undefined && String(contaDestinoIdRaw).trim() !== '') {
+                const contaDestinoRow = await contaRepo.findOne({ where: { domainId: String(contaDestinoIdRaw) } });
+                if (!contaDestinoRow) {
+                    this.logger.error('DespesaRecorrenteRepo.update: destination account not found for domainId %s', contaDestinoIdRaw);
+                    return Promise.reject(new Error('Destination account not found for recurring expense: ' + contaDestinoIdRaw));
+                }
+                contaDestinoId = contaDestinoRow.id;
+            } else if (!imediata) {
+                this.logger.error('DespesaRecorrenteRepo.update: destination account is required when immediate is false');
+                return Promise.reject(new Error('Destination account is required when immediate is false'));
+            }
 
             let contaPoupancaIdForUpdate: number | null = null;
             const contaPoupancaIdRaw = raw.conta_poupanca_id ?? '';
@@ -170,12 +196,15 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
                 valor: valorNum,
                 moeda,
                 diaDoMes,
+                diaDaSemana,
+                mes,
                 categoriaId: categoriaId as number,
                 contaOrigemId: contaOrigemId as number,
-                contaDestinoId: contaDestinoId as number,
+                contaDestinoId,
                 tipo: String(raw.tipo ?? 'Despesa Mensal'),
                 ultimoProcessamento,
                 ativo,
+                imediata,
                 userDomainId
             };
             if (contaPoupancaIdForUpdate !== null) updateSet['contaPoupancaId'] = contaPoupancaIdForUpdate;
@@ -312,7 +341,7 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
     }
 
     /**
-     * Find recurring expenses with valor + diaDoMes defined,
+     * Find recurring expenses that are fully scheduled for their recurrence type,
      * whose origin account belongs to the given bank
      */
     public async findWithValor(userId: string, bancoId: string): Promise<DespesaRecorrente[]> {
@@ -322,8 +351,15 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
                 .leftJoinAndSelect('d.contaOrigem', 'contaOrigem')
                 .leftJoinAndSelect('d.contaDestino', 'contaDestino')
                 .leftJoinAndSelect('d.contaPoupanca', 'contaPoupanca')
-                .where('d.valor IS NOT NULL')
-                .andWhere('d.dia_do_mes IS NOT NULL')
+                .where(`(
+                    (d.tipo IN (:...mensalTipos) AND d.valor IS NOT NULL AND d.dia_do_mes IS NOT NULL)
+                    OR (d.tipo = :tipoSemanal AND d.valor IS NOT NULL AND d.dia_da_semana IS NOT NULL)
+                    OR (d.tipo = :tipoAnual AND d.valor IS NOT NULL AND d.dia_do_mes IS NOT NULL AND d.mes IS NOT NULL)
+                )`, {
+                    mensalTipos: ['Despesa Mensal', 'Poupança'],
+                    tipoSemanal: 'Despesa Semanal',
+                    tipoAnual: 'Despesa Anual'
+                })
                 .andWhere('contaOrigem.banco_id = :bancoId', { bancoId })
                 .orderBy('d.id', 'ASC');
 
@@ -346,7 +382,7 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
     }
 
     /**
-     * Find recurring expenses without valor or diaDoMes (icon/nome only),
+     * Find recurring expenses that are not fully scheduled for their recurrence type,
      * whose origin account belongs to the given bank
      */
     public async findWithoutValor(userId: string, bancoId: string): Promise<DespesaRecorrente[]> {
@@ -356,7 +392,15 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
                 .leftJoinAndSelect('d.contaOrigem', 'contaOrigem')
                 .leftJoinAndSelect('d.contaDestino', 'contaDestino')
                 .leftJoinAndSelect('d.contaPoupanca', 'contaPoupanca')
-                .where('d.valor IS NULL')
+                .where(`(
+                    (d.tipo IN (:...mensalTipos) AND (d.valor IS NULL OR d.dia_do_mes IS NULL))
+                    OR (d.tipo = :tipoSemanal AND (d.valor IS NULL OR d.dia_da_semana IS NULL))
+                    OR (d.tipo = :tipoAnual AND (d.valor IS NULL OR d.dia_do_mes IS NULL OR d.mes IS NULL))
+                )`, {
+                    mensalTipos: ['Despesa Mensal', 'Poupança'],
+                    tipoSemanal: 'Despesa Semanal',
+                    tipoAnual: 'Despesa Anual'
+                })
                 .andWhere('contaOrigem.banco_id = :bancoId', { bancoId })
                 .orderBy('d.id', 'ASC');
 
@@ -377,5 +421,37 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
             throw err;
         }
     }
-}
 
+    /**
+     * Find recurring sem-valor expenses by tipo for a user, optionally filtered by bank
+     */
+    public async findByTipo(userId: string, tipo: string, bancoId?: string): Promise<DespesaRecorrente[]> {
+        try {
+            const qb = this.repo.createQueryBuilder('d')
+                .leftJoinAndSelect('d.categoria', 'categoria')
+                .leftJoinAndSelect('d.contaOrigem', 'contaOrigem')
+                .leftJoinAndSelect('d.contaDestino', 'contaDestino')
+                .leftJoinAndSelect('d.contaPoupanca', 'contaPoupanca')
+                .where('d.tipo = :tipo', { tipo })
+                .andWhere('d.valor IS NULL')
+                .andWhere('d.user_domain_id = :userId', { userId })
+                .orderBy('d.id', 'ASC');
+
+            if (bancoId) {
+                qb.andWhere('contaOrigem.banco_id = :bancoId', { bancoId });
+            }
+
+            const rows = await qb.getMany();
+            const res: DespesaRecorrente[] = [];
+            for (const r of rows) {
+                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: (r as DespesaRecorrenteEntity).userDomainId };
+                const d = await DespesaRecorrenteMap.toDomain(raw);
+                if (d) res.push(d);
+            }
+            return res;
+        } catch (err) {
+            this.logger.error('DespesaRecorrenteRepo.findByTipo error: %o', err);
+            throw err;
+        }
+    }
+}

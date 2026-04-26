@@ -23,9 +23,65 @@
   <div class="loading-state" *ngIf="vm.isLoading$ | async">A carregar...</div>
 
   <!-- ══════════ SEM VALOR — Despesas recorrentes por configurar ══════════ -->
-  <ng-container *ngIf="vm.despesasSemValor$ | async as semValor">
+
+  <!-- Despesas Semanais -->
+  <ng-container *ngIf="vm.despesasSemValorSemanal$ | async as semValor">
     <div class="sem-valor-section" *ngIf="semValor.length > 0">
-      <p class="sem-valor-label">Já veio Fatura</p>
+      <p class="sem-valor-label">Despesas Semanais</p>
+      <div class="sem-valor-list">
+        <button
+          *ngFor="let d of semValor"
+          class="sem-valor-btn"
+          (click)="onDespesaSemValorClick(d)"
+          [title]="d.nome"
+        >
+          <span class="sem-valor-icon">{{ d.icon }}</span>
+          <span class="sem-valor-nome">{{ d.nome }}</span>
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Despesas Mensais -->
+  <ng-container *ngIf="vm.despesasSemValorMensal$ | async as semValor">
+    <div class="sem-valor-section" *ngIf="semValor.length > 0">
+      <p class="sem-valor-label">Despesas Mensais</p>
+      <div class="sem-valor-list">
+        <button
+          *ngFor="let d of semValor"
+          class="sem-valor-btn"
+          (click)="onDespesaSemValorClick(d)"
+          [title]="d.nome"
+        >
+          <span class="sem-valor-icon">{{ d.icon }}</span>
+          <span class="sem-valor-nome">{{ d.nome }}</span>
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Despesas Anuais -->
+  <ng-container *ngIf="vm.despesasSemValorAnual$ | async as semValor">
+    <div class="sem-valor-section" *ngIf="semValor.length > 0">
+      <p class="sem-valor-label">Despesas Anuais</p>
+      <div class="sem-valor-list">
+        <button
+          *ngFor="let d of semValor"
+          class="sem-valor-btn"
+          (click)="onDespesaSemValorClick(d)"
+          [title]="d.nome"
+        >
+          <span class="sem-valor-icon">{{ d.icon }}</span>
+          <span class="sem-valor-nome">{{ d.nome }}</span>
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Poupança -->
+  <ng-container *ngIf="vm.despesasSemValorPoupanca$ | async as semValor">
+    <div class="sem-valor-section" *ngIf="semValor.length > 0">
+      <p class="sem-valor-label">Poupança</p>
       <div class="sem-valor-list">
         <button
           *ngFor="let d of semValor"
@@ -96,7 +152,7 @@
               <p class="transacao-descricao text-large">{{ t.descricao }}</p>
               <span class="transacao-meta text-muted text-small">
                 {{ t.categoria.icon }} {{ t.categoria.nome }}
-                <span *ngIf="t.conta"> • {{ t.conta.nome }}</span>
+                <span *ngIf="t.tipo"> • {{ t.tipo }}</span>
               </span>
 
               <!-- Actions (left) - same as transactions list -->
@@ -217,7 +273,7 @@
               <p class="transacao-descricao text-large">{{ t.descricao }}</p>
               <span class="transacao-meta text-muted text-small">
                 {{ t.categoria.icon }} {{ t.categoria.nome }}
-                <span *ngIf="t.conta"> • {{ t.conta.nome }}</span>
+                <span *ngIf="t.tipo"> • {{ t.tipo }}</span>
               </span>
 
               <!-- Actions (left) for concluded items (no conclude button) -->

@@ -21,6 +21,24 @@
   white-space: nowrap;
 }
 
+.badge--semanal {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38BDF8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.badge--mensal {
+  background: rgba(97, 237, 214, 0.15);
+  color: #61EDD6;
+  border-color: rgba(97, 237, 214, 0.3);
+}
+
+.badge--anual {
+  background: rgba(167, 139, 250, 0.15);
+  color: #A78BFA;
+  border-color: rgba(167, 139, 250, 0.3);
+}
+
 .badge--poupanca {
   background: rgba(74, 222, 128, 0.15);
   color: var(--brand-entrada);

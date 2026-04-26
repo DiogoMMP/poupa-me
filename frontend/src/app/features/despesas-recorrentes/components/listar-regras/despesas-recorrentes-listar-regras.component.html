@@ -29,10 +29,9 @@
 
           <div class="card-content">
             <h3 class="card-title">{{ regra.nome }}</h3>
-            <span class="badge" [class.badge--poupanca]="regra.tipo === 'Poupança'">{{ regra.tipo }}</span>
+            <span class="badge" [ngClass]="vm.getTipoClass(regra.tipo)">{{ regra.tipo }}</span>
             <div class="card-meta">
-              <span class="text-muted" *ngIf="regra.diaDoMes">Dia {{ regra.diaDoMes }}</span>
-              <span class="text-muted" *ngIf="!regra.diaDoMes">Sem dia definido</span>
+              <span class="text-muted">{{ vm.formatAgendamento(regra) }}</span>
             </div>
             <div class="card-valor" *ngIf="regra.temValor">
               {{ regra.valor | number:'1.2-2' }} {{ regra.moeda }}

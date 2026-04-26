@@ -30,7 +30,7 @@ export default async function createTypeOrmDataSource(): Promise<DataSource> {
             BancoEntity,
             DespesaRecorrenteEntity
         ],
-        synchronize: true,
+        synchronize: !isProduction,
         logging: false,
 
         ssl: isProduction || isCloudDB ? { rejectUnauthorized: false } : false,

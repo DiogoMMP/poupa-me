@@ -194,13 +194,6 @@ export class TransacoesService {
   }
 
   /**
-   * Create a Poupança (savings) transfer
-   */
-  createPoupanca(dto: TransacoesInputDTO): Observable<TransacoesDTO> {
-    return this.http.post<TransacoesDTO>(`${this.apiUrl}/poupanca`, dto, { withCredentials: true });
-  }
-
-  /**
    * Conclude a Poupança transaction (mark as Concluído)
    * @param id - transaction id
    */
@@ -209,18 +202,11 @@ export class TransacoesService {
   }
 
   /**
-   * Create a monthly expense entry
-   */
-  createDespesaMensal(dto: TransacoesInputDTO): Observable<TransacoesDTO> {
-    return this.http.post<TransacoesDTO>(`${this.apiUrl}/despesa-mensal`, dto, { withCredentials: true });
-  }
-
-  /**
-   * Conclude a Despesa Mensal transaction (mark as Concluído)
+   * Conclude a Despesa Recorrente transaction (mark as Concluído)
    * @param id - transaction id
    */
-  concluirDespesaMensal(id: string): Observable<TransacoesDTO> {
-    return this.http.post<TransacoesDTO>(`${this.apiUrl}/despesa-mensal/concluir/${id}`, {}, { withCredentials: true });
+  concluirDespesaRecorrente(id: string): Observable<TransacoesDTO> {
+    return this.http.post<TransacoesDTO>(`${this.apiUrl}/despesa-recorrente/concluir/${id}`, {}, { withCredentials: true });
   }
 
   /**

@@ -12,11 +12,14 @@ export interface IDespesaRecorrenteDTO {
     diaDoMes?: number;
     categoriaId: string;
     contaOrigemId: string;
-    contaDestinoId: string;
+    contaDestinoId?: string;
     contaPoupancaId?: string;
-    tipo: 'Despesa Mensal' | 'Poupança';
+    tipo: string;
     ultimoProcessamento: Date | null;
     ativo: boolean;
+    imediata: boolean;
+    diaDaSemana?: number;
+    mes?: number;
 }
 
 /**
@@ -30,10 +33,13 @@ export interface ICreateDespesaRecorrenteDTO {
     diaDoMes?: number;
     categoriaId: string;
     contaOrigemId: string;
-    contaDestinoId: string;
+    contaDestinoId?: string;
     contaPoupancaId?: string;
-    tipo?: 'Despesa Mensal' | 'Poupança';
+    tipo?: string;
     ativo?: boolean;
+    imediata?: boolean;
+    diaDaSemana?: number;
+    mes?: number;
 }
 
 /**
@@ -48,8 +54,11 @@ export interface IUpdateDespesaRecorrenteDTO {
     contaOrigemId?: string;
     contaDestinoId?: string;
     contaPoupancaId?: string;
-    tipo?: 'Despesa Mensal' | 'Poupança';
+    tipo?: string;
     ativo?: boolean;
+    imediata?: boolean;
+    diaDaSemana?: number;
+    mes?: number;
 }
 
 /**

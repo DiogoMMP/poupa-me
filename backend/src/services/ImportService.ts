@@ -14,7 +14,7 @@ import { Icon } from '../domain/Shared/ValueObjects/Icon.js';
 import { Dinheiro } from '../domain/Shared/ValueObjects/Dinheiro.js';
 import { Data } from '../domain/Shared/ValueObjects/Data.js';
 import { Descricao } from '../domain/Transacao/ValueObjects/Descricao.js';
-import { Tipo } from '../domain/Transacao/ValueObjects/Tipo.js';
+import { Tipo } from '../domain/Shared/ValueObjects/Tipo.js';
 import { Status } from '../domain/Transacao/ValueObjects/Status.js';
 import { Periodo } from '../domain/CartaoCredito/ValueObjects/Periodo.js';
 import { UniqueEntityID } from '../core/domain/UniqueEntityID.js';
