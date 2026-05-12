@@ -522,46 +522,7 @@ export default class TransacaoService implements ITransacaoService {
             }
 
             if (tipo === 'Poupança') {
-                if (!transacao.contaPoupanca) {
-                    return Result.fail<ITransacaoDTO>('Savings account not found for this Poupança transaction');
-                }
-
-                const statusResult = Status.create('Concluído');
-                if (statusResult.isFailure) return Result.fail<ITransacaoDTO>(String(statusResult.error));
-
-                const updatedTransacaoOrError = Transacao.create({
-                    descricao: transacao.descricao,
-                    data: transacao.data,
-                    valor: transacao.valor,
-                    tipo: transacao.tipo,
-                    categoria: transacao.categoria,
-                    status: statusResult.getValue(),
-                    conta: transacao.conta,
-                    contaDestino: transacao.contaDestino,
-                    contaPoupanca: transacao.contaPoupanca,
-                    cartaoCredito: transacao.cartaoCredito
-                }, transacao.id);
-
-                if (updatedTransacaoOrError.isFailure) {
-                    return Result.fail<ITransacaoDTO>(String(updatedTransacaoOrError.error));
-                }
-
-                const updatedTransacao = updatedTransacaoOrError.getValue();
-
-                (updatedTransacao as unknown as Record<string, unknown>)['userDomainId'] =
-                    (transacao as unknown as Record<string, unknown>)['userDomainId'];
-
-                const contaPoupancaFresh = await this.contaRepo.findById(transacao.contaPoupanca!.id.toString());
-                if (!contaPoupancaFresh) return Result.fail<ITransacaoDTO>('Savings Account not found');
-
-                const addResult = contaPoupancaFresh.adicionarSaldo(transacao.valor);
-                if (addResult.isFailure) return Result.fail<ITransacaoDTO>(String(addResult.error));
-
-                await this.contaRepo.update(contaPoupancaFresh);
-
-                const savedTransacao = await this.transacaoRepo.update(updatedTransacao);
-
-                return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+                return this.concluirPoupanca(transacaoId);
             } else {
                 if (!transacao.contaDestino) {
                     return Result.fail<ITransacaoDTO>('Destination account not found for this transaction');
@@ -719,14 +680,20 @@ export default class TransacaoService implements ITransacaoService {
                 (transacao as unknown as Record<string, unknown>)['userDomainId'];
 
             if (transacao.contaDestino) {
-                const subtractDestinoResult = transacao.contaDestino.subtrairSaldo(transacao.valor);
+                const contaDestinoFresh = await this.contaRepo.findById(transacao.contaDestino.id.toString());
+                if (!contaDestinoFresh) return Result.fail<ITransacaoDTO>('Destination Account not found');
+                
+                const subtractDestinoResult = contaDestinoFresh.subtrairSaldo(transacao.valor);
                 if (subtractDestinoResult.isFailure) return Result.fail<ITransacaoDTO>(String(subtractDestinoResult.error));
-                await this.contaRepo.update(transacao.contaDestino);
+                await this.contaRepo.update(contaDestinoFresh);
             }
 
-            const addResult = transacao.contaPoupanca.adicionarSaldo(transacao.valor);
+            const contaPoupancaFresh = await this.contaRepo.findById(transacao.contaPoupanca.id.toString());
+            if (!contaPoupancaFresh) return Result.fail<ITransacaoDTO>('Savings Account not found');
+
+            const addResult = contaPoupancaFresh.adicionarSaldo(transacao.valor);
             if (addResult.isFailure) return Result.fail<ITransacaoDTO>(String(addResult.error));
-            await this.contaRepo.update(transacao.contaPoupanca);
+            await this.contaRepo.update(contaPoupancaFresh);
 
             const saved = await this.transacaoRepo.update(updated);
             return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(saved));

@@ -433,12 +433,21 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
                 .leftJoinAndSelect('d.contaDestino', 'contaDestino')
                 .leftJoinAndSelect('d.contaPoupanca', 'contaPoupanca')
                 .where('d.tipo = :tipo', { tipo })
-                .andWhere('d.valor IS NULL')
                 .andWhere('d.user_domain_id = :userId', { userId })
                 .orderBy('d.id', 'ASC');
 
+            if (tipo === 'Despesa Mensal' || tipo === 'Poupança') {
+                qb.andWhere('(d.valor IS NULL OR d.dia_do_mes IS NULL)');
+            } else if (tipo === 'Despesa Semanal') {
+                qb.andWhere('(d.valor IS NULL OR d.dia_da_semana IS NULL)');
+            } else if (tipo === 'Despesa Anual') {
+                qb.andWhere('(d.valor IS NULL OR d.dia_do_mes IS NULL OR d.mes IS NULL)');
+            } else {
+                qb.andWhere('d.valor IS NULL');
+            }
+
             if (bancoId) {
-                qb.andWhere('contaOrigem.banco_id = :bancoId', { bancoId });
+                qb.andWhere('contaOrigem.banco_id = :bancoId', {bancoId});
             }
 
             const rows = await qb.getMany();

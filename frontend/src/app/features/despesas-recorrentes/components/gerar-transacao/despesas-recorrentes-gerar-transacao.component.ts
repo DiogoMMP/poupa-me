@@ -1,8 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { DespesasRecorrentesGerarTransacaoViewModel } from './despesas-recorrentes-gerar-transacao.view-model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 /**
  * Component to generate a transaction for a sem-valor recurring expense.
@@ -21,6 +22,7 @@ export class DespesasRecorrentesGerarTransacaoComponent implements OnInit {
   public vm = inject(DespesasRecorrentesGerarTransacaoViewModel);
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
 
   form: FormGroup;
   despesaId: string = '';
@@ -42,6 +44,19 @@ export class DespesasRecorrentesGerarTransacaoComponent implements OnInit {
     if (this.despesaId) {
       this.vm.loadById(this.despesaId);
     }
+
+    this.vm.despesa$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(despesa => {
+        if (despesa?.valor != null) {
+          this.form.patchValue({
+            valor: {
+              valor: despesa.valor,
+              moeda: despesa.moeda ?? 'EUR'
+            }
+          });
+        }
+      });
   }
 
   onSubmit(): void {

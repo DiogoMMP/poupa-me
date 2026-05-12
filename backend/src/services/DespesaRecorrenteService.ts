@@ -302,9 +302,20 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
             if (!regra) return Result.fail<ITransacaoDTO>('Despesa not found');
             if (regra.userId.toString() !== userId) return Result.fail<ITransacaoDTO>('Unauthorized');
 
-            // Validate that the rule is indeed sem-valor
-            if (regra.valor !== undefined) {
-                return Result.fail<ITransacaoDTO>('Esta despesa já tem valor configurado. Use o processamento automático.');
+            // Validate that the rule is not fully scheduled
+            const tipo = regra.tipo.value;
+            const hasValor = regra.valor !== undefined && regra.valor !== null;
+            const hasDiaDoMes = regra.diaDoMes !== undefined && regra.diaDoMes !== null;
+            const hasDiaDaSemana = regra.diaDaSemana !== undefined && regra.diaDaSemana !== null;
+            const hasMes = regra.mes !== undefined && regra.mes !== null;
+
+            const isFullyScheduled =
+                (tipo === 'Despesa Semanal' && hasValor && hasDiaDaSemana) ||
+                ((tipo === 'Despesa Mensal' || tipo === 'Poupança') && hasValor && hasDiaDoMes) ||
+                (tipo === 'Despesa Anual' && hasValor && hasDiaDoMes && hasMes);
+
+            if (isFullyScheduled) {
+                return Result.fail<ITransacaoDTO>('Esta despesa já está totalmente agendada. Use o processamento automático.');
             }
 
             const transacaoInput = {
@@ -329,7 +340,6 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
             }
 
             let result: Result<ITransacaoDTO>;
-            const tipo = regra.tipo.value;
 
             switch (tipo) {
                 case 'Poupança':
@@ -469,16 +479,22 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
         const hasDiaDaSemana = diaDaSemana !== undefined && diaDaSemana !== null;
         const hasMes = mes !== undefined && mes !== null;
 
-        if (tipoValue === 'Despesa Semanal' && hasValor !== hasDiaDaSemana) {
-            return Result.fail<void>('valor and diaDaSemana must be provided together or neither');
+        if (tipoValue === 'Despesa Semanal' && hasDiaDaSemana && !hasValor) {
+            return Result.fail<void>('valor is required when diaDaSemana is provided');
         }
 
-        if ((tipoValue === 'Despesa Mensal' || tipoValue === 'Poupança') && hasValor !== hasDiaDoMes) {
-            return Result.fail<void>('valor and diaDoMes must be provided together or neither');
+        if ((tipoValue === 'Despesa Mensal' || tipoValue === 'Poupança') && hasDiaDoMes && !hasValor) {
+            return Result.fail<void>('valor is required when diaDoMes is provided');
         }
 
-        if (tipoValue === 'Despesa Anual' && (hasValor || hasMes || hasDiaDoMes) && !(hasValor && hasMes && hasDiaDoMes)) {
-            return Result.fail<void>('valor, diaDoMes and mes must be provided together or neither');
+        if (tipoValue === 'Despesa Anual') {
+            const hasAgendamento = hasMes || hasDiaDoMes;
+            if (hasAgendamento && !(hasMes && hasDiaDoMes)) {
+                return Result.fail<void>('mes and diaDoMes must be provided together');
+            }
+            if (hasAgendamento && !hasValor) {
+                return Result.fail<void>('valor is required when mes/diaDoMes are provided');
+            }
         }
 
         return Result.ok<void>();

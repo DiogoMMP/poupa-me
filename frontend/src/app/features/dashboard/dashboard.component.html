@@ -126,32 +126,13 @@
               <div *ngFor="let t of transacoes" class="transacao-item card card--clickable">
 
                 <!-- Icon by type -->
-                <svg *ngIf="t.tipo === 'Entrada'" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                <svg *ngIf="t.tipo === 'Entrada' || t.tipo === 'Reembolso'" width="24" height="24" viewBox="0 0 24 24" fill="none"
                      class="transacao-icon entradas-icon">
                   <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5"
                         stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <svg *ngIf="t.tipo === 'Saída'" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     class="transacao-icon saidas-icon">
-                  <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5"
-                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <svg *ngIf="t.tipo === 'Crédito'" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     class="transacao-icon saidas-icon">
-                  <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5"
-                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <svg *ngIf="t.tipo === 'Reembolso'" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     class="transacao-icon entradas-icon">
-                  <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5"
-                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <svg *ngIf="t.tipo === 'Despesa Mensal'" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     class="transacao-icon saidas-icon">
-                  <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5"
-                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <svg *ngIf="t.tipo === 'Poupança'" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                <svg *ngIf="t.tipo === 'Saída' || t.tipo === 'Crédito' ||t.tipo === 'Despesa Semanal' || t.tipo === 'Despesa Mensal'
+                            || t.tipo === 'Despesa Anual' || t.tipo === 'Poupança'" width="24" height="24" viewBox="0 0 24 24" fill="none"
                      class="transacao-icon saidas-icon">
                   <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5"
                         stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -170,7 +151,8 @@
                 <div class="transacao-values">
                   <p class="transacao-valor text-large"
                      [class.text-positive]="t.tipo === 'Entrada' || t.tipo === 'Reembolso'"
-                     [class.text-negative]="t.tipo === 'Saída' || t.tipo === 'Crédito' || t.tipo === 'Despesa Mensal' || t.tipo === 'Poupança'">
+                     [class.text-negative]="t.tipo === 'Saída' || t.tipo === 'Crédito' || t.tipo === 'Despesa Semanal' ||
+                     t.tipo === 'Despesa Mensal' || t.tipo === 'Despesa Anual' || t.tipo === 'Poupança'">
                     {{ (t.tipo === 'Entrada' || t.tipo === 'Reembolso') ? '+' : '-' }} {{ t.valor | number:'1.2-2' }} {{ t.moeda === 'EUR' ? '€' : t.moeda }}
                   </p>
                   <span

@@ -13,8 +13,8 @@ interface DespesaRecorrenteProps {
     userId: UniqueEntityID;
     nome: Nome;
     icon: string;
-    valor?: Dinheiro;       // Required together with diaDoMes
-    diaDoMes?: number;      // 1-31 — Required together with valor
+    valor?: Dinheiro;       // Optional when dia is not defined
+    diaDoMes?: number;      // 1-31 — Requires valor when provided
     categoriaId: UniqueEntityID;
     contaOrigemId: UniqueEntityID;      // Account from which money leaves (real balance)
     contaDestinoId?: UniqueEntityID;    // Optional when imediata=true
@@ -151,18 +151,24 @@ export class DespesaRecorrente extends AggregateRoot<DespesaRecorrenteProps> {
         const hasMes = props.mes !== undefined && props.mes !== null;
 
         // Despesa Semanal
-        if (tipoValue === "Despesa Semanal" && hasValor !== hasDiaDaSemana) {
-            return Result.fail<DespesaRecorrente>('valor e diaDaSemana must be provided together or not at all');
+        if (tipoValue === "Despesa Semanal" && hasDiaDaSemana && !hasValor) {
+            return Result.fail<DespesaRecorrente>('valor is required when diaDaSemana is provided');
         }
 
         // Despesa Mensal ou Poupança
-        if ((tipoValue === 'Despesa Mensal' || tipoValue === 'Poupança') && hasValor !== hasDiaDoMes) {
-            return Result.fail<DespesaRecorrente>('valor e diaDoMes must be provided together or not at all');
+        if ((tipoValue === 'Despesa Mensal' || tipoValue === 'Poupança') && hasDiaDoMes && !hasValor) {
+            return Result.fail<DespesaRecorrente>('valor is required when diaDoMes is provided');
         }
 
         // Despesa Anual
-        if (tipoValue === 'Despesa Anual' && (hasValor || hasMes || hasDiaDoMes) && !(hasValor && hasMes && hasDiaDoMes)) {
-            return Result.fail<DespesaRecorrente>('valor, diaDoMes e mes must be provided together or not at all');
+        if (tipoValue === 'Despesa Anual') {
+            const hasAgendamento = hasMes || hasDiaDoMes;
+            if (hasAgendamento && !(hasMes && hasDiaDoMes)) {
+                return Result.fail<DespesaRecorrente>('mes and diaDoMes must be provided together');
+            }
+            if (hasAgendamento && !hasValor) {
+                return Result.fail<DespesaRecorrente>('valor is required when mes/diaDoMes are provided');
+            }
         }
 
         // Validate diaDaSemana when provided
