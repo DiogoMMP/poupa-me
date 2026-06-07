@@ -47,7 +47,7 @@ export class CartaoCreditoEntity {
     @JoinColumn({ name: 'conta_pagamento_id' })
     contaPagamento!: ContaEntity;
 
-    @Column({ name: 'conta_pagamento_id', nullable: true })
+    @Column({ name: 'conta_pagamento_id', type: 'int', nullable: true })
     contaPagamentoId!: number | null;
 
     @Column({ name: 'banco_id', type: 'varchar', length: 50, nullable: true })

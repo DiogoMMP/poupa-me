@@ -37,14 +37,14 @@ export class DespesaRecorrenteEntity {
     @JoinColumn({ name: 'categoria_id' })
     categoria?: CategoriaEntity;
 
-    @Column({ name: 'categoria_id' })
+    @Column({ name: 'categoria_id', type: 'int' })
     categoriaId!: number;
 
     @ManyToOne(() => ContaEntity)
     @JoinColumn({ name: 'conta_origem_id' })
     contaOrigem?: ContaEntity;
 
-    @Column({ name: 'conta_origem_id' })
+    @Column({ name: 'conta_origem_id', type: 'int' })
     contaOrigemId!: number;
 
     @ManyToOne(() => ContaEntity, { nullable: true })

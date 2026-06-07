@@ -1,0 +1,7 @@
+# Ignore local node_modules from build context
+node_modules
+npm-debug.log
+dist
+.git
+.idea
+.vscode

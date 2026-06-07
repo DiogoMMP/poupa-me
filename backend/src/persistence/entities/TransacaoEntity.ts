@@ -47,7 +47,7 @@ export class TransacaoEntity {
     @JoinColumn({ name: 'categoria_id' })
     categoria!: CategoriaEntity;
 
-    @Column({ name: 'categoria_id' })
+    @Column({ name: 'categoria_id', type: 'int' })
     categoriaId!: number;
 
     @ManyToOne(() => ContaEntity, { eager: false })

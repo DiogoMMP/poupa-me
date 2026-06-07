@@ -22,37 +22,30 @@ export default async ({ dbConnection, dataSource, schemas, controllers, repos, s
       Container.set('dataSource', dataSource);
     }
 
-    /**
-     * We are injecting the mongoose models into the DI container.
-     * This is controversial but it will provide a lot of flexibility
-     * at the time of writing unit tests.
-     */
+    // 1. Registar os Schemas
     for (const m of schemas) {
-      // Use dynamic import instead of require for ES modules
       const schema = (await import(m.schema)).default;
       Container.set(m.name, schema);
     }
 
+    // 2. Registar os Repositories
     for (const m of repos) {
       const repoClass = (await import(m.path)).default;
-      const repoInstance = Container.get(repoClass);
-      Container.set(m.name, repoInstance);
+      Container.set(m.name, Container.get(repoClass));
     }
 
+    // 3. Registar os Services
     for (const m of services) {
       const serviceClass = (await import(m.path)).default;
-      const serviceInstance = Container.get(serviceClass);
-      Container.set(m.name, serviceInstance);
+      Container.set(m.name, Container.get(serviceClass));
     }
 
+    // 4. Registar os Controllers
     for (const m of controllers) {
-      // load the @Service() class by its path
       const controllerClass = (await import(m.path)).default;
-      // create/get the instance of the @Service() class
-      const controllerInstance = Container.get(controllerClass);
-      // rename the instance inside the container
-      Container.set(m.name, controllerInstance);
+      Container.set(m.name, Container.get(controllerClass));
     }
+
 
     return;
   } catch (e) {
