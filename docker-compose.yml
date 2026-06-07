@@ -51,6 +51,20 @@ services:
     networks:
       - poupame_network
 
+  # 4. Ngrok Tunneling (para testar no telemóvel)
+  poupame_ngrok:
+    image: ngrok/ngrok:latest
+    container_name: poupame_ngrok_local
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: "http poupame_frontend:4200 --host-header=localhost"
+    ports:
+      - "4040:4040" # Acesso à Web Interface do Ngrok
+    depends_on:
+      - poupame_frontend
+    networks:
+      - poupame_network
+
 volumes:
   poupame_db_data:
 
