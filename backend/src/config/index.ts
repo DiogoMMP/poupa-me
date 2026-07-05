@@ -1,4 +1,4 @@
-﻿import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 
 // Set the NODE_ENV to 'development' by default
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
@@ -28,37 +28,61 @@ export default {
     repos: {
         user: {
             name: 'UserRepo',
-            path: '../repos/UserRepo.js'
+            path: '../repos/User/UserRepo.js'
         },
 
         categoria: {
             name: 'CategoriaRepo',
-            path: '../repos/CategoriaRepo.js'
+            path: '../repos/Categoria/CategoriaRepo.js'
         },
 
         transacao: {
             name: 'TransacaoRepo',
-            path: '../repos/TransacaoRepo.js'
+            path: '../repos/Transacao/TransacaoRepo.js'
+        },
+
+        transacaoContaQuery: {
+            name: 'TransacaoContaQueryRepo',
+            path: '../repos/Transacao/TransacaoContaQueryRepo.js'
+        },
+
+        transacaoCartaoQuery: {
+            name: 'TransacaoCartaoQueryRepo',
+            path: '../repos/Transacao/TransacaoCartaoQueryRepo.js'
+        },
+
+        transacaoPagarCartao: {
+            name: 'TransacaoPagarCartaoRepo',
+            path: '../repos/Transacao/TransacaoPagarCartaoRepo.js'
+        },
+
+        transacaoDespesasRecorrentes: {
+            name: 'TransacaoDespesasRecorrentesRepo',
+            path: '../repos/Transacao/TransacaoDespesasRecorrentesRepo.js'
         },
 
         conta: {
             name: 'ContaRepo',
-            path: '../repos/ContaRepo.js'
+            path: '../repos/Conta/ContaRepo.js'
         },
 
         cartao: {
             name: 'CartaoCreditoRepo',
-            path: '../repos/CartaoCreditoRepo.js'
+            path: '../repos/CartaoCredito/CartaoCreditoRepo.js'
         },
 
         banco: {
             name: 'BancoRepo',
-            path: '../repos/BancoRepo.js'
+            path: '../repos/Banco/BancoRepo.js'
         },
 
         despesaRecorrente: {
             name: 'DespesaRecorrenteRepo',
-            path: '../repos/DespesaRecorrenteRepo.js'
+            path: '../repos/DespesaRecorrente/DespesaRecorrenteRepo.js'
+        },
+        despesaRecorrenteQuery: {
+            name: 'DespesaRecorrenteQueryRepo',
+            path: '../repos/DespesaRecorrente/DespesaRecorrenteQueryRepo.js'
         }
     },
 
@@ -70,104 +94,127 @@ export default {
     services: {
         auth: {
             name: 'AuthService',
-            path: '../services/AuthService.js'
+            path: '../services/Auth/AuthService.js'
         },
 
         categoria: {
             name: 'CategoriaService',
-            path: '../services/CategoriaService.js'
+            path: '../services/Categoria/CategoriaService.js'
         },
 
         transacao: {
             name: 'TransacaoService',
-            path: '../services/TransacaoService.js'
+            path: '../services/Transacao/TransacaoService.js'
+        },
+
+        transacaoContaQuery: {
+            name: 'TransacaoContaQueryService',
+            path: '../services/Transacao/TransacaoContaQueryService.js'
+        },
+
+        transacaoCartaoQuery: {
+            name: 'TransacaoCartaoQueryService',
+            path: '../services/Transacao/TransacaoCartaoQueryService.js'
+        },
+
+        transacaoDespesasRecorrentes: {
+            name: 'TransacaoDespesasRecorrentesService',
+            path: '../services/Transacao/TransacaoDespesasRecorrentesService.js'
         },
 
         conta: {
             name: 'ContaService',
-            path: '../services/ContaService.js'
+            path: '../services/Conta/ContaService.js'
         },
 
         cartao: {
             name: 'CartaoCreditoService',
-            path: '../services/CartaoCreditoService.js'
+            path: '../services/CartaoCredito/CartaoCreditoService.js'
         },
 
         banco: {
             name: 'BancoService',
-            path: '../services/BancoService.js'
+            path: '../services/Banco/BancoService.js'
         },
 
         despesaRecorrente: {
             name: 'DespesaRecorrenteService',
-            path: '../services/DespesaRecorrenteService.js'
+            path: '../services/DespesaRecorrente/DespesaRecorrenteService.js'
         },
-
-        import: {
-            name: 'ImportService',
-            path: '../services/ImportService.js'
+        despesaRecorrenteProcessador: {
+            name: 'DespesaRecorrenteProcessadorService',
+            path: '../services/DespesaRecorrente/DespesaRecorrenteProcessadorService.js'
         },
 
         iaCategorizacao: {
             name: 'IACategorizacaoService',
-            path: '../services/IACategorizacaoService.js'
+            path: '../services/IACategorizacao/IACategorizacaoService.js'
         },
 
         estatisticas: {
             name: 'EstatisticasService',
-            path: '../services/EstatisticasService.js'
+            path: '../services/Estatisticas/EstatisticasService.js'
         }
     },
 
     controllers: {
         auth: {
             name: 'AuthController',
-            path: '../controllers/AuthController.js'
+            path: '../controllers/Auth/AuthController.js'
         },
 
         categoria: {
             name: 'CategoriaController',
-            path: '../controllers/CategoriaController.js'
+            path: '../controllers/Categoria/CategoriaController.js'
         },
 
         transacao: {
             name: 'TransacaoController',
-            path: '../controllers/TransacaoController.js'
+            path: '../controllers/Transacao/TransacaoController.js'
+        },
+
+        transacaoContaQuery: {
+            name: 'TransacaoContaQueryController',
+            path: '../controllers/Transacao/TransacaoContaQueryController.js'
+        },
+
+        transacaoCartaoQuery: {
+            name: 'TransacaoCartaoQueryController',
+            path: '../controllers/Transacao/TransacaoCartaoQueryController.js'
         },
 
         conta: {
             name: 'ContaController',
-            path: '../controllers/ContaController.js'
+            path: '../controllers/Conta/ContaController.js'
         },
 
         cartao: {
             name: 'CartaoCreditoController',
-            path: '../controllers/CartaoCreditoController.js'
+            path: '../controllers/CartaoCredito/CartaoCreditoController.js'
         },
 
         banco: {
             name: 'BancoController',
-            path: '../controllers/BancoController.js'
+            path: '../controllers/Banco/BancoController.js'
         },
 
         despesaRecorrente: {
             name: 'DespesaRecorrenteController',
-            path: '../controllers/DespesaRecorrenteController.js'
+            path: '../controllers/DespesaRecorrente/DespesaRecorrenteController.js'
         },
-
-        import: {
-            name: 'ImportController',
-            path: '../controllers/ImportController.js'
+        despesaRecorrenteProcessador: {
+            name: 'DespesaRecorrenteProcessadorController',
+            path: '../controllers/DespesaRecorrente/DespesaRecorrenteProcessadorController.js'
         },
 
         iaCategorizacao: {
             name: 'IACategorizacaoController',
-            path: '../controllers/IACategorizacaoController.js'
+            path: '../controllers/IACategorizacao/IACategorizacaoController.js'
         },
 
         estatisticas: {
             name: 'EstatisticasController',
-            path: '../controllers/EstatisticasController.js'
+            path: '../controllers/Estatisticas/EstatisticasController.js'
         }
     },
 

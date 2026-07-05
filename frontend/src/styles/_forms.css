@@ -1,0 +1,440 @@
+/* === GLOBAL SELECT STYLES === */
+select {
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--brand-text);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  outline: none;
+}
+
+select:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--brand-accent);
+}
+
+select:focus {
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 2px rgba(97, 237, 214, 0.15);
+}
+
+select option {
+  background: #001528;
+  color: white;
+}
+
+/* === FORM STYLES === */
+.form-card {
+  background: rgba(11, 37, 58, 0.7);
+  border: 1px solid rgba(11, 37, 58, 0.1);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
+  backdrop-filter: blur(10px);
+}
+
+.form-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.form-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--brand-text);
+  font-family: 'Archivo Black', sans-serif;
+  margin: 0 0 0.5rem 0;
+}
+
+.form-subtitle {
+  font-size: 0.95rem;
+  color: rgba(226, 232, 240, 0.7);
+  margin: 0;
+}
+
+.form-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.form-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--brand-text);
+}
+
+.form-label-hint {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: rgba(226, 232, 240, 0.5);
+  margin-left: 0.35rem;
+}
+
+.form-input,
+input[type="text"],
+input[type="email"],
+input[type="number"],
+textarea {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--brand-text);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  outline: none;
+}
+
+.form-input:hover,
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="number"]:hover,
+textarea:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--brand-accent);
+}
+
+.form-input:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 2px rgba(97, 237, 214, 0.15);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.form-input::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: rgba(226, 232, 240, 0.4);
+}
+
+.form-input[readonly] {
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.form-input[readonly]:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+/* === EMOJI PICKER STYLES (PICMO) === */
+.emoji-input-group {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.emoji-input-group .form-input {
+  flex: 1;
+}
+
+.emoji-btn {
+  min-width: 50px !important;
+  padding: 0.5rem !important;
+  background: rgba(11, 37, 58, 0.7) !important;
+  border: 2px solid var(--brand-accent) !important;
+  box-shadow: 0 2px 8px rgba(97, 237, 214, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.emoji-btn:hover:not(:disabled) {
+  background: rgba(97, 237, 214, 0.15) !important;
+  border-color: #4dd4c0 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 16px rgba(97, 237, 214, 0.5) !important;
+}
+
+.emoji-btn-icon {
+  font-size: 1.5rem;
+  display: block;
+  line-height: 1;
+}
+
+.picmo-container {
+  width: 100%;
+  height: 100%;
+}
+
+.picmo-container ::ng-deep .picmo__picker {
+  --background-color: transparent !important;
+  --border-color: transparent !important;
+  --category-name-background-color: rgba(11, 37, 58, 0.95) !important;
+  --category-name-text-color: var(--brand-accent) !important;
+  --category-tab-background-color: rgba(0, 21, 40, 0.7) !important;
+  --category-tab-highlight-background-color: rgba(97, 237, 214, 0.2) !important;
+  --category-tab-color: rgba(226, 232, 240, 0.6) !important;
+  --category-tab-highlight-color: var(--brand-accent) !important;
+  --emoji-hover-background-color: rgba(97, 237, 214, 0.25) !important;
+  --focus-indicator-background-color: rgba(97, 237, 214, 0.3) !important;
+  --focus-indicator-color: var(--brand-accent) !important;
+  --search-background-color: rgba(255, 255, 255, 0.08) !important;
+  --search-focus-background-color: rgba(255, 255, 255, 0.12) !important;
+  --search-focus-border-color: var(--brand-accent) !important;
+  --search-placeholder-color: rgba(226, 232, 240, 0.4) !important;
+  --search-icon-color: rgba(226, 232, 240, 0.6) !important;
+  --text-color: var(--brand-text) !important;
+  --secondary-text-color: rgba(226, 232, 240, 0.7) !important;
+  border: none !important;
+  background: transparent !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.picmo-container ::ng-deep .picmo__picker ::-webkit-scrollbar {
+  width: 12px !important;
+}
+
+.picmo-container ::ng-deep .picmo__picker ::-webkit-scrollbar-track {
+  background: rgba(0, 21, 40, 0.8) !important;
+  border-radius: 10px !important;
+}
+
+.picmo-container ::ng-deep .picmo__picker ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--brand-accent) 0%, #4dd4c0 100%) !important;
+  border-radius: 10px !important;
+  border: 2px solid rgba(11, 37, 58, 0.8) !important;
+  transition: all 0.3s ease !important;
+}
+
+.picmo-container ::ng-deep .picmo__picker ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #4dd4c0 0%, var(--brand-accent) 100%) !important;
+  box-shadow: 0 0 15px rgba(97, 237, 214, 0.6) !important;
+}
+
+.picmo-container ::ng-deep .picmo__searchContainer input {
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  border: 2px solid rgba(255, 255, 255, 0.12) !important;
+  transition: all 0.3s ease !important;
+}
+
+.picmo-container ::ng-deep .picmo__searchContainer input:focus {
+  box-shadow: 0 0 0 3px rgba(97, 237, 214, 0.2) !important;
+  outline: none !important;
+}
+
+.picmo-container ::ng-deep .picmo__categoryTabs {
+  border-bottom: 1px solid rgba(97, 237, 214, 0.2) !important;
+  padding: 8px 0 !important;
+}
+
+.picmo-container ::ng-deep .picmo__categoryTab {
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+}
+
+.picmo-container ::ng-deep .picmo__emoji {
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.picmo-container ::ng-deep .picmo__emoji:hover {
+  transform: scale(1.2) !important;
+}
+
+.picmo-container ::ng-deep .picmo__categoryName {
+  font-weight: 700 !important;
+  font-size: 0.8rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+}
+
+/* Ensure row-controls take full width and inputs expand by default */
+.form-field .row-controls {
+  width: 100%;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.form-field .row-controls .form-input {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.form-field:not([formGroupName="periodo"]) > .row-controls > .form-input:first-child {
+  flex: 0 0 80% !important;
+  width: 80% !important;
+  max-width: 80% !important;
+  box-sizing: border-box;
+}
+
+.form-field:not([formGroupName="periodo"]) > .row-controls > .form-input:last-child {
+  flex: 0 0 20% !important;
+  width: 20% !important;
+  max-width: 20% !important;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .form-field:not([formGroupName="periodo"]) > .row-controls > .form-input:first-child {
+    flex: 1 1 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  .form-field:not([formGroupName="periodo"]) > .row-controls > .form-input:last-child {
+    flex: 0 0 72px !important;
+    width: 72px !important;
+    max-width: 72px !important;
+    min-width: 0 !important;
+  }
+}
+
+.form-field .row-controls .emoji-input-group .form-input {
+  flex: 1 1 auto !important;
+  width: auto !important;
+}
+
+.form-field .row-controls .emoji-input-group .emoji-btn {
+  flex: 0 0 48px !important;
+  width: 48px !important;
+}
+
+.form-field[formGroupName="periodo"] .row-controls {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.form-field[formGroupName="periodo"] .row-controls .form-input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.form-field[formGroupName="periodo"] .row-controls .form-input:first-child {
+  margin-right: 0;
+}
+
+.form-field[formGroupName="periodo"] .row-controls .form-input:last-child {
+  margin-left: 0;
+}
+
+/* Selection toggles (visual radios but allow multi-select) used across forms */
+.selection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.selection-row {
+  width: 100%;
+}
+
+.selection-row label {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.selection-label {
+  color: var(--brand-text);
+  font-weight: 500;
+  display: block;
+  text-align: left;
+  line-height: 1.3;
+  position: relative;
+  padding-left: 32px;
+}
+
+.selection-label::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.12);
+  background: transparent;
+  box-sizing: border-box;
+  transition: background 0.15s ease, transform 0.12s ease, border-color 0.12s ease;
+  flex-shrink: 0;
+}
+
+.selection-row input[type="checkbox"]:checked + .selection-label::before {
+  background: linear-gradient(135deg, var(--brand-accent) 0%, #4dd4c0 100%);
+  border-color: var(--brand-accent);
+  transform: translateY(-50%) scale(1.02);
+}
+
+.selection-row input[type="checkbox"]:focus + .selection-label::before {
+  box-shadow: 0 0 0 4px rgba(97,237,214,0.12);
+}
+
+@media (max-width: 480px) {
+  .selection-row label { padding: 6px 0; }
+  .selection-label { padding-left: 36px; }
+}
+
+/* Native radio controls styling */
+input[type="radio"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.12);
+  background: transparent;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 0.5rem 0 0;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+
+input[type="radio"]:checked {
+  background: linear-gradient(135deg, var(--brand-accent) 0%, #4dd4c0 100%);
+  border-color: var(--brand-accent);
+  transform: scale(1.02);
+}
+
+input[type="radio"]:focus {
+  box-shadow: 0 0 0 4px rgba(97,237,214,0.12);
+  outline: none;
+}
+
+.selection-row input[type="checkbox"] {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

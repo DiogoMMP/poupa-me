@@ -1,0 +1,41 @@
+<div class="nova-transacao-wrapper">
+  <button class="nova-transacao-btn" (click)="toggleMenu($event)">
+    <svg class="nova-transacao-icon" viewBox="0 0 24 24" fill="none">
+      <path d="M12 5V19M5 12H19" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Nova Transação
+  </button>
+
+  <div class="nova-transacao-menu" *ngIf="showMenu()" (click)="$event.stopPropagation()">
+    <a routerLink="/transacoes/criar-entradas">
+      <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Entrada
+    </a>
+    <div class="menu-divider"></div>
+    <a routerLink="/transacoes/criar-saidas">
+      <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Saída
+    </a>
+
+    <ng-container *ngIf="showCartaoOptions">
+      <div class="menu-divider"></div>
+      <a routerLink="/transacoes/criar-credito">
+        <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+          <path d="M3 10h18M7 15h2m4 0h2M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Crédito
+      </a>
+      <div class="menu-divider"></div>
+      <a routerLink="/transacoes/criar-reembolso">
+        <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
+          <path d="M9 14l-4-4 4-4M5 10h11a4 4 0 0 1 0 8h-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Reembolso
+      </a>
+    </ng-container>
+  </div>
+</div>

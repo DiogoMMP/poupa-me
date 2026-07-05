@@ -1,0 +1,12 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.app-icon-svg {
+  display: block;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, color 0.2s ease;
+}

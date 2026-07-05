@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { Container } from 'typedi';
 import { isAuth } from '../middlewares/index.js';
 import type { AuthenticatedRequest } from '../middlewares/index.js';
-import CartaoCreditoController from '../../controllers/CartaoCreditoController.js';
+import CartaoCreditoController from '../../controllers/CartaoCredito/CartaoCreditoController.js';
 
 const route = Router();
 

@@ -1,0 +1,5 @@
+<div class="pagination" *ngIf="totalPages > 1">
+  <button class="pagination-btn" (click)="onPrev()" [disabled]="currentPage === 1">‹</button>
+  <span class="pagination-info">{{ currentPage }} / {{ totalPages }}</span>
+  <button class="pagination-btn" (click)="onNext()" [disabled]="currentPage === totalPages">›</button>
+</div>

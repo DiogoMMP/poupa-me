@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { Container } from 'typedi';
 import { isAuth } from '../middlewares/index.js';
-import type IIACategorizacaoController from '../../controllers/IControllers/IIACategorizacaoController.js';
+import type IIACategorizacaoController from '../../controllers/IACategorizacao/IIACategorizacaoController.js';
 
 const route = Router();
 
@@ -15,7 +15,7 @@ export default (app: Router) => {
      * /ia-categorizacao/sugerir:
      *   get:
      *     tags:
-     *       - IA Categorizacao
+     *       - IACategorizacao
      *     summary: Sugere uma categoria para a descrição de uma transação
      *     description: Utiliza IA para sugerir uma categoria para a descrição fornecida, com base nas categorias existentes. Requer autenticação.
      *     security:

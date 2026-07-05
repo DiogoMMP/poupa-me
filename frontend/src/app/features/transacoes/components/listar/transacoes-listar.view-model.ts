@@ -13,21 +13,9 @@ import { CartoesCreditoModel } from '../../../cartoes-credito/models/cartoes-cre
 import { CartoesCreditoMapper } from '../../../cartoes-credito/mappers/cartoes-credito.mapper';
 import { ContasModel } from '../../../contas/models/contas.model';
 import { ContasMapper } from '../../../contas/mappers/contas.mapper';
+import { ContaFilters, CartaoFilters, filterByPeriod } from './transacoes-listar.filter';
 
-export type PeriodFilter = 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano' | '';
-
-export interface ContaFilters {
-  categoriaId: string;
-  contaId: string;
-  period: PeriodFilter;
-}
-
-export interface CartaoFilters {
-  categoriaId: string;
-  cartaoId: string;
-  status: string;
-  period: PeriodFilter;
-}
+export type { PeriodFilter, ContaFilters, CartaoFilters } from './transacoes-listar.filter';
 
 @Injectable()
 export class TransacoesListViewModel {
@@ -50,7 +38,7 @@ export class TransacoesListViewModel {
   contaFilters: ContaFilters = { categoriaId: '', contaId: '', period: 'Este Mês' };
   cartaoFilters: CartaoFilters = { categoriaId: '', cartaoId: '', status: '', period: 'Este Mês' };
 
-  readonly PERIODS: PeriodFilter[] = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'];
+  readonly PERIODS = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'] as const;
   readonly STATUSES = ['Pendente', 'Concluído'];
 
   constructor() {
@@ -103,7 +91,7 @@ export class TransacoesListViewModel {
         next: dtos => {
           let all = TransacoesMapper.toModelArray(dtos);
           if (f.categoriaId) all = all.filter(t => t.categoria.id === f.categoriaId);
-          if (f.period) all = this.filterByPeriod(all, f.period);
+          if (f.period) all = filterByPeriod(all, f.period);
           this.contaTransacoes$.next(all);
           this.isLoading$.next(false);
         },
@@ -135,7 +123,7 @@ export class TransacoesListViewModel {
       this.transacoesService.getContaTransactionsByCategoria(f.categoriaId, bancoId).subscribe({
         next: dtos => {
           let all = TransacoesMapper.toModelArray(dtos);
-          if (f.period) all = this.filterByPeriod(all, f.period);
+          if (f.period) all = filterByPeriod(all, f.period);
           this.contaTransacoes$.next(all);
           this.isLoading$.next(false);
         },
@@ -186,7 +174,7 @@ export class TransacoesListViewModel {
           let all = TransacoesMapper.toModelArray(dtos);
           if (f.categoriaId) all = all.filter(t => t.categoria.id === f.categoriaId);
           if (f.status) all = all.filter(t => t.status === f.status);
-          if (f.period) all = this.filterByPeriod(all, f.period);
+          if (f.period) all = filterByPeriod(all, f.period);
           this.cartaoTransacoes$.next(all);
           this.isLoading$.next(false);
         },
@@ -218,7 +206,7 @@ export class TransacoesListViewModel {
       this.transacoesService.getCartaoTransactionsByStatus(f.status, bancoId).subscribe({
         next: dtos => {
           let all = TransacoesMapper.toModelArray(dtos);
-          if (f.period) all = this.filterByPeriod(all, f.period);
+          if (f.period) all = filterByPeriod(all, f.period);
           this.cartaoTransacoes$.next(all);
           this.isLoading$.next(false);
         },
@@ -236,7 +224,7 @@ export class TransacoesListViewModel {
         next: dtos => {
           let all = TransacoesMapper.toModelArray(dtos);
           if (f.status) all = all.filter(t => t.status === f.status);
-          if (f.period) all = this.filterByPeriod(all, f.period);
+          if (f.period) all = filterByPeriod(all, f.period);
           this.cartaoTransacoes$.next(all);
           this.isLoading$.next(false);
         },
@@ -274,43 +262,10 @@ export class TransacoesListViewModel {
   // ── Helpers ───────────────────────────────────────────────
 
   /**
-   * Format a day+month into short month name
-   */
-  formatData(dia: number, mes: number): string {
-    const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    return `${dia} ${meses[mes - 1] ?? ''}`;
-  }
-
-  /**
    * Return whether there are any cards available
    */
   hasCartoes(): boolean {
     return this.cartoes$.getValue().length > 0;
-  }
-
-  private filterByPeriod(items: TransacaoModel[], period: PeriodFilter): TransacaoModel[] {
-    if (!period) return items;
-    const now = new Date();
-    let startYear = now.getFullYear();
-    let startMonth = now.getMonth() + 1;
-
-    if (period === 'Este Mês') {
-      return items.filter(t => t.mes === startMonth && t.ano === startYear);
-    } else if (period === 'Últimos 3 Meses') {
-      const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-      return items.filter(t => {
-        const tDate = new Date(t.ano, t.mes - 1, t.dia);
-        return tDate >= start && tDate <= now;
-      });
-    } else if (period === 'Último Ano') {
-      const start = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-      return items.filter(t => {
-        const tDate = new Date(t.ano, t.mes - 1, t.dia);
-        return tDate >= start && tDate <= now;
-      });
-    }
-    return items;
   }
 
   /**
@@ -319,7 +274,6 @@ export class TransacoesListViewModel {
    */
   public deleteTransacao(transacaoId: string): void {
     if (!transacaoId) return;
-    const bancoId = this.bancoId ?? undefined;
     this.isLoading$.next(true);
     this.transacoesService.delete(transacaoId).subscribe({
       next: () => {

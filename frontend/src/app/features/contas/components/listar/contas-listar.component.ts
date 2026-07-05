@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ContasListViewModel } from './contas-listar.view-model';
 
+
 @Component({
   selector: 'app-contas-list',
   standalone: true,

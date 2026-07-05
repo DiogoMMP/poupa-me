@@ -10,13 +10,9 @@ import { CategoriasDTO } from '../../../categorias/dto/categorias.dto';
 import { DespesasRecorrentesService } from '../../services/despesas-recorrentes.service';
 import { DespesasRecorrentesMapper } from '../../mappers/despesas-recorrentes.mapper';
 import { DespesaRecorrenteModel } from '../../models/despesas-recorrentes.model';
+import { DespesaFilters, filterByPeriod } from './despesas-recorrentes-listar.filter';
 
-export type PeriodFilter = 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano' | '';
-
-export interface DespesaFilters {
-  categoriaId: string;
-  period: PeriodFilter;
-}
+export type { PeriodFilter, DespesaFilters } from './despesas-recorrentes-listar.filter';
 
 @Injectable()
 export class DespesasRecorrentesListViewModel {
@@ -46,7 +42,7 @@ export class DespesasRecorrentesListViewModel {
   /** Set of transaction ids currently being processed to prevent duplicate clicks */
   private busyIds = new Set<string>();
 
-  readonly PERIODS: PeriodFilter[] = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'];
+  readonly PERIODS = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'] as const;
 
   constructor() {
     this.selectedBanco.selectedBancoId$.subscribe(() => this.loadAll());
@@ -87,28 +83,20 @@ export class DespesasRecorrentesListViewModel {
     }
     this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Semanal').subscribe({
       next: dtos => this.despesasSemValorSemanal$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
-      error: err => {
-        console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err);
-      }
+      error: err => { console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err); }
     });
     this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Mensal').subscribe({
       next: dtos => this.despesasSemValorMensal$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
-      error: err => {
-        console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err);
-      }
+      error: err => { console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err); }
     });
     this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Anual').subscribe({
       next: dtos => this.despesasSemValorAnual$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
-      error: err => {
-        console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err);
-      }
+      error: err => { console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err); }
     });
     this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Poupança').subscribe({
       next: dtos => this.despesasSemValorPoupanca$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
-      error: err => {
-        console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err);
-      }
-    })
+      error: err => { console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err); }
+    });
   }
 
   // ── Pendentes column ──────────────────────────────────────
@@ -169,7 +157,7 @@ export class DespesasRecorrentesListViewModel {
       this.transacoesService.getDespesaRecorrenteByCategoria(f.categoriaId, bancoId).subscribe({
         next: dtos => {
           let all = TransacoesMapper.toModelArray(dtos).filter(t => t.status === 'Concluído');
-          if (f.period) all = this.filterByPeriod(all, f.period);
+          if (f.period) all = filterByPeriod(all, f.period);
           this.concluidas$.next(all);
           this.isLoading$.next(false);
         },
@@ -197,33 +185,6 @@ export class DespesasRecorrentesListViewModel {
 
   // ── Helpers ───────────────────────────────────────────────
 
-  formatData(dia: number, mes: number): string {
-    const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    return `${dia} ${meses[mes - 1] ?? ''}`;
-  }
-
-  private filterByPeriod(items: TransacaoModel[], period: PeriodFilter): TransacaoModel[] {
-    if (!period) return items;
-    const now = new Date();
-    if (period === 'Este Mês') {
-      return items.filter(t => t.mes === now.getMonth() + 1 && t.ano === now.getFullYear());
-    } else if (period === 'Últimos 3 Meses') {
-      const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-      return items.filter(t => {
-        const d = new Date(t.ano, t.mes - 1, t.dia);
-        return d >= start && d <= now;
-      });
-    } else if (period === 'Último Ano') {
-      const start = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-      return items.filter(t => {
-        const d = new Date(t.ano, t.mes - 1, t.dia);
-        return d >= start && d <= now;
-      });
-    }
-    return items;
-  }
-
   /**
    * Returns true if the transaction id is currently being processed
    */
@@ -232,7 +193,7 @@ export class DespesasRecorrentesListViewModel {
   }
 
   /**
-   * Conclude a recurring transaction: calls the correct endpoint depending on the transaction type
+   * Conclude a recurring transaction: calls the correct endpoint depending on the transaction type.
    * Supports 'Despesa Mensal' and 'Poupança'. Refreshes lists on success.
    */
   concluirTransacao(t: TransacaoModel): void {

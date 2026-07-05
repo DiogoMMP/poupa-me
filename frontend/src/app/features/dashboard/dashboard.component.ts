@@ -1,9 +1,12 @@
-import {Component, ChangeDetectionStrategy, inject, OnInit, HostListener} from '@angular/core';
-import { CommonModule, NgStyle } from '@angular/common';
+import {Component, ChangeDetectionStrategy, inject, OnInit} from '@angular/core';
+import { CommonModule } from '@angular/common';
 import {RouterModule, Routes} from '@angular/router';
 import {AuthService} from '../auth/services/auth.service';
 import { signal } from '@angular/core';
 import { DashboardViewModel } from './dashboard.view-model';
+import { TransacaoItemComponent } from '../../shared/components/transacao-item/transacao-item.component';
+import { NovaTransacaoMenuComponent } from '../../shared/components/nova-transacao-menu/nova-transacao-menu.component';
+import { LoadingCoinComponent } from '../../shared/components/loading-coin/loading-coin.component';
 
 /**
  * Dashboard component displaying the dashboard page content.
@@ -11,7 +14,7 @@ import { DashboardViewModel } from './dashboard.view-model';
 @Component({
   selector: 'app-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TransacaoItemComponent, NovaTransacaoMenuComponent, LoadingCoinComponent],
   templateUrl: 'dashboard.component.html',
   styleUrls: ['dashboard.component.css'],
   host: {class: 'page-dashboard'},
@@ -38,9 +41,6 @@ export class DashboardComponent implements OnInit {
   transacoes$ = this.vm.transacoes$;
   hasBancoSelected$ = this.vm.hasBancoSelected$;
 
-  // Nova Transação dropdown
-  showCreateMenu = false;
-
   ngOnInit(): void {
     this.greeting.set(this.computeGreeting());
     this.vm.loadBancos();
@@ -51,16 +51,6 @@ export class DashboardComponent implements OnInit {
     if (h >= 5 && h < 12) return 'Bom dia';
     if (h >= 12 && h < 18) return 'Boa tarde';
     return 'Boa noite';
-  }
-
-  toggleCreateMenu(event: MouseEvent): void {
-    event.stopPropagation();
-    this.showCreateMenu = !this.showCreateMenu;
-  }
-
-  @HostListener('document:click')
-  closeCreateMenu(): void {
-    this.showCreateMenu = false;
   }
 }
 

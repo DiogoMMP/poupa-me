@@ -1,22 +1,29 @@
-import { Component, OnInit, inject, HostListener } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TransacoesListViewModel, ContaFilters, CartaoFilters } from './transacoes-listar.view-model';
 import { TransacaoModel } from '../../models/transacoes.model';
+import { formatData } from './transacoes-listar.formatter';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { TransacaoItemComponent } from '../../../../shared/components/transacao-item/transacao-item.component';
+import { NovaTransacaoMenuComponent } from '../../../../shared/components/nova-transacao-menu/nova-transacao-menu.component';
 
 const PAGE_SIZE = 10; // items per page
 
 @Component({
   selector: 'app-transacoes-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, PaginationComponent, TransacaoItemComponent, NovaTransacaoMenuComponent],
   templateUrl: './transacoes-listar.component.html',
   styleUrls: ['./transacoes-listar.component.css'],
   providers: [TransacoesListViewModel]
 })
 export class TransacoesListComponent implements OnInit {
   public vm = inject(TransacoesListViewModel);
+
+  /** Expose formatter utility directly to the template */
+  readonly formatData = formatData;
 
   // Local form state for filters (bound via ngModel)
   contaFilterForm: ContaFilters = { categoriaId: '', contaId: '', period: 'Este Mês' };
@@ -25,9 +32,6 @@ export class TransacoesListComponent implements OnInit {
   // Toggle filter panels
   showContaFilters = false;
   showCartaoFilters = false;
-
-  // Nova Transação dropdown
-  showCreateMenu = false;
 
   contaPage = 1;
   cartaoPage = 1;
@@ -104,15 +108,5 @@ export class TransacoesListComponent implements OnInit {
     const ok = confirm('Eliminar transação? Esta ação não pode ser desfeita.');
     if (!ok) return;
     this.vm.deleteTransacao(t.id);
-  }
-
-  toggleCreateMenu(event: MouseEvent): void {
-    event.stopPropagation();
-    this.showCreateMenu = !this.showCreateMenu;
-  }
-
-  @HostListener('document:click')
-  closeCreateMenu(): void {
-    this.showCreateMenu = false;
   }
 }

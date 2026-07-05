@@ -15,7 +15,10 @@ export type Tipos =
     "Despesa Mensal" |
     "Poupança" |
     "Despesa Semanal" |
-    "Despesa Anual";
+    "Despesa Anual" |
+    "Entrada Semanal" |
+    "Entrada Mensal" |
+    "Entrada Anual";
 
 /**
  * Properties required to create a Tipo value object.
@@ -41,7 +44,7 @@ export class Tipo extends ValueObject<TipoProps> {
     /** Checks whether the provided value is supported by the domain */
     public static isSupported(value: string): value is Tipos {
         return ["Entrada", "Saída", "Crédito", "Reembolso", "Despesa Mensal", "Poupança", "Despesa Semanal",
-            "Despesa Anual"].includes(value);
+            "Despesa Anual", "Entrada Semanal", "Entrada Mensal", "Entrada Anual"].includes(value);
     }
 
     /**
@@ -76,7 +79,8 @@ export class Tipo extends ValueObject<TipoProps> {
      * Returns true if the transaction represents money coming in
      */
     public isIncome(): boolean {
-        return this.value === "Entrada" || this.value === "Reembolso";
+        return this.value === "Entrada" || this.value === "Reembolso" || this.value === "Entrada Semanal"
+            || this.value === "Entrada Mensal" || this.value === "Entrada Anual";
     }
 
     /**

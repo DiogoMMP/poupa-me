@@ -1,12 +1,11 @@
 import { Router } from 'express';
 import authRoute from "./routes/AuthRoute.js";
 import categoriaRoute from "./routes/CategoriaRoute.js";
-import transacaoRoute from "./routes/TransacaoRoute.js";
+import transacaoRoute from "./routes/Transacao/index.js";
 import contaRoute from "./routes/ContaRoute.js";
 import cartaoCreditoRoute from "./routes/CartaoCreditoRoute.js";
 import bancoRoute from "./routes/BancoRoute.js";
-import despesaRecorrenteRoute from "./routes/DespesaRecorrenteRoute.js";
-import importRoute from "./routes/ImportRoute.js";
+import despesaRecorrenteRoute from "./routes/DespesaRecorrente/index.js";
 import iACategorizacaoRoute from "./routes/IACategorizacaoRoute.js";
 import healthRoute from "./routes/Health.js"
 import estatisticasRoute from "./routes/EstatisticasRoute.js";
@@ -37,9 +36,6 @@ export default () => {
 
 	// Register DespesaRecorrente routes
 	despesaRecorrenteRoute(app);
-
-	// Register Import routes
-	importRoute(app);
 
 	// Register AI Categorization routes
 	iACategorizacaoRoute(app);

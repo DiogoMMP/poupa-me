@@ -1,0 +1,124 @@
+:host {
+  display: block;
+  width: 100%;
+  padding: 3rem 1rem;
+}
+
+.loading-coin-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.coin-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  perspective: 600px;
+}
+
+/* Medium size (default) */
+.loading-coin--medium .coin {
+  width: 56px;
+  height: 56px;
+  font-size: 1.5rem;
+}
+.loading-coin--medium .coin-shadow {
+  width: 44px;
+  height: 8px;
+  margin-top: 12px;
+}
+
+/* Large size */
+.loading-coin--large .coin {
+  width: 80px;
+  height: 80px;
+  font-size: 2.25rem;
+}
+.loading-coin--large .coin-shadow {
+  width: 64px;
+  height: 10px;
+  margin-top: 16px;
+}
+
+.coin {
+  position: relative;
+  transform-style: preserve-3d;
+  animation: spinCoin 1.8s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+}
+
+.coin-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 50%, #b45309 100%);
+  border: 3px solid #fef08a;
+  box-shadow: 0 4px 10px rgba(217, 119, 6, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.coin-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(135deg, #f59e0b 0%, #b45309 50%, #92400e 100%);
+}
+
+.coin-shadow {
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 80%);
+  border-radius: 50%;
+  animation: pulseShadow 1.8s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+}
+
+.loading-message {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #64748b);
+  margin: 0;
+  letter-spacing: 0.02em;
+  animation: pulseText 1.8s infinite ease-in-out;
+}
+
+@keyframes spinCoin {
+  0% {
+    transform: rotateY(0deg) translateY(0px);
+  }
+  25% {
+    transform: rotateY(90deg) translateY(-8px);
+  }
+  50% {
+    transform: rotateY(180deg) translateY(0px);
+  }
+  75% {
+    transform: rotateY(270deg) translateY(-8px);
+  }
+  100% {
+    transform: rotateY(360deg) translateY(0px);
+  }
+}
+
+@keyframes pulseShadow {
+  0%, 50%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  25%, 75% {
+    transform: scale(0.7);
+    opacity: 0.4;
+  }
+}
+
+@keyframes pulseText {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}

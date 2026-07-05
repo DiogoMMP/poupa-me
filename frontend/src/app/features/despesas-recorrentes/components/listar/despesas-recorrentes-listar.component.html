@@ -188,7 +188,7 @@
               <p class="transacao-valor text-large text-negative">
                 - {{ t.valor | number:'1.2-2' }} {{ t.moeda === 'EUR' ? '€' : t.moeda }}
               </p>
-              <span class="transacao-data text-muted text-small">{{ vm.formatData(t.dia, t.mes) }} {{ t.ano }}</span>
+              <span class="transacao-data text-muted text-small">{{ formatData(t.dia, t.mes) }} {{ t.ano }}</span>
               <span class="status-badge"
                     [class.status-badge--pendente]="t.status === 'Pendente'"
                     [class.status-badge--concluido]="t.status === 'Concluído'">
@@ -302,7 +302,7 @@
               <p class="transacao-valor text-large text-negative">
                 - {{ t.valor | number:'1.2-2' }} {{ t.moeda === 'EUR' ? '€' : t.moeda }}
               </p>
-              <span class="transacao-data text-muted text-small">{{ vm.formatData(t.dia, t.mes) }} {{ t.ano }}</span>
+              <span class="transacao-data text-muted text-small">{{ formatData(t.dia, t.mes) }} {{ t.ano }}</span>
               <span class="status-badge"
                     [class.status-badge--pendente]="t.status === 'Pendente'"
                     [class.status-badge--concluido]="t.status === 'Concluído'">

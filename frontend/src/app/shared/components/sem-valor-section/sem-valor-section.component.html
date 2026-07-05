@@ -1,0 +1,14 @@
+<div class="sem-valor-section" *ngIf="items && items.length > 0">
+  <p class="sem-valor-label">{{ label }}</p>
+  <div class="sem-valor-list">
+    <button
+      *ngFor="let d of items"
+      class="sem-valor-btn"
+      (click)="onClick(d)"
+      [title]="d.nome"
+    >
+      <span class="sem-valor-icon">{{ d.icon }}</span>
+      <span class="sem-valor-nome">{{ d.nome }}</span>
+    </button>
+  </div>
+</div>

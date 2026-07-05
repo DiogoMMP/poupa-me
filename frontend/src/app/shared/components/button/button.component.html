@@ -1,0 +1,27 @@
+<ng-template #content>
+  <span *ngIf="loading" class="btn-spinner"></span>
+  <app-icon *ngIf="icon && !loading" [name]="icon" [size]="size === 'small' ? 16 : (size === 'large' ? 22 : 18)"></app-icon>
+  <span class="btn-text"><ng-content></ng-content></span>
+</ng-template>
+
+<ng-container *ngIf="routerLink; else buttonElement">
+  <a
+    [routerLink]="routerLink"
+    class="app-btn"
+    [ngClass]="['app-btn--' + variant, 'app-btn--' + size]"
+    [class.app-btn--disabled]="disabled || loading"
+    (click)="onClick($event)">
+    <ng-container *ngTemplateOutlet="content"></ng-container>
+  </a>
+</ng-container>
+
+<ng-template #buttonElement>
+  <button
+    [type]="type"
+    [disabled]="disabled || loading"
+    class="app-btn"
+    [ngClass]="['app-btn--' + variant, 'app-btn--' + size]"
+    (click)="onClick($event)">
+    <ng-container *ngTemplateOutlet="content"></ng-container>
+  </button>
+</ng-template>

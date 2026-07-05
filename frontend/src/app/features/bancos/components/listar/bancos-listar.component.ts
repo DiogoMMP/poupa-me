@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { BancosListViewModel } from './bancos-listar.view-model';
 
+
 @Component({
   selector: 'app-bancos-list',
   standalone: true,

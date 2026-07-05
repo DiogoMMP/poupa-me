@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { UtilizadoresListViewModel } from './utilizadores-listar.view-model';
 
+
 @Component({
   selector: 'app-utilizadores-list',
   standalone: true,

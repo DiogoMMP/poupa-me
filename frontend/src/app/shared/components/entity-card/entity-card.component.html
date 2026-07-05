@@ -1,0 +1,36 @@
+<div class="card card--hover">
+  <div class="card-icon-wrapper">
+    <div *ngIf="icon; else projectedIcon" class="card-icon card-icon--circle">{{ icon }}</div>
+    <ng-template #projectedIcon>
+      <ng-content select="[card-icon]"></ng-content>
+    </ng-template>
+  </div>
+
+  <div class="card-content">
+    <h3 class="card-title">{{ title }}</h3>
+    <p *ngIf="value" class="card-value">{{ value }}</p>
+    <ng-content></ng-content>
+  </div>
+
+  <div class="card-actions" *ngIf="showActions && (editRoute || actionText || showDelete)">
+    <button *ngIf="editRoute" [routerLink]="editRoute" class="btn-action">
+      <svg *ngIf="!editIcon" class="svg-icon" viewBox="0 0 24 24">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="currentColor"/>
+      </svg>
+      <app-icon *ngIf="editIcon" [name]="editIcon" [size]="16"></app-icon>
+      <span>{{ editText }}</span>
+    </button>
+
+    <button *ngIf="actionText" (click)="actionClicked.emit()" [routerLink]="actionRoute" class="btn-action">
+      <app-icon *ngIf="actionIcon" [name]="actionIcon" [size]="16"></app-icon>
+      <span>{{ actionText }}</span>
+    </button>
+
+    <ng-content select="[card-actions]"></ng-content>
+
+    <button *ngIf="showDelete" (click)="deleteClicked.emit()" class="btn-delete">
+      <svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 7h12v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3-4h6l1 1H8l1-1z" fill="currentColor"/></svg>
+      <span>{{ deleteText }}</span>
+    </button>
+  </div>
+</div>

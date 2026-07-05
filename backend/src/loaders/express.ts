@@ -110,6 +110,22 @@ ${isLocalDevelopment ? `
           description: 'Servidor Local',
         }
       ],
+      tags: [
+        { name: 'Auth', description: 'Autenticação de utilizadores e gestão de sessão' },
+        { name: 'Banco', description: 'Gestão de entidades bancárias e painéis globais' },
+        { name: 'Conta', description: 'Gestão de contas bancárias (à ordem, poupança, etc.)' },
+        { name: 'CartaoCredito', description: 'Gestão de cartões de crédito e pagamentos de faturas' },
+        { name: 'Categoria', description: 'Gestão de categorias de receitas e despesas' },
+        { name: 'Transação', description: 'Operações CRUD e registo base de transações (Entradas, Saídas, Créditos, Reembolsos, Poupanças)' },
+        { name: 'Transação - Despesas Recorrentes', description: 'Registo e consulta de transações geradas por despesas recorrentes' },
+        { name: 'Transação - Queries Conta/Banco', description: 'Consultas avançadas, agregações e extratos por Conta ou Banco' },
+        { name: 'Transação - Queries Cartão', description: 'Consultas avançadas e extratos por Cartão de Crédito' },
+        { name: 'Despesa Recorrente - Regras', description: 'Gestão e configuração de regras de recorrência (Mensal, Semanal, Anual)' },
+        { name: 'Despesa Recorrente - Processador', description: 'Geração manual e processamento em background de recorrências' },
+        { name: 'Estatisticas', description: 'Agregações estatísticas e resumos financeiros' },
+        { name: 'IACategorizacao', description: 'Categorização inteligente de transações baseada em Inteligência Artificial' },
+        { name: 'Health', description: 'Verificação do estado e saúde da API' }
+      ],
       components: {
         securitySchemes: {
           bearerAuth: {

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { Container } from 'typedi';
 import { isAuth, authorize, Role } from '../middlewares/index.js';
 import type { AuthenticatedRequest } from '../middlewares/index.js';
-import AuthController from '../../controllers/AuthController.js';
+import AuthController from '../../controllers/Auth/AuthController.js';
 
 const route = Router();
 

@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { DespesasRecorrentesListViewModel, DespesaFilters } from './despesas-recorrentes-listar.view-model';
 import { TransacaoModel } from '../../../transacoes/models/transacoes.model';
 import { DespesaRecorrenteModel } from '../../models/despesas-recorrentes.model';
+import { formatData } from './despesas-recorrentes-listar.formatter';
 
 const PAGE_SIZE = 10;
 
@@ -19,6 +20,8 @@ const PAGE_SIZE = 10;
 export class DespesasRecorrentesListComponent implements OnInit {
   public vm = inject(DespesasRecorrentesListViewModel);
   private router = inject(Router);
+
+  readonly formatData = formatData;
 
   // Filter form state
   pendenteFilterForm: DespesaFilters = { categoriaId: '', period: '' };

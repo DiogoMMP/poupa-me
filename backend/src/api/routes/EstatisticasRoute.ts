@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { Container } from 'typedi';
 import { isAuth } from '../middlewares/index.js';
 import type { AuthenticatedRequest } from '../middlewares/index.js';
-import EstatisticasController from '../../controllers/EstatisticasController.js';
+import EstatisticasController from '../../controllers/Estatisticas/EstatisticasController.js';
 
 const route = Router();
 

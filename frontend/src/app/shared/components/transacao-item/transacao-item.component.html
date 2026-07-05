@@ -1,0 +1,50 @@
+<div class="transacao-item card" [class.card--clickable]="!showActions">
+  <!-- Icon -->
+  <svg *ngIf="iconOverride === 'concluido'" width="24" height="24" viewBox="0 0 24 24" fill="none" class="transacao-icon concluido-icon">
+    <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7.5 12.5l2.5 2.5L16.5 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </svg>
+  <svg *ngIf="iconOverride !== 'concluido' && isPositive" width="24" height="24" viewBox="0 0 24 24" fill="none" class="transacao-icon entradas-icon">
+    <path d="M12 19.5L17 14.5M12 19.5L7 14.5M12 19.5C12 19.5 12 11.1667 12 9.5C12 7.83333 11 4.5 7 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <svg *ngIf="iconOverride !== 'concluido' && !isPositive" width="24" height="24" viewBox="0 0 24 24" fill="none" class="transacao-icon saidas-icon">
+    <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+
+  <div class="transacao-details">
+    <p class="transacao-descricao text-large">{{ transacao.descricao }}</p>
+    <span class="transacao-meta text-muted text-small">
+      {{ transacao.categoria.icon }} {{ transacao.categoria.nome }}
+      <span *ngIf="transacao.conta"> • {{ transacao.conta.nome }}</span>
+      <span *ngIf="transacao.cartaoCredito"> • {{ transacao.cartaoCredito.nome }}</span>
+    </span>
+
+    <!-- Actions (left) -->
+    <div class="transacao-actions" *ngIf="showActions">
+      <a class="btn-edit-small" [routerLink]="[editRoutePrefix, transacao.id]" title="Editar" aria-label="Editar transação">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <button class="btn-delete-small" title="Eliminar" aria-label="Eliminar transação" (click)="onDelete()">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6M10 6V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button *ngIf="showConcluir" class="btn-concluir-small" title="Concluir" aria-label="Concluir transação" (click)="onConcluir()" [disabled]="isBusy">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="transacao-values">
+    <p class="transacao-valor text-large"
+       [class.text-positive]="isPositive"
+       [class.text-negative]="!isPositive">
+      {{ isPositive ? '+' : '-' }} {{ transacao.valor | number:'1.2-2' }} {{ transacao.moeda === 'EUR' ? '€' : transacao.moeda }}
+    </p>
+    <span class="transacao-data text-muted text-small">{{ formatData(transacao.dia, transacao.mes) }} {{ transacao.ano }}</span>
+    <span *ngIf="showStatus && transacao.status && transacao.tipo !== 'Entrada' && transacao.tipo !== 'Saída'"
+          class="status-badge"
+          [class.status-badge--pendente]="transacao.status === 'Pendente'"
+          [class.status-badge--concluido]="transacao.status === 'Concluído'">
+      {{ transacao.status }}
+    </span>
+  </div>
+</div>

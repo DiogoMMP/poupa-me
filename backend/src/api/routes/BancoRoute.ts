@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { Container } from 'typedi';
 import { isAuth } from '../middlewares/index.js';
-import BancoController from '../../controllers/BancoController.js';
+import BancoController from '../../controllers/Banco/BancoController.js';
 
 const route = Router();
 

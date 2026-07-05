@@ -45,19 +45,65 @@ export default async ({expressApp}: { expressApp: Application }) => {
 
 
 
-    const transacaoController = {
-        name: config.controllers.transacao.name,
-        path: config.controllers.transacao.path
-    };
 
     const transacaoRepo = {
         name: config.repos.transacao.name,
         path: config.repos.transacao.path
     };
 
+    const transacaoContaQueryRepo = {
+        name: config.repos.transacaoContaQuery.name,
+        path: config.repos.transacaoContaQuery.path
+    };
+
+    const transacaoCartaoQueryRepo = {
+        name: config.repos.transacaoCartaoQuery.name,
+        path: config.repos.transacaoCartaoQuery.path
+    };
+
+    const transacaoPagarCartaoRepo = {
+        name: config.repos.transacaoPagarCartao.name,
+        path: config.repos.transacaoPagarCartao.path
+    };
+
+    const transacaoDespesasRecorrentesRepo = {
+        name: config.repos.transacaoDespesasRecorrentes.name,
+        path: config.repos.transacaoDespesasRecorrentes.path
+    };
+
     const transacaoService = {
         name: config.services.transacao.name,
         path: config.services.transacao.path
+    };
+
+    const transacaoContaQueryService = {
+        name: config.services.transacaoContaQuery.name,
+        path: config.services.transacaoContaQuery.path
+    };
+
+    const transacaoCartaoQueryService = {
+        name: config.services.transacaoCartaoQuery.name,
+        path: config.services.transacaoCartaoQuery.path
+    };
+
+    const transacaoDespesasRecorrentesService = {
+        name: config.services.transacaoDespesasRecorrentes.name,
+        path: config.services.transacaoDespesasRecorrentes.path
+    };
+
+    const transacaoController = {
+        name: config.controllers.transacao.name,
+        path: config.controllers.transacao.path
+    };
+
+    const transacaoContaQueryController = {
+        name: config.controllers.transacaoContaQuery.name,
+        path: config.controllers.transacaoContaQuery.path
+    };
+
+    const transacaoCartaoQueryController = {
+        name: config.controllers.transacaoCartaoQuery.name,
+        path: config.controllers.transacaoCartaoQuery.path
     };
 
 
@@ -116,9 +162,19 @@ export default async ({expressApp}: { expressApp: Application }) => {
         path: config.controllers.despesaRecorrente.path
     };
 
+    const despesaRecorrenteProcessadorController = {
+        name: config.controllers.despesaRecorrenteProcessador.name,
+        path: config.controllers.despesaRecorrenteProcessador.path
+    };
+
     const despesaRecorrenteService = {
         name: config.services.despesaRecorrente.name,
         path: config.services.despesaRecorrente.path
+    };
+
+    const despesaRecorrenteProcessadorService = {
+        name: config.services.despesaRecorrenteProcessador.name,
+        path: config.services.despesaRecorrenteProcessador.path
     };
 
     const despesaRecorrenteRepo = {
@@ -126,17 +182,14 @@ export default async ({expressApp}: { expressApp: Application }) => {
         path: config.repos.despesaRecorrente.path
     };
 
-
-
-    const importService = {
-        name: config.services.import.name,
-        path: config.services.import.path
+    const despesaRecorrenteQueryRepo = {
+        name: config.repos.despesaRecorrenteQuery.name,
+        path: config.repos.despesaRecorrenteQuery.path
     };
 
-    const importController = {
-        name: config.controllers.import.name,
-        path: config.controllers.import.path
-    };
+
+
+
 
 
 
@@ -169,11 +222,13 @@ export default async ({expressApp}: { expressApp: Application }) => {
             authController,
             categoriaController,
             transacaoController,
+            transacaoContaQueryController,
+            transacaoCartaoQueryController,
             contaController,
             cartaoController,
             bancoController,
             despesaRecorrenteController,
-            importController,
+            despesaRecorrenteProcessadorController,
             iaCategorizacaoController,
             estatisticasController
         ],
@@ -181,20 +236,28 @@ export default async ({expressApp}: { expressApp: Application }) => {
             userRepo,
             categoriaRepo,
             transacaoRepo,
+            transacaoContaQueryRepo,
+            transacaoCartaoQueryRepo,
+            transacaoPagarCartaoRepo,
+            transacaoDespesasRecorrentesRepo,
             contaRepo,
             cartaoRepo,
             bancoRepo,
-            despesaRecorrenteRepo
+            despesaRecorrenteRepo,
+            despesaRecorrenteQueryRepo
         ],
         services: [
             authService,
             categoriaService,
+            transacaoDespesasRecorrentesService,
             transacaoService,
+            transacaoContaQueryService,
+            transacaoCartaoQueryService,
             contaService,
             cartaoService,
             bancoService,
             despesaRecorrenteService,
-            importService,
+            despesaRecorrenteProcessadorService,
             iaCategorizacaoService,
             estatisticasService
         ]

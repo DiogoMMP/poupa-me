@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { Container } from 'typedi';
 import { isAuth } from '../middlewares/index.js';
 import type { AuthenticatedRequest } from '../middlewares/index.js';
-import ContaController from '../../controllers/ContaController.js';
+import ContaController from '../../controllers/Conta/ContaController.js';
 
 const route = Router();
 

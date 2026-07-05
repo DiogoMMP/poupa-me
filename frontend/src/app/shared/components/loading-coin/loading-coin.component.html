@@ -1,0 +1,10 @@
+<div class="loading-coin-container" [ngClass]="'loading-coin--' + size">
+  <div class="coin-wrapper">
+    <div class="coin">
+      <div class="coin-face coin-front">€</div>
+      <div class="coin-face coin-back">€</div>
+    </div>
+    <div class="coin-shadow"></div>
+  </div>
+  <p *ngIf="message" class="loading-message">{{ message }}</p>
+</div>

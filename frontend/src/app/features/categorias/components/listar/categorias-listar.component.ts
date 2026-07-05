@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CategoriasListViewModel } from './categorias-listar.view-model';
 
+
 @Component({
   selector: 'app-categorias-list',
   standalone: true,
