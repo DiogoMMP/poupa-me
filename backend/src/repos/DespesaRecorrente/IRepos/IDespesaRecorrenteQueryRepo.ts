@@ -6,7 +6,6 @@ import type { DespesaRecorrente } from '../../../domain/DespesaRecorrente/Entiti
 export default interface IDespesaRecorrenteQueryRepo {
     findAll(userId: string, bancoId?: string): Promise<DespesaRecorrente[]>;
     findActiveByUserId(userId: string): Promise<DespesaRecorrente[]>;
-    findWithValor(userId: string, bancoId: string): Promise<DespesaRecorrente[]>;
-    findWithoutValor(userId: string, bancoId: string): Promise<DespesaRecorrente[]>;
-    findByTipo(userId: string, tipo: string, bancoId?: string): Promise<DespesaRecorrente[]>;
+    findWithValor(userId: string, bancoId?: string): Promise<DespesaRecorrente[]>;
+    findWithoutValor(userId: string, bancoId?: string, tipo?: string): Promise<DespesaRecorrente[]>;
 }

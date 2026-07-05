@@ -11,5 +11,4 @@ export default interface IDespesaRecorrenteController {
     getAllDespesas(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
     getDespesasComValor(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
     getDespesasSemValor(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
-    getDespesasSemValorByTipo(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 }

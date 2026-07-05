@@ -193,7 +193,7 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
         }
     }
 
-    public async getDespesasComValor(userId: string, bancoId: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
+    public async getDespesasComValor(userId: string, bancoId?: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
         try {
             const despesas = await this.despesaQueryRepo.findWithValor(userId, bancoId);
             return Result.ok<IDespesaRecorrenteDTO[]>(despesas.map(d => DespesaRecorrenteMap.toDTO(d)));
@@ -203,24 +203,18 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
         }
     }
 
-    public async getDespesasSemValorByTipo(userId: string, tipo: string, bancoId?: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
+    public async getDespesasSemValor(userId: string, bancoId?: string, tipo?: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
         try {
-            const tipoResult = Tipo.create(tipo);
-            if (tipoResult.isFailure) {
-                return Result.fail<IDespesaRecorrenteDTO[]>(String(tipoResult.error));
+            let validTipo: string | undefined = undefined;
+            if (tipo) {
+                const tipoResult = Tipo.create(tipo);
+                if (tipoResult.isFailure) {
+                    return Result.fail<IDespesaRecorrenteDTO[]>(String(tipoResult.error));
+                }
+                validTipo = tipoResult.getValue().value;
             }
 
-            const despesas = await this.despesaQueryRepo.findByTipo(userId, tipoResult.getValue().value, bancoId);
-            return Result.ok<IDespesaRecorrenteDTO[]>(despesas.map(d => DespesaRecorrenteMap.toDTO(d)));
-        } catch (err) {
-            this.logger.error('DespesaRecorrenteService.getDespesasSemValorByTipo error: %o', err);
-            return Result.fail<IDespesaRecorrenteDTO[]>('Error fetching recurring sem-valor expenses by tipo');
-        }
-    }
-
-    public async getDespesasSemValor(userId: string, bancoId: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
-        try {
-            const despesas = await this.despesaQueryRepo.findWithoutValor(userId, bancoId);
+            const despesas = await this.despesaQueryRepo.findWithoutValor(userId, bancoId, validTipo);
             return Result.ok<IDespesaRecorrenteDTO[]>(despesas.map(d => DespesaRecorrenteMap.toDTO(d)));
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.getDespesasSemValor error: %o', err);

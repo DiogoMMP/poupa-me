@@ -148,11 +148,7 @@ export default class DespesaRecorrenteController implements IDespesaRecorrenteCo
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const bancoId = req.query.bancoId as string;
-            if (!bancoId) {
-                return res.status(400).json({ error: 'bancoId query parameter is required' });
-            }
-
+            const bancoId = req.query.bancoId as string | undefined;
             const result = await this.despesaService.getDespesasComValor(userId, bancoId);
 
             if (result.isFailure) {
@@ -172,37 +168,10 @@ export default class DespesaRecorrenteController implements IDespesaRecorrenteCo
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const bancoId = req.query.bancoId as string;
-            if (!bancoId) {
-                return res.status(400).json({ error: 'bancoId query parameter is required' });
-            }
-
-            const result = await this.despesaService.getDespesasSemValor(userId, bancoId);
-
-            if (result.isFailure) {
-                return res.status(400).json({ error: result.error });
-            }
-
-            return res.status(200).json(result.getValue());
-        } catch (err) {
-            next(err);
-        }
-    }
-
-    public async getDespesasSemValorByTipo(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            if (!userId) {
-                return res.status(401).json({ error: 'User not authenticated' });
-            }
-
-            const tipo = req.query.tipo as string;
-            if (!tipo) {
-                return res.status(400).json({ error: 'tipo query parameter is required' });
-            }
-
             const bancoId = req.query.bancoId as string | undefined;
-            const result = await this.despesaService.getDespesasSemValorByTipo(userId, tipo, bancoId);
+            const tipo = req.query.tipo as string | undefined;
+
+            const result = await this.despesaService.getDespesasSemValor(userId, bancoId, tipo);
 
             if (result.isFailure) {
                 return res.status(400).json({ error: result.error });

@@ -3,6 +3,7 @@ import { Result } from '../../core/logic/Result.js';
 import type { ITransacaoDTO } from '../../dto/ITransacaoDTO.js';
 import type ITransacaoContaQueryService from './IServices/ITransacaoContaQueryService.js';
 import type ITransacaoContaQueryRepo from '../../repos/Transacao/IRepos/ITransacaoContaQueryRepo.js';
+import type { ITransacaoContaQueryFilters } from '../../repos/Transacao/IRepos/ITransacaoContaQueryRepo.js';
 import { TransacaoMap } from '../../mappers/TransacaoMap.js';
 import type { Transacao } from '../../domain/Transacao/Entities/Transacao.js';
 
@@ -17,33 +18,21 @@ export default class TransacaoContaQueryService implements ITransacaoContaQueryS
     ) {}
 
     /**
-     * Finds all Entrada and Saída transactions for a specific account.
+     * Finds Entrada/Saída transactions with optional filters.
+     * Filters: userId, bancoId, contaId, categoriaId, period.
      */
-    public async findContaTransactions(contaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
+    public async findAllContaTransactions(filters?: ITransacaoContaQueryFilters): Promise<Result<ITransacaoDTO[]>> {
         try {
-            const rows: Transacao[] = await this.transacaoContaQueryRepo.findContaTransactions(contaId, userId);
+            const rows: Transacao[] = await this.transacaoContaQueryRepo.findAllContaTransactions(filters);
             return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
         } catch (e) {
-            this.logger.error('TransacaoContaQueryService.findContaTransactions error: %o', e);
+            this.logger.error('TransacaoContaQueryService.findAllContaTransactions error: %o', e);
             return Result.fail<ITransacaoDTO[]>('Error fetching conta transactions');
         }
     }
 
     /**
-     * Finds ALL Entrada/Saída transactions across every account (no contaId filter).
-     */
-    public async findAllContaTransactions(userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>> {
-        try {
-            const rows: Transacao[] = await this.transacaoContaQueryRepo.findAllContaTransactions(userId, bancoId);
-            return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
-        } catch (e) {
-            this.logger.error('TransacaoContaQueryService.findAllContaTransactions error: %o', e);
-            return Result.fail<ITransacaoDTO[]>('Error fetching all conta transactions');
-        }
-    }
-
-    /**
-     * Finds ALL transactions for a specific banco (conta + cartão).
+     * Finds ALL transactions for a specific banco (conta + cartão). Returns 5 most recent.
      */
     public async findAllByBanco(bancoId: string, userId?: string): Promise<Result<ITransacaoDTO[]>> {
         try {
@@ -52,32 +41,6 @@ export default class TransacaoContaQueryService implements ITransacaoContaQueryS
         } catch (e) {
             this.logger.error('TransacaoContaQueryService.findAllByBanco error: %o', e);
             return Result.fail<ITransacaoDTO[]>('Error fetching transactions for banco');
-        }
-    }
-
-    /**
-     * Finds Entrada/Saída transactions by category across all accounts.
-     */
-    public async findContaTransactionsByCategoria(categoriaId: string, userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>> {
-        try {
-            const rows: Transacao[] = await this.transacaoContaQueryRepo.findContaTransactionsByCategoria(categoriaId, userId, bancoId);
-            return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
-        } catch (e) {
-            this.logger.error('TransacaoContaQueryService.findContaTransactionsByCategoria error: %o', e);
-            return Result.fail<ITransacaoDTO[]>('Error fetching conta transactions by categoria');
-        }
-    }
-
-    /**
-     * Finds Entrada/Saída transactions by predefined period across all accounts.
-     */
-    public async findContaTransactionsByPeriod(period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string, bancoId?: string): Promise<Result<ITransacaoDTO[]>> {
-        try {
-            const rows: Transacao[] = await this.transacaoContaQueryRepo.findContaTransactionsByPeriod(period, userId, bancoId);
-            return Result.ok<ITransacaoDTO[]>(rows.map((r: Transacao) => TransacaoMap.toDTO(r)));
-        } catch (e) {
-            this.logger.error('TransacaoContaQueryService.findContaTransactionsByPeriod error: %o', e);
-            return Result.fail<ITransacaoDTO[]>('Error fetching conta transactions by period');
         }
     }
 }

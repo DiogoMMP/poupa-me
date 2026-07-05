@@ -18,7 +18,4 @@ export default interface ITransacaoController {
     deleteTransacao(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
     getTransacaoById(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
     getDespesaRecorrente(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
-    getDespesaRecorrenteByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
-    getDespesaRecorrenteByStatus(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
-    getDespesaRecorrenteByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void>;
 }

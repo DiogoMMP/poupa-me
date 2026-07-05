@@ -29,8 +29,8 @@ export default class EstatisticasService implements IEstatisticasService {
 
             // Fetch all conta (Entrada/Saída) and cartao (Crédito/Reembolso) transactions for this banco/user
             const [contaTransacoes, cartaoTransacoes] = await Promise.all([
-                this.transacaoContaQueryRepo.findAllContaTransactions(filterUserId, bancoId),
-                this.transacaoCartaoQueryRepo.findAllCartaoTransactions(filterUserId, bancoId)
+                this.transacaoContaQueryRepo.findAllContaTransactions({ userId: filterUserId, bancoId }),
+                this.transacaoCartaoQueryRepo.findAllCartaoTransactions({ userId: filterUserId, bancoId })
             ]);
 
             // Build date range. If the requested month/year is the current month/year,

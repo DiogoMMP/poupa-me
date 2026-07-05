@@ -1,5 +1,6 @@
 import {Result} from "../../../core/logic/Result.js";
 import { Transacao } from "../../../domain/Transacao/Entities/Transacao.js";
+import type { ITransacaoDespesasRecorrentesFilters } from '../../../repos/Transacao/IRepos/ITransacaoDespesasRecorrentesRepo.js';
 import type {
     ITransacaoDTO,
     ITransacaoInputDTO
@@ -33,32 +34,10 @@ export default interface ITransacaoDespesasRecorrentesService {
     concluirPoupanca(transacaoId: string): Promise<Result<ITransacaoDTO>>;
 
     /**
-     * Find all recurring expense transactions (Despesa Mensal + Poupança) for a specific bank.
-     * @param bancoId - The domain id of the Banco to filter transactions by.
-     * @param userId - Optional user id to scope the search to a specific user's transactions.
+     * Find recurring expense transactions with optional filters.
+     * Filters: bancoId, categoriaId, status, period, userId.
      */
-    findDespesaRecorrente(bancoId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
-    /**
-     * Find recurring expense transactions by category for a specific bank.
-     * @param bancoId - The domain id of the Banco to filter transactions by.
-     * @param categoriaId - Category domain id used to filter transactions.
-     * @param userId - Optional user id to scope the search to a specific user's transactions.
-     */
-    findDespesaRecorrenteByCategoria(bancoId: string, categoriaId: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
-    /**
-     * Find recurring expense transactions by status for a specific bank.
-     * @param bancoId - The domain id of the Banco to filter transactions by.
-     * @param status - The status value used to filter transactions (e.g., "Pendente", "Concluído").
-     * @param userId - Optional user id to scope the search to a specific user's transactions.
-     */
-    findDespesaRecorrenteByStatus(bancoId: string, status: string, userId?: string): Promise<Result<ITransacaoDTO[]>>;
-    /**
-     * Find recurring expense transactions by predefined period for a specific bank.
-     * @param bancoId - The domain id of the Banco to filter transactions by.
-     * @param period - Predefined period: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
-     * @param userId - Optional user id to scope the search to a specific user's transactions.
-     */
-    findDespesaRecorrenteByPeriod(bancoId: string, period: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId?: string): Promise<Result<ITransacaoDTO[]>>;
+    findDespesaRecorrente(filters?: ITransacaoDespesasRecorrentesFilters): Promise<Result<ITransacaoDTO[]>>;
     /**
      * Create and persist a Weekly Expense transaction (Despesa Semanal).
      * @param inputDTO - Input data for creating a Despesa Semanal transaction.

@@ -3,6 +3,7 @@ import { type AuthenticatedRequest, getEffectiveUserId } from '../../api/middlew
 import { Service, Inject } from 'typedi';
 import type ITransacaoContaQueryController from './IControllers/ITransacaoContaQueryController.js';
 import type ITransacaoContaQueryService from '../../services/Transacao/IServices/ITransacaoContaQueryService.js';
+import type { ITransacaoContaQueryFilters } from '../../repos/Transacao/IRepos/ITransacaoContaQueryRepo.js';
 
 /**
  * Controller for Conta-based transaction query endpoints (Entrada/Saída).
@@ -13,22 +14,27 @@ export default class TransacaoContaQueryController implements ITransacaoContaQue
         @Inject('TransacaoContaQueryService') private transacaoContaQueryService: ITransacaoContaQueryService,
     ) {}
 
-    public async getContaTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const contaId = (req.query.contaId || req.params.contaId) as string;
-            if (!contaId) return res.status(400).json({ error: 'contaId is required' });
-            const userId = getEffectiveUserId(req as AuthenticatedRequest);
-            const result = await this.transacaoContaQueryService.findContaTransactions(contaId, userId);
-            if (result.isFailure) return res.status(500).json({ error: result.error });
-            return res.status(200).json(result.getValue());
-        } catch (e) { next(e); }
-    }
-
     public async getAllContaTransactions(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const userId = getEffectiveUserId(req as AuthenticatedRequest);
-            const bancoId = (req.query.bancoId) as string | undefined;
-            const result = await this.transacaoContaQueryService.findAllContaTransactions(userId, bancoId);
+            const bancoId = req.query.bancoId as string | undefined;
+            const contaId = req.query.contaId as string | undefined;
+            const categoriaId = req.query.categoriaId as string | undefined;
+            const period = req.query.period as string | undefined;
+
+            if (period && !['Este Mês', 'Últimos 3 Meses', 'Último Ano'].includes(period)) {
+                return res.status(400).json({ error: 'Period must be one of: Este Mês, Últimos 3 Meses, Último Ano' });
+            }
+
+            const filters: ITransacaoContaQueryFilters = {
+                userId,
+                bancoId,
+                contaId,
+                categoriaId,
+                period: period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano' | undefined,
+            };
+
+            const result = await this.transacaoContaQueryService.findAllContaTransactions(filters);
             if (result.isFailure) return res.status(500).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) { next(e); }
@@ -57,34 +63,6 @@ export default class TransacaoContaQueryController implements ITransacaoContaQue
 
             const result = await this.transacaoContaQueryService.findAllByBanco(bancoId, userIdForQuery);
             if (result.isFailure) return res.status(500).json({ error: result.error });
-            return res.status(200).json(result.getValue());
-        } catch (e) { next(e); }
-    }
-
-    public async getContaTransactionsByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const categoriaId = (req.query.categoriaId || req.params.categoriaId) as string;
-            if (!categoriaId) return res.status(400).json({ error: 'categoriaId is required' });
-            const userId = getEffectiveUserId(req as AuthenticatedRequest);
-            const bancoId = (req.query.bancoId) as string | undefined;
-            const result = await this.transacaoContaQueryService.findContaTransactionsByCategoria(categoriaId, userId, bancoId);
-            if (result.isFailure) return res.status(404).json({ error: result.error });
-            return res.status(200).json(result.getValue());
-        } catch (e) { next(e); }
-    }
-
-    public async getContaTransactionsByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const period = (req.query.period || req.params.period) as string;
-            if (!period) return res.status(400).json({ error: 'period is required' });
-            const validPeriods = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'];
-            if (!validPeriods.includes(period)) {
-                return res.status(400).json({ error: `Period must be one of: ${validPeriods.join(', ')}` });
-            }
-            const userId = getEffectiveUserId(req as AuthenticatedRequest);
-            const bancoId = (req.query.bancoId) as string | undefined;
-            const result = await this.transacaoContaQueryService.findContaTransactionsByPeriod(period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId, bancoId);
-            if (result.isFailure) return res.status(404).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) { next(e); }
     }

@@ -17,7 +17,7 @@ export class TransacoesService {
    */
   getContaTransactions(contaId: string): Observable<TransacoesDTO[]> {
     const params = new HttpParams().set('contaId', contaId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/conta`, { params, withCredentials: true });
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-conta`, { params, withCredentials: true });
   }
 
   /**
@@ -26,7 +26,7 @@ export class TransacoesService {
    */
   getCartaoTransactions(cartaoCreditoId: string): Observable<TransacoesDTO[]> {
     const params = new HttpParams().set('cartaoCreditoId', cartaoCreditoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/cartao`, { params, withCredentials: true });
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-cartao`, { params, withCredentials: true });
   }
 
   /**
@@ -77,7 +77,7 @@ export class TransacoesService {
   getContaTransactionsByCategoria(categoriaId: string, bancoId?: string): Observable<TransacoesDTO[]> {
     let params = new HttpParams().set('categoriaId', categoriaId);
     if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/conta/by-categoria`, { params, withCredentials: true });
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-conta`, { params, withCredentials: true });
   }
 
   /**
@@ -88,7 +88,7 @@ export class TransacoesService {
   getCartaoTransactionsByCategoria(categoriaId: string, bancoId?: string): Observable<TransacoesDTO[]> {
     let params = new HttpParams().set('categoriaId', categoriaId);
     if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/cartao/by-categoria`, { params, withCredentials: true });
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-cartao`, { params, withCredentials: true });
   }
 
   /**
@@ -99,7 +99,7 @@ export class TransacoesService {
   getDespesaRecorrenteByCategoria(categoriaId: string, bancoId?: string): Observable<TransacoesDTO[]> {
     let params = new HttpParams().set('categoriaId', categoriaId);
     if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-recorrente/by-categoria`, { params, withCredentials: true });
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-recorrente`, { params, withCredentials: true });
   }
 
   /**
@@ -110,7 +110,7 @@ export class TransacoesService {
   getCartaoTransactionsByStatus(status: string, bancoId?: string): Observable<TransacoesDTO[]> {
     let params = new HttpParams().set('status', status);
     if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/cartao/by-status`, { params, withCredentials: true });
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-cartao`, { params, withCredentials: true });
   }
 
   /**
@@ -121,7 +121,7 @@ export class TransacoesService {
   getDespesaRecorrenteByStatus(status: string, bancoId?: string): Observable<TransacoesDTO[]> {
     let params = new HttpParams().set('status', status);
     if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-recorrente/by-status`, { params, withCredentials: true });
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-recorrente`, { params, withCredentials: true });
   }
 
   /**
@@ -132,7 +132,7 @@ export class TransacoesService {
   getContaTransactionsByPeriod(period: string, bancoId?: string): Observable<TransacoesDTO[]> {
     let params = new HttpParams().set('period', period);
     if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/conta/by-period`, { params, withCredentials: true });
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-conta`, { params, withCredentials: true });
   }
 
   /**
@@ -143,7 +143,7 @@ export class TransacoesService {
   getCartaoTransactionsByPeriod(period: string, bancoId?: string): Observable<TransacoesDTO[]> {
     let params = new HttpParams().set('period', period);
     if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/cartao/by-period`, { params, withCredentials: true });
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-cartao`, { params, withCredentials: true });
   }
 
   /**
@@ -154,7 +154,7 @@ export class TransacoesService {
   getDespesaRecorrenteByPeriod(period: string, bancoId?: string): Observable<TransacoesDTO[]> {
     let params = new HttpParams().set('period', period);
     if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-recorrente/by-period`, { params, withCredentials: true });
+    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-recorrente`, { params, withCredentials: true });
   }
 
   /**

@@ -243,10 +243,10 @@ export default (app: Router) => {
    *     parameters:
    *       - in: query
    *         name: bancoId
-   *         required: true
+   *         required: false
    *         schema:
    *           type: string
-   *         description: Bank domain ID to filter by
+   *         description: Optional bank domain ID to filter by
    *         example: "BNC00000000001"
    *     responses:
    *       200:
@@ -257,11 +257,9 @@ export default (app: Router) => {
    *               type: array
    *               items:
    *                 $ref: '#/components/schemas/DespesaRecorrente'
-   *       400:
-   *         description: bancoId is required
    *       401:
    *         description: Unauthorized
-   */
+   * */
   route.get('/com-valor', isAuth, (req, res, next) => ctrl.getDespesasComValor(req, res, next));
 
   /**
@@ -270,61 +268,29 @@ export default (app: Router) => {
    *   get:
    *     tags:
    *       - Despesa Recorrente - Regras
-   *     summary: Get unscheduled recurring expenses for a bank
-   *     description: Returns recurring expenses that have no valor or diaDoMes configured (icon/nome only), whose origin account belongs to the given bank
+   *     summary: Get unscheduled recurring expenses
+   *     description: Returns recurring expenses that have no valor or scheduling configured (icon/nome only), optionally filtered by bank and/or tipo
    *     security:
    *       - bearerAuth: []
    *     parameters:
-   *       - in: query
-   *         name: bancoId
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Bank domain ID to filter by
-   *         example: "BNC00000000001"
-   *     responses:
-   *       200:
-   *         description: List of unscheduled recurring expenses for the bank
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/DespesaRecorrente'
-   *       400:
-   *         description: bancoId is required
-   *       401:
-   *         description: Unauthorized
-   */
-  route.get('/sem-valor', isAuth, (req, res, next) => ctrl.getDespesasSemValor(req, res, next));
-
-  /**
-   * @openapi
-   * /despesa-recorrente/sem-valor/por-tipo:
-   *   get:
-   *     tags:
-   *       - Despesa Recorrente - Regras
-   *     summary: Get sem-valor recurring expenses by tipo
-   *     description: Returns sem-valor recurring expenses for the authenticated user filtered by tipo. Optionally filter by bank via origin account.
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: query
-   *         name: tipo
-   *         required: true
-   *         schema:
-   *           type: string
-   *           enum: ["Despesa Mensal", "Despesa Semanal", "Despesa Anual", "Poupança"]
-   *         example: "Despesa Semanal"
    *       - in: query
    *         name: bancoId
    *         required: false
    *         schema:
    *           type: string
    *         description: Optional bank domain ID to filter by
+   *         example: "BNC00000000001"
+   *       - in: query
+   *         name: tipo
+   *         required: false
+   *         schema:
+   *           type: string
+   *           enum: ["Despesa Mensal", "Despesa Semanal", "Despesa Anual", "Poupança"]
+   *         description: Optional tipo to filter by
+   *         example: "Despesa Semanal"
    *     responses:
    *       200:
-   *         description: List of recurring expenses by tipo
+   *         description: List of unscheduled recurring expenses
    *         content:
    *           application/json:
    *             schema:
@@ -332,11 +298,11 @@ export default (app: Router) => {
    *               items:
    *                 $ref: '#/components/schemas/DespesaRecorrente'
    *       400:
-   *         description: tipo is required or invalid
+   *         description: Invalid parameters
    *       401:
    *         description: Unauthorized
-   */
-  route.get('/sem-valor/por-tipo', isAuth, (req, res, next) => ctrl.getDespesasSemValorByTipo(req, res, next));
+   * */
+  route.get('/sem-valor', isAuth, (req, res, next) => ctrl.getDespesasSemValor(req, res, next));
 
   /**
    * @openapi

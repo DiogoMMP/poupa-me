@@ -5,6 +5,7 @@ import type {
   ITransacaoInputDTO,
 } from "../../dto/ITransacaoDTO.js";
 import type ITransacaoDespesasRecorrentesService from "./IServices/ITransacaoDespesasRecorrentesService.js";
+import type { ITransacaoDespesasRecorrentesFilters } from "../../repos/Transacao/IRepos/ITransacaoDespesasRecorrentesRepo.js";
 import type ITransacaoRepo from "../../repos/Transacao/IRepos/ITransacaoRepo.js";
 import type ITransacaoDespesasRecorrentesRepo from "../../repos/Transacao/IRepos/ITransacaoDespesasRecorrentesRepo.js";
 import type ICategoriaRepo from "../../repos/Categoria/ICategoriaRepo.js";
@@ -421,10 +422,16 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
         if (statusResult.isFailure)
           return Result.fail<ITransacaoDTO>(String(statusResult.error));
 
+        const hoje = new Date();
+
         const updatedTransacaoOrError = Transacao.create(
           {
             descricao: transacao.descricao,
-            data: transacao.data,
+            data: Data.createFromParts(
+              hoje.getDate(),
+              hoje.getMonth() + 1,
+              hoje.getFullYear(),
+            ).getValue(),
             valor: transacao.valor,
             tipo: transacao.tipo,
             categoria: transacao.categoria,
@@ -848,114 +855,15 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
     return Result.ok<void>();
   }
   /**
-   * Finds recurring expense transactions (Despesa Mensal + Poupança) by category for a specific bank.
-   * @param bancoId - The domain id of the Banco to filter transactions by.
-   * @param categoriaId - The unique identifier of the Categoria to find transactions for
-   * @param userId - Optional user identifier to filter transactions by user ownership
-   */
-  public async findDespesaRecorrenteByCategoria(
-    bancoId: string,
-    categoriaId: string,
-    userId?: string,
-  ): Promise<Result<ITransacaoDTO[]>> {
-    try {
-      const rows: Transacao[] =
-        await this.despesasRecorrentesRepo.findDespesaRecorrenteByCategoria(
-          bancoId,
-          categoriaId,
-          userId,
-        );
-      return Result.ok<ITransacaoDTO[]>(
-        rows.map((r: Transacao) => TransacaoMap.toDTO(r)),
-      );
-    } catch (e) {
-      this.logger.error(
-        "TransacaoService.findDespesaRecorrenteByCategoria error: %o",
-        e,
-      );
-      return Result.fail<ITransacaoDTO[]>(
-        "Error fetching recurring expense transactions by category",
-      );
-    }
-  }
-  /**
-   * Finds recurring expense transactions (Despesa Mensal + Poupança) by status for a specific bank.
-   * @param bancoId - The domain id of the Banco to filter transactions by.
-   * @param status - The status of transactions to find (e.g., "Pendente", "Concluído")
-   * @param userId - Optional user identifier to filter transactions by user ownership
-   */
-  public async findDespesaRecorrenteByStatus(
-    bancoId: string,
-    status: string,
-    userId?: string,
-  ): Promise<Result<ITransacaoDTO[]>> {
-    try {
-      const rows: Transacao[] =
-        await this.despesasRecorrentesRepo.findDespesaRecorrenteByStatus(
-          bancoId,
-          status,
-          userId,
-        );
-      return Result.ok<ITransacaoDTO[]>(
-        rows.map((r: Transacao) => TransacaoMap.toDTO(r)),
-      );
-    } catch (e) {
-      this.logger.error(
-        "TransacaoService.findDespesaRecorrenteByStatus error: %o",
-        e,
-      );
-      return Result.fail<ITransacaoDTO[]>(
-        "Error fetching recurring expense transactions by status",
-      );
-    }
-  }
-  /**
-   * Finds recurring expense transactions (Despesa Mensal + Poupança) by predefined period for a specific bank.
-   * @param bancoId - The domain id of the Banco to filter transactions by.
-   * @param period - The period to filter by: 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano'
-   * @param userId - Optional user identifier to filter transactions by user ownership
-   */
-  public async findDespesaRecorrenteByPeriod(
-    bancoId: string,
-    period: "Este Mês" | "Últimos 3 Meses" | "Último Ano",
-    userId?: string,
-  ): Promise<Result<ITransacaoDTO[]>> {
-    try {
-      const rows: Transacao[] =
-        await this.despesasRecorrentesRepo.findDespesaRecorrenteByPeriod(
-          bancoId,
-          period,
-          userId,
-        );
-      return Result.ok<ITransacaoDTO[]>(
-        rows.map((r: Transacao) => TransacaoMap.toDTO(r)),
-      );
-    } catch (e) {
-      this.logger.error(
-        "TransacaoService.findDespesaRecorrenteByPeriod error: %o",
-        e,
-      );
-      return Result.fail<ITransacaoDTO[]>(
-        "Error fetching recurring expense transactions by period",
-      );
-    }
-  }
-  /**
-   * Finds all recurring expense transactions (Despesa Mensal + Poupança) for a specific bank.
-   * @param bancoId - The domain id of the Banco to filter transactions by.
-   * @param userId - Optional user identifier to filter transactions by user ownership
-   * @returns A Result object containing either an array of despesa mensal DTOs or an error message
+   * Finds recurring expense transactions with optional filters.
+   * All filters are optional and can be combined freely.
    */
   public async findDespesaRecorrente(
-    bancoId: string,
-    userId?: string,
+    filters?: ITransacaoDespesasRecorrentesFilters,
   ): Promise<Result<ITransacaoDTO[]>> {
     try {
       const rows: Transacao[] =
-        await this.despesasRecorrentesRepo.findDespesaRecorrente(
-          bancoId,
-          userId,
-        );
+        await this.despesasRecorrentesRepo.findDespesaRecorrente(filters);
       return Result.ok<ITransacaoDTO[]>(
         rows.map((r: Transacao) => TransacaoMap.toDTO(r)),
       );

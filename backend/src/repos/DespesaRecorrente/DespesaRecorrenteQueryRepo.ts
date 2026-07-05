@@ -83,9 +83,9 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
 
     /**
      * Find recurring expenses that are fully scheduled for their recurrence type,
-     * whose origin account belongs to the given bank
+     * optionally filtered by bank
      */
-    public async findWithValor(userId: string, bancoId: string): Promise<DespesaRecorrente[]> {
+    public async findWithValor(userId: string, bancoId?: string): Promise<DespesaRecorrente[]> {
         try {
             const qb = this.repo.createQueryBuilder('d')
                 .leftJoinAndSelect('d.categoria', 'categoria')
@@ -101,11 +101,13 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
                     tipoSemanal: 'Despesa Semanal',
                     tipoAnual: 'Despesa Anual'
                 })
-                .andWhere('contaOrigem.banco_id = :bancoId', { bancoId })
                 .orderBy('d.id', 'ASC');
 
             if (userId) {
                 qb.andWhere('d.user_domain_id = :userId', { userId });
+            }
+            if (bancoId) {
+                qb.andWhere('contaOrigem.banco_id = :bancoId', { bancoId });
             }
 
             const rows = await qb.getMany();
@@ -124,16 +126,30 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
 
     /**
      * Find recurring expenses that are not fully scheduled for their recurrence type,
-     * whose origin account belongs to the given bank
+     * optionally filtered by bank and/or tipo
      */
-    public async findWithoutValor(userId: string, bancoId: string): Promise<DespesaRecorrente[]> {
+    public async findWithoutValor(userId: string, bancoId?: string, tipo?: string): Promise<DespesaRecorrente[]> {
         try {
             const qb = this.repo.createQueryBuilder('d')
                 .leftJoinAndSelect('d.categoria', 'categoria')
                 .leftJoinAndSelect('d.contaOrigem', 'contaOrigem')
                 .leftJoinAndSelect('d.contaDestino', 'contaDestino')
                 .leftJoinAndSelect('d.contaPoupanca', 'contaPoupanca')
-                .where(`(
+                .orderBy('d.id', 'ASC');
+
+            if (tipo) {
+                qb.where('d.tipo = :tipo', { tipo });
+                if (tipo === 'Despesa Mensal' || tipo === 'Poupança') {
+                    qb.andWhere('(d.valor IS NULL OR d.dia_do_mes IS NULL)');
+                } else if (tipo === 'Despesa Semanal') {
+                    qb.andWhere('(d.valor IS NULL OR d.dia_da_semana IS NULL)');
+                } else if (tipo === 'Despesa Anual') {
+                    qb.andWhere('(d.valor IS NULL OR d.dia_do_mes IS NULL OR d.mes IS NULL)');
+                } else {
+                    qb.andWhere('d.valor IS NULL');
+                }
+            } else {
+                qb.where(`(
                     (d.tipo IN (:...mensalTipos) AND (d.valor IS NULL OR d.dia_do_mes IS NULL))
                     OR (d.tipo = :tipoSemanal AND (d.valor IS NULL OR d.dia_da_semana IS NULL))
                     OR (d.tipo = :tipoAnual AND (d.valor IS NULL OR d.dia_do_mes IS NULL OR d.mes IS NULL))
@@ -141,12 +157,14 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
                     mensalTipos: ['Despesa Mensal', 'Poupança'],
                     tipoSemanal: 'Despesa Semanal',
                     tipoAnual: 'Despesa Anual'
-                })
-                .andWhere('contaOrigem.banco_id = :bancoId', { bancoId })
-                .orderBy('d.id', 'ASC');
+                });
+            }
 
             if (userId) {
                 qb.andWhere('d.user_domain_id = :userId', { userId });
+            }
+            if (bancoId) {
+                qb.andWhere('contaOrigem.banco_id = :bancoId', { bancoId });
             }
 
             const rows = await qb.getMany();
@@ -159,48 +177,6 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
             return res;
         } catch (err) {
             this.logger.error('DespesaRecorrenteRepo.findWithoutValor error: %o', err);
-            throw err;
-        }
-    }
-
-    /**
-     * Find recurring sem-valor expenses by tipo for a user, optionally filtered by bank
-     */
-    public async findByTipo(userId: string, tipo: string, bancoId?: string): Promise<DespesaRecorrente[]> {
-        try {
-            const qb = this.repo.createQueryBuilder('d')
-                .leftJoinAndSelect('d.categoria', 'categoria')
-                .leftJoinAndSelect('d.contaOrigem', 'contaOrigem')
-                .leftJoinAndSelect('d.contaDestino', 'contaDestino')
-                .leftJoinAndSelect('d.contaPoupanca', 'contaPoupanca')
-                .where('d.tipo = :tipo', { tipo })
-                .andWhere('d.user_domain_id = :userId', { userId })
-                .orderBy('d.id', 'ASC');
-
-            if (tipo === 'Despesa Mensal' || tipo === 'Poupança') {
-                qb.andWhere('(d.valor IS NULL OR d.dia_do_mes IS NULL)');
-            } else if (tipo === 'Despesa Semanal') {
-                qb.andWhere('(d.valor IS NULL OR d.dia_da_semana IS NULL)');
-            } else if (tipo === 'Despesa Anual') {
-                qb.andWhere('(d.valor IS NULL OR d.dia_do_mes IS NULL OR d.mes IS NULL)');
-            } else {
-                qb.andWhere('d.valor IS NULL');
-            }
-
-            if (bancoId) {
-                qb.andWhere('contaOrigem.banco_id = :bancoId', {bancoId});
-            }
-
-            const rows = await qb.getMany();
-            const res: DespesaRecorrente[] = [];
-            for (const r of rows) {
-                const raw: Record<string, unknown> = { ...(r as unknown as Record<string, unknown>), user_domain_id: (r as DespesaRecorrenteEntity).userDomainId };
-                const d = await DespesaRecorrenteMap.toDomain(raw);
-                if (d) res.push(d);
-            }
-            return res;
-        } catch (err) {
-            this.logger.error('DespesaRecorrenteRepo.findByTipo error: %o', err);
             throw err;
         }
     }

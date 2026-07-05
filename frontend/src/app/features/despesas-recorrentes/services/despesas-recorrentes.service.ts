@@ -40,31 +40,32 @@ export class DespesasRecorrentesService {
   }
 
   /**
-   * Get recurring expenses that have both valor and diaDoMes configured and whose origin account belongs to the given bank
+   * Get recurring expenses that have both valor and diaDoMes configured, optionally filtered by bank
    * Matches backend route: GET /despesa-recorrente/com-valor?bancoId=...
    */
-  getComValor(bancoId: string): Observable<DespesaRecorrenteDTO[]> {
-    const params = new HttpParams().set('bancoId', bancoId);
+  getComValor(bancoId?: string): Observable<DespesaRecorrenteDTO[]> {
+    let params = new HttpParams();
+    if (bancoId) params = params.set('bancoId', bancoId);
     return this.http.get<DespesaRecorrenteDTO[]>(`${this.baseUrl}/com-valor`, { params, withCredentials: true });
   }
 
   /**
-   * Get recurring expenses that have no valor/diaDoMes configured (icon/nome only) and whose origin account belongs to the given bank
-   * Matches backend route: GET /despesa-recorrente/sem-valor?bancoId=...
+   * Get recurring expenses that have no valor/diaDoMes configured (icon/nome only), optionally filtered by bank and/or tipo
+   * Matches backend route: GET /despesa-recorrente/sem-valor?bancoId=...&tipo=...
    */
-  getSemValor(bancoId: string): Observable<DespesaRecorrenteDTO[]> {
-    const params = new HttpParams().set('bancoId', bancoId);
+  getSemValor(bancoId?: string, tipo?: string): Observable<DespesaRecorrenteDTO[]> {
+    let params = new HttpParams();
+    if (bancoId) params = params.set('bancoId', bancoId);
+    if (tipo) params = params.set('tipo', tipo);
     return this.http.get<DespesaRecorrenteDTO[]>(`${this.baseUrl}/sem-valor`, { params, withCredentials: true });
   }
 
   /**
-   * Get recurring expenses that have no valor/diaDoMes/diaDaSemana/mes configured (icon/nome only) and whose origin account belongs to the given bank
-   * Matches backend route: GET /despesa-recorrente/sem-valor/por-tipo?bancoId=...&tipo=...
+   * Get recurring expenses without valor filtered by tipo
+   * Matches backend route: GET /despesa-recorrente/sem-valor?bancoId=...&tipo=...
    */
   getSemValorPorTipo(bancoId: string, tipo: string): Observable<DespesaRecorrenteDTO[]> {
-    let params = new HttpParams().set('bancoId', bancoId);
-    params = params.set('tipo', tipo);
-    return this.http.get<DespesaRecorrenteDTO[]>(`${this.baseUrl}/sem-valor/por-tipo`, { params, withCredentials: true });
+    return this.getSemValor(bancoId, tipo);
   }
 
   /**

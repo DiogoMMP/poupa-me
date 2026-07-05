@@ -523,22 +523,42 @@ export default (app: Router) => {
    *   get:
    *     tags:
    *       - Transação - Despesas Recorrentes
-   *     summary: Get all recurring expense transactions for a specific bank
+   *     summary: Get recurring expense transactions with optional filters
    *     description: |
-   *       Returns all recurring expense transactions (Despesa Mensal, Despesa Semanal, Despesa Anual, Poupança)
-   *       for accounts belonging to the given bank. Requires authentication.
+   *       Returns recurring expense transactions (Despesa Mensal, Despesa Semanal, Despesa Anual, Poupança)
+   *       for the authenticated user. Optional filters can be applied via query parameters. Requires authentication.
    *     security:
    *       - bearerAuth: []
    *     parameters:
    *       - in: query
    *         name: bancoId
-   *         required: true
+   *         required: false
    *         schema:
    *           type: string
-   *         description: Domain ID of the Banco to filter transactions by
+   *         description: Domain ID of the Banco to filter by
+   *       - in: query
+   *         name: categoriaId
+   *         required: false
+   *         schema:
+   *           type: string
+   *         description: Domain ID of the Categoria to filter by
+   *       - in: query
+   *         name: status
+   *         required: false
+   *         schema:
+   *           type: string
+   *           enum: ["Pendente", "Concluído"]
+   *         description: Status to filter by
+   *       - in: query
+   *         name: period
+   *         required: false
+   *         schema:
+   *           type: string
+   *           enum: ["Este Mês", "Últimos 3 Meses", "Último Ano"]
+   *         description: Predefined period to filter by
    *     responses:
    *       200:
-   *         description: List of recurring expense transactions
+   *         description: List of recurring expense transactions matching the criteria
    *         content:
    *           application/json:
    *             schema:
@@ -547,124 +567,6 @@ export default (app: Router) => {
    *                 $ref: '#/components/schemas/Transacao'
    */
   route.get('/despesa-recorrente', isAuth, (req, res, next) => ctrl.getDespesaRecorrente(req as AuthenticatedRequest, res, next));
-
-  // --- GET Routes: Filter by Categoria ---
-
-  /**
-   * @openapi
-   * /transacao/despesa-recorrente/by-categoria:
-   *   get:
-   *     tags:
-   *       - Transação - Despesas Recorrentes
-   *     summary: Get recurring expense transactions by category for a specific bank
-   *     description: |
-   *       Returns recurring expense transactions (Despesa Mensal, Despesa Semanal, Despesa Anual, Poupança)
-   *       filtered by category for accounts belonging to the given bank. Requires authentication.
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: query
-   *         name: bancoId
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Domain ID of the Banco
-   *       - in: query
-   *         name: categoriaId
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Domain ID of the Categoria
-   *     responses:
-   *       200:
-   *         description: Matching transactions
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/Transacao'
-   */
-  route.get('/despesa-recorrente/by-categoria', isAuth, (req, res, next) => ctrl.getDespesaRecorrenteByCategoria(req as AuthenticatedRequest, res, next));
-
-  // --- GET Routes: Filter by Status (one for cartão, one for despesa mensal) ---
-
-  /**
-   * @openapi
-   * /transacao/despesa-recorrente/by-status:
-   *   get:
-   *     tags:
-   *       - Transação - Despesas Recorrentes
-   *     summary: Get recurring expense transactions by status for a specific bank
-   *     description: |
-   *       Returns recurring expense transactions (Despesa Mensal, Despesa Semanal, Despesa Anual, Poupança)
-   *       filtered by status for accounts belonging to the given bank. Requires authentication.
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: query
-   *         name: bancoId
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Domain ID of the Banco
-   *       - in: query
-   *         name: status
-   *         required: true
-   *         schema:
-   *           type: string
-   *           enum: ["Pendente","Concluído"]
-   *     responses:
-   *       200:
-   *         description: Matching transactions
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/Transacao'
-   */
-  route.get('/despesa-recorrente/by-status', isAuth, (req, res, next) => ctrl.getDespesaRecorrenteByStatus(req as AuthenticatedRequest, res, next));
-
-  // --- GET Routes: Filter by Period (one per type) ---
-
-  /**
-   * @openapi
-   * /transacao/despesa-recorrente/by-period:
-   *   get:
-   *     tags:
-   *       - Transação - Despesas Recorrentes
-   *     summary: Get recurring expense transactions by predefined period for a specific bank
-   *     description: |
-   *       Returns recurring expense transactions (Despesa Mensal, Despesa Semanal, Despesa Anual, Poupança)
-   *       within a predefined period for accounts belonging to the given bank. Requires authentication.
-   *       Valid periods: 'Este Mês', 'Últimos 3 Meses', 'Último Ano'
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: query
-   *         name: bancoId
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Domain ID of the Banco
-   *       - in: query
-   *         name: period
-   *         required: true
-   *         schema:
-   *           type: string
-   *           enum: ["Este Mês", "Últimos 3 Meses", "Último Ano"]
-   *     responses:
-   *       200:
-   *         description: Matching transactions
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/Transacao'
-   */
-  route.get('/despesa-recorrente/by-period', isAuth, (req, res, next) => ctrl.getDespesaRecorrenteByPeriod(req as AuthenticatedRequest, res, next));
 
   /**
    * @openapi

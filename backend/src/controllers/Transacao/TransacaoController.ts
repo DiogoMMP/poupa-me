@@ -5,6 +5,7 @@ import type ITransacaoController from './IControllers/ITransacaoController.js';
 import type ITransacaoService from '../../services/Transacao/IServices/ITransacaoService.js';
 import type ITransacaoDespesasRecorrentesService from '../../services/Transacao/IServices/ITransacaoDespesasRecorrentesService.js';
 import type { ITransacaoInputDTO, ITransacaoReembolsoDTO, ITransacaoUpdateDTO } from '../../dto/ITransacaoDTO.js';
+import type { ITransacaoDespesasRecorrentesFilters } from '../../repos/Transacao/IRepos/ITransacaoDespesasRecorrentesRepo.js';
 
 /**
  * Controller for core Transacao operations: create, update, delete, getById and despesas recorrentes.
@@ -152,54 +153,26 @@ export default class TransacaoController implements ITransacaoController {
 
     public async getDespesaRecorrente(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const bancoId = (req.query.bancoId || req.params.bancoId) as string;
-            if (!bancoId) return res.status(400).json({ error: 'bancoId is required' });
             const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.despesasRecorrentesService.findDespesaRecorrente(bancoId, userId);
-            if (result.isFailure) return res.status(500).json({ error: result.error });
-            return res.status(200).json(result.getValue());
-        } catch (e) { next(e); }
-    }
+            const bancoId = (req.query.bancoId || req.params.bancoId) as string | undefined;
+            const categoriaId = (req.query.categoriaId || req.params.categoriaId) as string | undefined;
+            const status = (req.query.status || req.params.status) as string | undefined;
+            const period = (req.query.period || req.params.period) as string | undefined;
 
-    public async getDespesaRecorrenteByCategoria(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const bancoId = (req.query.bancoId || req.params.bancoId) as string;
-            const categoriaId = (req.query.categoriaId || req.params.categoriaId) as string;
-            if (!bancoId) return res.status(400).json({ error: 'bancoId is required' });
-            if (!categoriaId) return res.status(400).json({ error: 'categoriaId is required' });
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.despesasRecorrentesService.findDespesaRecorrenteByCategoria(bancoId, categoriaId, userId);
-            if (result.isFailure) return res.status(404).json({ error: result.error });
-            return res.status(200).json(result.getValue());
-        } catch (e) { next(e); }
-    }
-
-    public async getDespesaRecorrenteByStatus(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const bancoId = (req.query.bancoId || req.params.bancoId) as string;
-            const status = (req.query.status || req.params.status) as string;
-            if (!bancoId) return res.status(400).json({ error: 'bancoId is required' });
-            if (!status) return res.status(400).json({ error: 'status is required' });
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.despesasRecorrentesService.findDespesaRecorrenteByStatus(bancoId, status, userId);
-            if (result.isFailure) return res.status(404).json({ error: result.error });
-            return res.status(200).json(result.getValue());
-        } catch (e) { next(e); }
-    }
-
-    public async getDespesaRecorrenteByPeriod(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
-        try {
-            const bancoId = (req.query.bancoId || req.params.bancoId) as string;
-            const period = (req.query.period || req.params.period) as string;
-            if (!bancoId) return res.status(400).json({ error: 'bancoId is required' });
-            if (!period) return res.status(400).json({ error: 'period is required' });
-            const validPeriods = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'];
-            if (!validPeriods.includes(period)) {
-                return res.status(400).json({ error: `Period must be one of: ${validPeriods.join(', ')}` });
+            if (period && !['Este Mês', 'Últimos 3 Meses', 'Último Ano'].includes(period)) {
+                return res.status(400).json({ error: 'Period must be one of: Este Mês, Últimos 3 Meses, Último Ano' });
             }
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const result = await this.despesasRecorrentesService.findDespesaRecorrenteByPeriod(bancoId, period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano', userId);
-            if (result.isFailure) return res.status(404).json({ error: result.error });
+
+            const filters: ITransacaoDespesasRecorrentesFilters = {
+                userId,
+                bancoId,
+                categoriaId,
+                status,
+                period: period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano' | undefined,
+            };
+
+            const result = await this.despesasRecorrentesService.findDespesaRecorrente(filters);
+            if (result.isFailure) return res.status(500).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) { next(e); }
     }

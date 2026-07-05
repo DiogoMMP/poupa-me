@@ -10,7 +10,6 @@ export default interface IDespesaRecorrenteService {
     deleteDespesa(despesaId: string, userId: string): Promise<Result<void>>;
     getDespesa(despesaId: string, userId: string): Promise<Result<IDespesaRecorrenteDTO>>;
     getAllDespesas(userId: string, bancoId?: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
-    getDespesasComValor(userId: string, bancoId: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
-    getDespesasSemValorByTipo(userId: string, tipo: string, bancoId?: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
-    getDespesasSemValor(userId: string, bancoId: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
+    getDespesasComValor(userId: string, bancoId?: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
+    getDespesasSemValor(userId: string, bancoId?: string, tipo?: string): Promise<Result<IDespesaRecorrenteDTO[]>>;
 }
