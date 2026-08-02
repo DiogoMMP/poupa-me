@@ -1,29 +1,30 @@
-import type {IDinheiroProps} from "./ITransacaoDTO.js";
-import type {IDataProps} from "./ITransacaoDTO.js";
+import type {IDinheiroDTO} from "./shared/IDinheiroDTO.js";
+import type {IDataDTO} from "./shared/IDataDTO.js";
+import { IEntityReferenceDTO } from "./shared/IEntityReferenceDTO.js";
 
 export interface IPeriodoProps {
-    inicio: IDataProps;
-    fecho: IDataProps;
+    inicio: IDataDTO;
+    fecho: IDataDTO;
 }
 
 export interface ICartaoCreditoDTO {
     id: string;
-    userId: string;
+    user?: IEntityReferenceDTO;
     nome: string;
     icon: string;
-    limiteCredito: IDinheiroProps;
-    saldoUtilizado: IDinheiroProps;
+    limiteCredito: IDinheiroDTO;
+    saldoUtilizado: IDinheiroDTO;
     periodo: IPeriodoProps;
-    contaPagamentoId: string;
-    bancoId?: string;
+    contaPagamento: IEntityReferenceDTO;
+    banco?: IEntityReferenceDTO;
 }
 
 export interface ICartaoCreditoInputDTO {
     nome: string;
     icon: string;
     userId?: string;
-    limiteCredito: IDinheiroProps;
-    saldoUtilizado?: IDinheiroProps; // optional initial balance; defaults to zero
+    limiteCredito: IDinheiroDTO;
+    saldoUtilizado?: IDinheiroDTO; // optional initial balance; defaults to zero
     periodo: IPeriodoProps;
     contaPagamentoId: string;
     bancoId?: string;
@@ -32,7 +33,7 @@ export interface ICartaoCreditoInputDTO {
 export interface ICartaoCreditoUpdateDTO {
     nome?: string;
     icon?: string;
-    limiteCredito?: IDinheiroProps;
+    limiteCredito?: IDinheiroDTO;
     periodo?: IPeriodoProps;
     contaPagamentoId?: string;
     bancoId?: string;

@@ -1,19 +1,20 @@
-import type {IDinheiroProps} from "./ITransacaoDTO.js";
+import type {IDinheiroDTO} from "./shared/IDinheiroDTO.js";
+import { IEntityReferenceDTO } from "./shared/IEntityReferenceDTO.js";
 
 export interface IContaDTO {
     id: string;
-    userId: string;
+    user?: IEntityReferenceDTO;
     nome: string;
     icon: string;
-    saldo: IDinheiroProps;
-    bancoId?: string;
+    saldo: IDinheiroDTO;
+    banco?: IEntityReferenceDTO;
 }
 
 export interface IContaInputDTO {
     nome: string;
     icon: string;
     userId?: string; // will be set by controller from authenticated user
-    saldo?: IDinheiroProps; // optional initial balance; defaults to zero
+    saldo?: IDinheiroDTO; // optional initial balance; defaults to zero
     bancoId?: string;
 }
 

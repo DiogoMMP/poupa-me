@@ -3,8 +3,9 @@ import type IBancoService from './IBancoService.js';
 import type IBancoRepo from '../../repos/Banco/IBancoRepo.js';
 import type IContaRepo from '../../repos/Conta/IContaRepo.js';
 import type ICartaoCreditoRepo from '../../repos/CartaoCredito/ICartaoCreditoRepo.js';
+import type IUserRepo from '../../repos/User/IUserRepo.js';
 import { Result } from '../../core/logic/Result.js';
-import type { IBancoDTO, ICreateBancoDTO, IUpdateBancoDTO } from '../../dto/IBancoDTO.js';
+import type { IBancoDTO, IBancoSummaryDTO, ICreateBancoDTO, IUpdateBancoDTO } from '../../dto/IBancoDTO.js';
 import type { IDashboardDTO, IBancoResumoDTO } from '../../dto/IDashboardDTO.js';
 import { Nome } from '../../domain/Shared/ValueObjects/Nome.js';
 import { Icon } from '../../domain/Shared/ValueObjects/Icon.js';
@@ -22,8 +23,33 @@ export default class BancoService implements IBancoService {
         @Inject('BancoRepo') private bancoRepo: IBancoRepo,
         @Inject('ContaRepo') private contaRepo: IContaRepo,
         @Inject('CartaoCreditoRepo') private cartaoRepo: ICartaoCreditoRepo,
+        @Inject('UserRepo') private userRepo: IUserRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {}
+
+    private async getUserNome(userId: string): Promise<string | undefined> {
+        try {
+            const user = await this.userRepo.findByDomainId(userId);
+            return user?.name.value;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private async getContasCartoesMap(userId?: string): Promise<Map<string, { nome: string; icon: string }>> {
+        const [contas, cartoes] = await Promise.all([
+            this.contaRepo.findAll(userId),
+            this.cartaoRepo.findAll(userId)
+        ]);
+        const map = new Map<string, { nome: string; icon: string }>();
+        for (const c of contas) {
+            map.set(c.id.toString(), { nome: c.nome.value, icon: c.icon.value });
+        }
+        for (const cart of cartoes) {
+            map.set(cart.id.toString(), { nome: cart.nome.value, icon: cart.icon.value });
+        }
+        return map;
+    }
 
     /**
      * Creates a new Banco
@@ -57,7 +83,9 @@ export default class BancoService implements IBancoService {
             const savedBanco = await this.bancoRepo.save(banco);
 
             // Return DTO
-            return Result.ok<IBancoDTO>(BancoMap.toDTO(savedBanco));
+            const map = await this.getContasCartoesMap(userId);
+            const userNome = await this.getUserNome(userId);
+            return Result.ok<IBancoDTO>(BancoMap.toDTO(savedBanco, map, userNome));
         } catch (err) {
             this.logger.error('BancoService.createBanco error: %o', err);
             return Result.fail<IBancoDTO>('Failed to create banco');
@@ -118,7 +146,9 @@ export default class BancoService implements IBancoService {
             // Persist
             const savedBanco = await this.bancoRepo.update(updatedBanco);
 
-            return Result.ok<IBancoDTO>(BancoMap.toDTO(savedBanco));
+            const map = await this.getContasCartoesMap(banco.userId.toString());
+            const userNome = await this.getUserNome(banco.userId.toString());
+            return Result.ok<IBancoDTO>(BancoMap.toDTO(savedBanco, map, userNome));
         } catch (err) {
             this.logger.error('BancoService.updateBanco error: %o', err);
             return Result.fail<IBancoDTO>('Failed to update banco');
@@ -164,7 +194,9 @@ export default class BancoService implements IBancoService {
                 return Result.fail<IBancoDTO>('Unauthorized');
             }
 
-            return Result.ok<IBancoDTO>(BancoMap.toDTO(banco));
+            const map = await this.getContasCartoesMap(banco.userId.toString());
+            const userNome = await this.getUserNome(banco.userId.toString());
+            return Result.ok<IBancoDTO>(BancoMap.toDTO(banco, map, userNome));
         } catch (err) {
             this.logger.error('BancoService.getBanco error: %o', err);
             return Result.fail<IBancoDTO>('Failed to get banco');
@@ -174,16 +206,24 @@ export default class BancoService implements IBancoService {
     /**
      * Gets all Bancos for a user (or all if Admin)
      */
-    public async getAllBancos(userId: string, userRole?: string): Promise<Result<IBancoDTO[]>> {
+    public async getAllBancos(userId: string, userRole?: string): Promise<Result<IBancoSummaryDTO[]>> {
         try {
             // Admin can see all bancos
             const filterUserId = userRole === 'Admin' ? undefined : userId;
             const bancos = await this.bancoRepo.findAll(filterUserId);
-            const dtos = bancos.map(banco => BancoMap.toDTO(banco));
-            return Result.ok<IBancoDTO[]>(dtos);
+            // Build a user name cache
+            const userNameCache = new Map<string, string | undefined>();
+            const dtos = await Promise.all(bancos.map(async b => {
+                const uid = b.userId.toString();
+                if (!userNameCache.has(uid)) {
+                    userNameCache.set(uid, await this.getUserNome(uid));
+                }
+                return BancoMap.toSummaryDTO(b, userNameCache.get(uid));
+            }));
+            return Result.ok<IBancoSummaryDTO[]>(dtos);
         } catch (err) {
             this.logger.error('BancoService.getAllBancos error: %o', err);
-            return Result.fail<IBancoDTO[]>('Failed to get bancos');
+            return Result.fail<IBancoSummaryDTO[]>('Failed to get bancos');
         }
     }
 

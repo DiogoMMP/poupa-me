@@ -14,14 +14,30 @@ export default (app: Router) => {
    * @openapi
    * components:
    *   schemas:
+   *     EntityReference:
+   *       type: object
+   *       properties:
+   *         id:
+   *           type: string
+   *         nome:
+   *           type: string
+   *         icon:
+   *           type: string
    *     DespesaRecorrente:
    *       type: object
    *       properties:
    *         id:
    *           type: string
    *           example: "DRC00000000001"
-   *         userId:
-   *           type: string
+   *         user:
+   *           type: object
+   *           properties:
+   *             id:
+   *               type: string
+   *               example: "USR00000000001"
+   *             nome:
+   *               type: string
+   *               example: "Diogo Silva"
    *         nome:
    *           type: string
    *           example: "Netflix"
@@ -34,21 +50,14 @@ export default (app: Router) => {
    *           type: number
    *           example: 15
    *           description: Day of month (1-31), required for Despesa Mensal, Poupança, and Despesa Anual
-   *         categoriaId:
-   *           type: string
-   *           example: "CAT00000000001"
-   *         contaOrigemId:
-   *           type: string
-   *           example: "CNT00000000001"
-   *           description: Account from which money leaves (real balance)
-   *         contaDestinoId:
-   *           type: string
-   *           example: "CNT00000000002"
-   *           description: Destination account (monthly expenses)
-   *         contaPoupancaId:
-   *           type: string
-   *           example: "CNT00000000003"
-   *           description: Savings account (required for Poupança)
+   *         categoria:
+   *           $ref: '#/components/schemas/EntityReference'
+   *         contaOrigem:
+   *           $ref: '#/components/schemas/EntityReference'
+   *         contaDestino:
+   *           $ref: '#/components/schemas/EntityReference'
+   *         contaPoupanca:
+   *           $ref: '#/components/schemas/EntityReference'
    *         tipo:
    *           type: string
    *           enum: ["Despesa Mensal", "Despesa Semanal", "Despesa Anual", "Poupança"]

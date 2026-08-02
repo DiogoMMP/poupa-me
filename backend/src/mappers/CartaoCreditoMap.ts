@@ -141,10 +141,15 @@ export class CartaoCreditoMap extends Mapper<CartaoCredito> {
      * Maps a CartaoCredito domain entity to a DTO for API responses.
      * @param cartao The CartaoCredito domain entity to map
      */
-    public static toDTO(cartao: CartaoCredito): ICartaoCreditoDTO {
+    public static toDTO(
+        cartao: CartaoCredito,
+        banco?: { nome: string; icon: string },
+        contaPagamento?: { nome: string; icon: string },
+        userNome?: string
+    ): ICartaoCreditoDTO {
         return {
             id: cartao.id.toString(),
-            userId: cartao.userId.toString(),
+            user: cartao.userId ? { id: cartao.userId.toString(), nome: userNome } : undefined,
             nome: cartao.nome.value,
             icon: cartao.icon.value,
             limiteCredito: {
@@ -167,8 +172,16 @@ export class CartaoCreditoMap extends Mapper<CartaoCredito> {
                     ano: cartao.periodo.fecho.year
                 }
             },
-            contaPagamentoId: cartao.contaPagamentoId ? cartao.contaPagamentoId.toString() : null,
-            bancoId: cartao.bancoId
-        } as ICartaoCreditoDTO;
+            contaPagamento: cartao.contaPagamentoId ? {
+                id: cartao.contaPagamentoId.toString(),
+                nome: contaPagamento?.nome,
+                icon: contaPagamento?.icon
+            } : { id: '' },
+            banco: cartao.bancoId ? {
+                id: cartao.bancoId,
+                nome: banco?.nome,
+                icon: banco?.icon
+            } : undefined
+        };
     }
 }

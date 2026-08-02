@@ -17,10 +17,12 @@ export default class DespesaRecorrenteProcessadorController implements IDespesaR
 
     public async gerarTransacaoSemValor(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            if (!userId) {
+            const currentUser = (req as AuthenticatedRequest).currentUser;
+            if (!currentUser || (!currentUser.id && currentUser.role !== 'Admin')) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
+            const userId = currentUser.id || '';
+            const userRole = currentUser.role;
 
             const despesaId = req.params.id as string;
             if (!despesaId) {
@@ -35,7 +37,7 @@ export default class DespesaRecorrenteProcessadorController implements IDespesaR
                 return res.status(400).json({ error: 'data (dia, mes, ano) inválida' });
             }
 
-            const result = await this.processadorService.gerarTransacaoSemValor(despesaId, dto, userId);
+            const result = await this.processadorService.gerarTransacaoSemValor(despesaId, dto, userId, userRole);
 
             if (result.isFailure) {
                 const error = result.error;

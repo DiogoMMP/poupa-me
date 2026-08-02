@@ -94,14 +94,18 @@ export class ContaMap extends Mapper<Conta> {
      * Maps a Conta domain entity to a DTO for API responses.
      * @param conta The Conta domain entity to map
      */
-    public static toDTO(conta: Conta): IContaDTO {
+    public static toDTO(conta: Conta, banco?: { nome: string; icon: string }, userNome?: string): IContaDTO {
         return {
             id: conta.id.toString(),
-            userId: conta.userId.toString(),
+            user: conta.userId ? { id: conta.userId.toString(), nome: userNome } : undefined,
             nome: conta.nome.value,
             icon: conta.icon.value,
             saldo: { valor: conta.saldo.value, moeda: conta.saldo.moeda },
-            bancoId: conta.bancoId
-        } as IContaDTO;
+            banco: conta.bancoId ? {
+                id: conta.bancoId,
+                nome: banco?.nome,
+                icon: banco?.icon
+            } : undefined
+        };
     }
 }

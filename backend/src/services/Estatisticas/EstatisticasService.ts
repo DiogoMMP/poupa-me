@@ -3,7 +3,7 @@ import { Result } from '../../core/logic/Result.js';
 import type ITransacaoContaQueryRepo from '../../repos/Transacao/IRepos/ITransacaoContaQueryRepo.js';
 import type ITransacaoCartaoQueryRepo from '../../repos/Transacao/IRepos/ITransacaoCartaoQueryRepo.js';
 import type { IEstatisticasDTO, ICategoriaEstatistica, IHistoricoDiario } from '../../dto/IEstatisticasDTO.js';
-import type { IDataProps } from '../../dto/ITransacaoDTO.js';
+import type { IDataDTO } from '../../dto/shared/IDataDTO.js';
 import { CategoriaMap } from '../../mappers/CategoriaMap.js';
 import type { Categoria } from '../../domain/Categoria/Entities/Categoria.js';
 import IEstatisticasService from "./IEstatisticasService.js";
@@ -103,7 +103,7 @@ export default class EstatisticasService implements IEstatisticasService {
             }));
 
             // 3) Daily history (expenses only) - group by date
-            const dailyMap = new Map<string, { data: IDataProps; total: number; moeda: string }>();
+            const dailyMap = new Map<string, { data: IDataDTO; total: number; moeda: string }>();
             const accumulateDaily = (t: unknown) => {
                 const tr = t as { valor?: { value?: number; moeda?: string }; data?: { day?: number; month?: number; year?: number } };
                 const valor = Number(tr.valor?.value ?? 0) || 0;

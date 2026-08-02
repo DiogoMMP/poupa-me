@@ -14,24 +14,62 @@ export default (app: Router) => {
    * @openapi
    * components:
    *   schemas:
+   *     BancoSummary:
+   *       type: object
+   *       properties:
+   *         id:
+   *           type: string
+   *           example: "BNC00000000001"
+   *         user:
+   *           type: object
+   *           properties:
+   *             id:
+   *               type: string
+   *               example: "USR00000000001"
+   *             nome:
+   *               type: string
+   *               example: "Diogo Silva"
+   *         nome:
+   *           type: string
+   *           example: "Santander"
+   *         icon:
+   *           type: string
+   *           example: "😊"
    *     Banco:
    *       type: object
    *       properties:
    *         id:
    *           type: string
    *           example: "BNC00000000001"
-   *         userId:
-   *           type: string
+   *         user:
+   *           type: object
+   *           properties:
+   *             id:
+   *               type: string
+   *               example: "USR00000000001"
+   *             nome:
+   *               type: string
+   *               example: "Diogo Silva"
    *         nome:
    *           type: string
+   *           example: "Santander"
    *         icon:
    *           type: string
+   *           example: "😊"
    *         contasCartoesSelecionados:
    *           type: array
    *           items:
-   *             type: string
-   *           description: IDs of selected contas/cartoes for dashboard calculation
-   *           example: ["CNT00000000001", "CRT00000000001"]
+   *             type: object
+   *             properties:
+   *               id:
+   *                 type: string
+   *                 example: "CNT00000000001"
+   *               nome:
+   *                 type: string
+   *                 example: "Saldo Real"
+   *               icon:
+   *                 type: string
+   *                 example: "😍"
    *     BancoInput:
    *       type: object
    *       required: [nome, icon]
@@ -89,68 +127,7 @@ export default (app: Router) => {
    */
   route.post('/', isAuth, (req, res, next) => ctrl.createBanco(req, res, next));
 
-  /**
-   * @openapi
-   * /banco/{id}/dashboard:
-   *   get:
-   *     tags:
-   *       - Banco
-   *     summary: Get dashboard for a specific bank
-   *     description: Returns aggregated financial data for a specific bank including total balance breakdown
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: Banco domain ID
-   *         example: "BNC00000000001"
-   *     responses:
-   *       200:
-   *         description: Dashboard data for the specific bank
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 saldoGlobal:
-   *                   type: number
-   *                   description: Total for this bank (contas + cartoes)
-   *                   example: 5000.50
-   *                 detalhePorBanco:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       id:
-   *                         type: string
-   *                         example: "BNC00000000001"
-   *                       nome:
-   *                         type: string
-   *                         example: "Millennium BCP"
-   *                       icon:
-   *                         type: string
-   *                         example: "millennium.png"
-   *                       saldoContas:
-   *                         type: number
-   *                         description: Total real money in accounts
-   *                         example: 3000.00
-   *                       saldoCartoes:
-   *                         type: number
-   *                         description: Total provisions in credit cards
-   *                         example: 2000.50
-   *                       totalBanco:
-   *                         type: number
-   *                         description: saldoContas + saldoCartoes
-   *                         example: 5000.50
-   *       404:
-   *         description: Banco not found
-   *       401:
-   *         description: Unauthorized
-   */
-  route.get('/:id/dashboard', isAuth, (req, res, next) => ctrl.getDashboard(req, res, next));
+
 
   /**
    * @openapi
@@ -159,7 +136,7 @@ export default (app: Router) => {
    *     tags:
    *       - Banco
    *     summary: Get all bancos for authenticated user
-   *     description: Returns all bancos belonging to the authenticated user
+   *     description: Returns all bancos belonging to the authenticated user (summary format without contasCartoesSelecionados)
    *     security:
    *       - bearerAuth: []
    *     responses:
@@ -170,7 +147,7 @@ export default (app: Router) => {
    *             schema:
    *               type: array
    *               items:
-   *                 $ref: '#/components/schemas/Banco'
+   *                 $ref: '#/components/schemas/BancoSummary'
    *       401:
    *         description: Unauthorized
    */

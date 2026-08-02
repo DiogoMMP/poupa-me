@@ -12,6 +12,7 @@ import type ITransacaoRepo from '../../repos/Transacao/IRepos/ITransacaoRepo.js'
 import type ICategoriaRepo from '../../repos/Categoria/ICategoriaRepo.js';
 import type IContaRepo from '../../repos/Conta/IContaRepo.js';
 import type ICartaoCreditoRepo from '../../repos/CartaoCredito/ICartaoCreditoRepo.js';
+import type IUserRepo from '../../repos/User/IUserRepo.js';
 import { Transacao } from '../../domain/Transacao/Entities/Transacao.js';
 import { Descricao } from '../../domain/Transacao/ValueObjects/Descricao.js';
 import { Data } from '../../domain/Shared/ValueObjects/Data.js';
@@ -32,8 +33,25 @@ export default class TransacaoService implements ITransacaoService {
         @Inject('ContaRepo') private contaRepo: IContaRepo,
         @Inject('CartaoCreditoRepo') private cartaoCreditoRepo: ICartaoCreditoRepo,
         @Inject('TransacaoDespesasRecorrentesService') private transacaoDespesasRecorrentesService: ITransacaoDespesasRecorrentesService,
+        @Inject('UserRepo') private userRepo: IUserRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {}
+
+    private async getUserNome(userId?: string): Promise<string | undefined> {
+        if (!userId) return undefined;
+        try {
+            const user = await this.userRepo.findByDomainId(userId);
+            return user?.name.value;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private async toEnrichedDTO(transacao: Transacao): Promise<ITransacaoDTO> {
+        const uid = (transacao as unknown as { userDomainId?: string }).userDomainId;
+        const userNome = await this.getUserNome(uid);
+        return TransacaoMap.toDTO(transacao, userNome);
+    }
 
     // --- Creation Methods ---
 
@@ -77,7 +95,7 @@ export default class TransacaoService implements ITransacaoService {
             const savedTransacao = await this.transacaoRepo.save(transacao);
             await this.contaRepo.update(conta);
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+            return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(savedTransacao));
         } catch (e) {
             this.logger.error('TransacaoService.createEntrada error: %o', e);
             return Result.fail<ITransacaoDTO>('Error creating entrada');
@@ -124,7 +142,7 @@ export default class TransacaoService implements ITransacaoService {
             const savedTransacao = await this.transacaoRepo.save(transacao);
             await this.contaRepo.update(conta);
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+            return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(savedTransacao));
         } catch (e) {
             this.logger.error('TransacaoService.createSaida error: %o', e);
             return Result.fail<ITransacaoDTO>('Error creating saida');
@@ -186,7 +204,7 @@ export default class TransacaoService implements ITransacaoService {
 
             const savedTransacao = await this.transacaoRepo.save(transacao);
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+            return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(savedTransacao));
         } catch (e) {
             this.logger.error('TransacaoService.createCredito error: %o', e);
             return Result.fail<ITransacaoDTO>('Error creating credito');
@@ -249,7 +267,7 @@ export default class TransacaoService implements ITransacaoService {
 
             const savedTransacao = await this.transacaoRepo.save(transacao);
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+            return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(savedTransacao));
         } catch (e) {
             this.logger.error('TransacaoService.createReembolso error: %o', e);
             return Result.fail<ITransacaoDTO>('Error creating reembolso');
@@ -468,7 +486,7 @@ export default class TransacaoService implements ITransacaoService {
 
             const savedUpdated = await this.transacaoRepo.update(updatedTransacao);
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedUpdated));
+            return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(savedUpdated));
         } catch (e) {
             this.logger.error('TransacaoService.updateTransacao error: %o', e);
             return Result.fail<ITransacaoDTO>('Error updating transaction');
@@ -526,7 +544,7 @@ export default class TransacaoService implements ITransacaoService {
         try {
             const t = await this.transacaoRepo.findById(id);
             if (!t) return Result.fail<ITransacaoDTO>('Transaction not found');
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(t));
+            return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(t));
         } catch (e) {
             this.logger.error('TransacaoService.findTransacaoById error: %o', e);
             return Result.fail<ITransacaoDTO>('Error fetching transaction');

@@ -4,6 +4,8 @@ import type ICartaoCreditoService from './ICartaoCreditoService.js';
 import type ICartaoCreditoRepo from '../../repos/CartaoCredito/ICartaoCreditoRepo.js';
 import type ITransacaoPagarCartaoRepo from '../../repos/Transacao/IRepos/ITransacaoPagarCartaoRepo.js';
 import type ICategoriaRepo from '../../repos/Categoria/ICategoriaRepo.js';
+import type IBancoRepo from '../../repos/Banco/IBancoRepo.js';
+import type IUserRepo from '../../repos/User/IUserRepo.js';
 import type {ICartaoCreditoDTO, ICartaoCreditoInputDTO, ICartaoCreditoUpdateDTO, IPeriodoProps} from '../../dto/ICartaoCreditoDTO.js';
 import {CartaoCreditoMap} from '../../mappers/CartaoCreditoMap.js';
 import {Nome} from '../../domain/Shared/ValueObjects/Nome.js';
@@ -13,7 +15,8 @@ import {Periodo} from '../../domain/CartaoCredito/ValueObjects/Periodo.js';
 import {UniqueEntityID} from '../../core/domain/UniqueEntityID.js';
 import {CartaoCredito} from '../../domain/CartaoCredito/Entities/CartaoCredito.js';
 import {Data} from '../../domain/Shared/ValueObjects/Data.js';
-import type {IDinheiroProps, ITransacaoDTO} from "../../dto/ITransacaoDTO.js";
+import type {IDinheiroDTO} from "../../dto/shared/IDinheiroDTO.js";
+import type {ITransacaoDTO} from "../../dto/ITransacaoDTO.js";
 import { TransacaoMap } from '../../mappers/TransacaoMap.js';
 
 /**
@@ -26,8 +29,38 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
         @Inject('TransacaoPagarCartaoRepo') private transacaoRepo: ITransacaoPagarCartaoRepo,
         @Inject('CategoriaRepo') private categoriaRepo: ICategoriaRepo,
         @Inject('ContaRepo') private contaRepo: any,
+        @Inject('BancoRepo') private bancoRepo: IBancoRepo,
+        @Inject('UserRepo') private userRepo: IUserRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {
+    }
+
+    private async getUserNome(userId: string): Promise<string | undefined> {
+        try {
+            const user = await this.userRepo.findByDomainId(userId);
+            return user?.name.value;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private async getLookupMaps(userId?: string): Promise<{
+        bancos: Map<string, { nome: string; icon: string }>;
+        contas: Map<string, { nome: string; icon: string }>;
+    }> {
+        const [bancosList, contasList] = await Promise.all([
+            this.bancoRepo.findAll(userId),
+            this.contaRepo.findAll(userId)
+        ]);
+        const bancos = new Map<string, { nome: string; icon: string }>();
+        const contas = new Map<string, { nome: string; icon: string }>();
+        for (const b of bancosList) {
+            bancos.set(b.id.toString(), { nome: b.nome.value, icon: b.icon.value });
+        }
+        for (const c of contasList) {
+            contas.set(c.id.toString(), { nome: c.nome.value, icon: c.icon.value });
+        }
+        return { bancos, contas };
     }
 
     /**
@@ -79,7 +112,14 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
 
             const cartaoDomain = cartaoOrError.getValue();
             const saved = await this.cartaoRepo.save(cartaoDomain);
-            return Result.ok<ICartaoCreditoDTO>(CartaoCreditoMap.toDTO(saved));
+            const maps = await this.getLookupMaps(inputDTO.userId);
+            const userNome = inputDTO.userId ? await this.getUserNome(String(inputDTO.userId)) : undefined;
+            return Result.ok<ICartaoCreditoDTO>(CartaoCreditoMap.toDTO(
+                saved,
+                saved.bancoId ? maps.bancos.get(saved.bancoId) : undefined,
+                saved.contaPagamentoId ? maps.contas.get(saved.contaPagamentoId.toString()) : undefined,
+                userNome
+            ));
         } catch (err) {
             this.logger.error('CartaoCreditoService.createCartao error: %o', err);
             return Result.fail<ICartaoCreditoDTO>('Error creating CartaoCredito');
@@ -136,7 +176,14 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
             if (updatedOrError.isFailure) return Result.fail<ICartaoCreditoDTO>(String(updatedOrError.error));
 
             const saved = await this.cartaoRepo.update(updatedOrError.getValue());
-            return Result.ok<ICartaoCreditoDTO>(CartaoCreditoMap.toDTO(saved));
+            const maps = await this.getLookupMaps(saved.userId.toString());
+            const userNome = await this.getUserNome(saved.userId.toString());
+            return Result.ok<ICartaoCreditoDTO>(CartaoCreditoMap.toDTO(
+                saved,
+                saved.bancoId ? maps.bancos.get(saved.bancoId) : undefined,
+                saved.contaPagamentoId ? maps.contas.get(saved.contaPagamentoId.toString()) : undefined,
+                userNome
+            ));
         } catch (err) {
             this.logger.error('CartaoCreditoService.updateCartao error: %o', err);
             return Result.fail<ICartaoCreditoDTO>('Error updating CartaoCredito');
@@ -169,7 +216,14 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
         try {
             const cartao = await this.cartaoRepo.findById(id);
             if (!cartao) return Result.fail<ICartaoCreditoDTO>('Not found');
-            return Result.ok<ICartaoCreditoDTO>(CartaoCreditoMap.toDTO(cartao));
+            const maps = await this.getLookupMaps(cartao.userId.toString());
+            const userNome = await this.getUserNome(cartao.userId.toString());
+            return Result.ok<ICartaoCreditoDTO>(CartaoCreditoMap.toDTO(
+                cartao,
+                cartao.bancoId ? maps.bancos.get(cartao.bancoId) : undefined,
+                cartao.contaPagamentoId ? maps.contas.get(cartao.contaPagamentoId.toString()) : undefined,
+                userNome
+            ));
         } catch (err) {
             this.logger.error('CartaoCreditoService.findCartaoById error: %o', err);
             return Result.fail<ICartaoCreditoDTO>('Error fetching CartaoCredito');
@@ -189,7 +243,21 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
     public async findAllCartoes(userId?: string, bancoId?: string): Promise<Result<ICartaoCreditoDTO[]>> {
         try {
             const cartoes = await this.cartaoRepo.findAll(userId, bancoId);
-            return Result.ok<ICartaoCreditoDTO[]>(cartoes.map(c => CartaoCreditoMap.toDTO(c)));
+            const maps = await this.getLookupMaps(userId);
+            const userNameCache = new Map<string, string | undefined>();
+            const dtos = await Promise.all(cartoes.map(async c => {
+                const uid = c.userId.toString();
+                if (!userNameCache.has(uid)) {
+                    userNameCache.set(uid, await this.getUserNome(uid));
+                }
+                return CartaoCreditoMap.toDTO(
+                    c,
+                    c.bancoId ? maps.bancos.get(c.bancoId) : undefined,
+                    c.contaPagamentoId ? maps.contas.get(c.contaPagamentoId.toString()) : undefined,
+                    userNameCache.get(uid)
+                );
+            }));
+            return Result.ok<ICartaoCreditoDTO[]>(dtos);
         } catch (err) {
             this.logger.error('CartaoCreditoService.findAllCartoes error: %o', err);
             return Result.fail<ICartaoCreditoDTO[]>('Error fetching Cartoes');
@@ -205,32 +273,34 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
      */
     public async getExtrato(cartaoCreditoId: string, userId?: string): Promise<Result<{
         transacoes: ITransacaoDTO[],
-        saldoAtual: IDinheiroProps
+        saldoAtual: IDinheiroDTO
     }>> {
         try {
             const extrato = await this.cartaoRepo.getExtrato(cartaoCreditoId, userId);
+            const cartao = await this.cartaoRepo.findById(cartaoCreditoId);
 
             // Map domain Transacao[] to DTOs
             const transacoesDTO: ITransacaoDTO[] = [];
+            const userNome = cartao ? await this.getUserNome(cartao.userId.toString()) : undefined;
             for (const t of extrato.transacoes) {
                 try {
-                    transacoesDTO.push(TransacaoMap.toDTO(t));
+                    transacoesDTO.push(TransacaoMap.toDTO(t, userNome));
                 } catch (e) {
                     this.logger.error('CartaoCreditoService.getExtrato: failed to map transacao to DTO %o', e);
                 }
             }
 
-            // Convert Dinheiro VO to IDinheiroProps
+            // Convert Dinheiro VO to IDinheiroDTO
             const saldoAtualVO = extrato.saldoAtual;
-            const saldoAtual: IDinheiroProps = {
+            const saldoAtual: IDinheiroDTO = {
                 valor: saldoAtualVO.value,
                 moeda: saldoAtualVO.moeda
             };
 
-            return Result.ok<{ transacoes: ITransacaoDTO[], saldoAtual: IDinheiroProps }>({ transacoes: transacoesDTO, saldoAtual });
+            return Result.ok<{ transacoes: ITransacaoDTO[], saldoAtual: IDinheiroDTO }>({ transacoes: transacoesDTO, saldoAtual });
         } catch (err) {
             this.logger.error('CartaoCreditoService.getExtrato error: %o', err);
-            return Result.fail<{ transacoes: ITransacaoDTO[], saldoAtual: IDinheiroProps }>('Error fetching extrato');
+            return Result.fail<{ transacoes: ITransacaoDTO[], saldoAtual: IDinheiroDTO }>('Error fetching extrato');
         }
     }
 
@@ -307,7 +377,8 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
                 { inicio: periodoAntigoInicio, fecho: periodoAntigoFecho }
             );
 
-            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(transacaoPagamento));
+            const ownerNome = await this.getUserNome(cartaoOwnerId);
+            return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(transacaoPagamento, ownerNome));
 
         } catch (err) {
             this.logger.error('CartaoCreditoService.pagarCartao error: %o', err);

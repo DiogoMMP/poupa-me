@@ -1,5 +1,5 @@
 import type { Result } from '../../core/logic/Result.js';
-import type { IBancoDTO, ICreateBancoDTO, IUpdateBancoDTO } from '../../dto/IBancoDTO.js';
+import type { IBancoDTO, IBancoSummaryDTO, ICreateBancoDTO, IUpdateBancoDTO } from '../../dto/IBancoDTO.js';
 import type { IDashboardDTO } from '../../dto/IDashboardDTO.js';
 
 /**
@@ -48,7 +48,7 @@ export default interface IBancoService {
      * @param userRole - User role (Admin sees all bancos)
      * @returns Result containing array of Banco DTOs or error
      */
-    getAllBancos(userId: string, userRole?: string): Promise<Result<IBancoDTO[]>>;
+    getAllBancos(userId: string, userRole?: string): Promise<Result<IBancoSummaryDTO[]>>;
 
     /**
      * Gets the dashboard for a specific bank with its totals

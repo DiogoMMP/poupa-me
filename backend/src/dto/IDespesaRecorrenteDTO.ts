@@ -1,19 +1,22 @@
-import type { IDinheiroProps } from './ITransacaoDTO.js';
+import { ICategoriaDTO } from './ICategoriaDTO.js';
+import { IDataDTO } from './shared/IDataDTO.js';
+import type { IDinheiroDTO } from './shared/IDinheiroDTO.js';
+import { IEntityReferenceDTO } from './shared/IEntityReferenceDTO.js';
 
 /**
  * DTO for Recurring Expense (response)
  */
 export interface IDespesaRecorrenteDTO {
     id: string;
-    userId: string;
+    user?: IEntityReferenceDTO;
     nome: string;
     icon: string;
-    valor?: IDinheiroProps;
+    valor?: IDinheiroDTO;
     diaDoMes?: number;
-    categoriaId: string;
-    contaOrigemId: string;
-    contaDestinoId?: string;
-    contaPoupancaId?: string;
+    categoria: ICategoriaDTO;
+    contaOrigem: IEntityReferenceDTO;
+    contaDestino?: IEntityReferenceDTO;
+    contaPoupanca?: IEntityReferenceDTO;
     tipo: string;
     ultimoProcessamento: Date | null;
     ativo: boolean;
@@ -29,7 +32,7 @@ export interface ICreateDespesaRecorrenteDTO {
     userId?: string;
     nome: string;
     icon: string;
-    valor?: IDinheiroProps;
+    valor?: IDinheiroDTO;
     diaDoMes?: number;
     categoriaId: string;
     contaOrigemId: string;
@@ -48,7 +51,7 @@ export interface ICreateDespesaRecorrenteDTO {
 export interface IUpdateDespesaRecorrenteDTO {
     nome?: string;
     icon?: string;
-    valor?: IDinheiroProps;
+    valor?: IDinheiroDTO;
     diaDoMes?: number;
     categoriaId?: string;
     contaOrigemId?: string;
@@ -66,12 +69,8 @@ export interface IUpdateDespesaRecorrenteDTO {
  * The rule itself is NOT updated — valor/data are used only for this one transaction.
  */
 export interface IGerarTransacaoSemValorDTO {
-    valor: IDinheiroProps;
+    valor: IDinheiroDTO;
     /** Full date for the transaction */
-    data: {
-        dia: number;
-        mes: number;
-        ano: number;
-    };
+    data: IDataDTO;
 }
 

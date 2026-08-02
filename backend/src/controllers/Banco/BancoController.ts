@@ -21,10 +21,11 @@ export default class BancoController implements IBancoController {
      */
     public async createBanco(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            if (!userId) {
+            const currentUser = (req as AuthenticatedRequest).currentUser;
+            if (!currentUser || (!currentUser.id && currentUser.role !== 'Admin')) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
+            const userId = (currentUser.id || req.body?.userId || '') as string;
 
             const result = await this.bancoService.createBanco(req.body, userId);
 
@@ -43,11 +44,12 @@ export default class BancoController implements IBancoController {
      */
     public async updateBanco(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const userRole = (req as AuthenticatedRequest).currentUser?.role;
-            if (!userId) {
+            const currentUser = (req as AuthenticatedRequest).currentUser;
+            if (!currentUser || (!currentUser.id && currentUser.role !== 'Admin')) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
+            const userId = currentUser.id || '';
+            const userRole = currentUser.role;
 
             const bancoId = req.params.id as string;
             if (!bancoId) {
@@ -78,11 +80,12 @@ export default class BancoController implements IBancoController {
      */
     public async deleteBanco(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const userRole = (req as AuthenticatedRequest).currentUser?.role;
-            if (!userId) {
+            const currentUser = (req as AuthenticatedRequest).currentUser;
+            if (!currentUser || (!currentUser.id && currentUser.role !== 'Admin')) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
+            const userId = currentUser.id || '';
+            const userRole = currentUser.role;
 
             const bancoId = req.params.id as string;
             if (!bancoId) {
@@ -113,11 +116,12 @@ export default class BancoController implements IBancoController {
      */
     public async getBanco(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const userRole = (req as AuthenticatedRequest).currentUser?.role;
-            if (!userId) {
+            const currentUser = (req as AuthenticatedRequest).currentUser;
+            if (!currentUser || (!currentUser.id && currentUser.role !== 'Admin')) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
+            const userId = currentUser.id || '';
+            const userRole = currentUser.role;
 
             const bancoId = req.params.id as string;
             if (!bancoId) {
@@ -148,11 +152,12 @@ export default class BancoController implements IBancoController {
      */
     public async getAllBancos(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const userRole = (req as AuthenticatedRequest).currentUser?.role;
-            if (!userId) {
+            const currentUser = (req as AuthenticatedRequest).currentUser;
+            if (!currentUser || (!currentUser.id && currentUser.role !== 'Admin')) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
+            const userId = currentUser.id || '';
+            const userRole = currentUser.role;
 
             const result = await this.bancoService.getAllBancos(userId, userRole);
 
@@ -172,11 +177,12 @@ export default class BancoController implements IBancoController {
      */
     public async getDashboard(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id;
-            const userRole = (req as AuthenticatedRequest).currentUser?.role;
-            if (!userId) {
+            const currentUser = (req as AuthenticatedRequest).currentUser;
+            if (!currentUser || (!currentUser.id && currentUser.role !== 'Admin')) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
+            const userId = currentUser.id || '';
+            const userRole = currentUser.role;
 
             const bancoId = req.params.id as string;
             if (!bancoId) {
@@ -185,9 +191,11 @@ export default class BancoController implements IBancoController {
 
             // 🔥 THE MAGIC: FIRE AND FORGET - Process recurring expenses in background
             // This runs asynchronously and doesn't block the dashboard response
-            this.despesaRecorrenteService.processarRecorrencias(userId).catch(err => {
-                console.error('Background recurring expenses processing error:', err);
-            });
+            if (userId) {
+                this.despesaRecorrenteService.processarRecorrencias(userId).catch(err => {
+                    console.error('Background recurring expenses processing error:', err);
+                });
+            }
 
             // Continue with normal dashboard loading (doesn't wait for recurring processing)
             const result = await this.bancoService.getDashboard(bancoId, userId, userRole);
