@@ -1,0 +1,30 @@
+name: Branch Guard
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  check-source-into-main:
+    if: github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only allow develop or hotfix/* into main
+        run: |
+          if [[ "${{ github.head_ref }}" != "develop" && "${{ github.head_ref }}" != hotfix/* ]]; then
+            echo "PRs para main só podem vir de 'develop' ou 'hotfix/*' (esta vem de '${{ github.head_ref }}')."
+            exit 1
+          fi
+
+  check-branch-name:
+    if: github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch prefix
+        run: |
+          pattern='^(feature|fix|refactor|docs|style|test|build|ci|chore|perf|revert)/.+'
+          if [[ ! "${{ github.head_ref }}" =~ $pattern ]]; then
+            echo "Branch '${{ github.head_ref }}' não segue a convenção <tipo>/<descrição>."
+            echo "Prefixos aceites: feature, fix, refactor, docs, style, test, build, ci, chore, perf, revert"
+            exit 1
+          fi
