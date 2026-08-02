@@ -165,12 +165,15 @@ export default class CartaoCreditoController implements ICartaoCreditoController
      */
     public async pagarCartao(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const userId = (req as AuthenticatedRequest).currentUser?.id as string | undefined;
+            const currentUser = (req as AuthenticatedRequest).currentUser;
+            if (!currentUser || (!currentUser.id && currentUser.role !== 'Admin')) {
+                return res.status(401).json({ error: 'User not authenticated' });
+            }
+            const userId = currentUser.id || '';
             const cartaoCreditoId = (req.params.id || req.query.id) as string;
             const { novoPeriodo } = req.body;
 
             if (!cartaoCreditoId) return res.status(400).json({ error: 'Card ID is required' });
-            if (!userId) return res.status(401).json({ error: 'User not authenticated' });
             if (!novoPeriodo || !novoPeriodo.inicio || !novoPeriodo.fecho) {
                 return res.status(400).json({ error: 'New period (inicio and fecho) is required' });
             }

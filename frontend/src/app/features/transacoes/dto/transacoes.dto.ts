@@ -1,6 +1,3 @@
-import {CartoesCreditoDTO} from '../../cartoes-credito/dto/cartoes-credito.dto';
-import {ContasDto} from '../../contas/dto/contas.dto';
-
 // Date components
 export interface DataProps {
   dia: number;
@@ -21,6 +18,13 @@ export interface CategoriaProps {
   icon: string;
 }
 
+export interface EntityReferenceProps {
+  id: string;
+  nome?: string;
+  descricao?: string;
+  icon?: string;
+}
+
 // Transaction DTO returned by the API
 export interface TransacoesDTO {
   id: string;
@@ -30,9 +34,12 @@ export interface TransacoesDTO {
   tipo: string;
   categoria: CategoriaProps;
   status: string;
-  conta?: ContasDto;
-  cartaoCredito?: CartoesCreditoDTO;
-  userId: string;
+  conta?: EntityReferenceProps;
+  cartaoCredito?: EntityReferenceProps;
+  contaDestino?: EntityReferenceProps;
+  contaPoupanca?: EntityReferenceProps;
+  user?: EntityReferenceProps;
+  userId?: string;
 }
 
 // Payload for creating transactions

@@ -22,18 +22,24 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
     /**
      * Find all recurring expenses for a user, optionally filtered by bank (via origin account)
      */
-    public async findAll(userId: string, bancoId?: string): Promise<DespesaRecorrente[]> {
+    public async findAll(userId?: string, bancoId?: string): Promise<DespesaRecorrente[]> {
         try {
             const qb = this.repo.createQueryBuilder('d')
                 .leftJoinAndSelect('d.categoria', 'categoria')
                 .leftJoinAndSelect('d.contaOrigem', 'contaOrigem')
                 .leftJoinAndSelect('d.contaDestino', 'contaDestino')
                 .leftJoinAndSelect('d.contaPoupanca', 'contaPoupanca')
-                .where('d.user_domain_id = :userId', { userId })
                 .orderBy('d.id', 'ASC');
 
+            if (userId) {
+                qb.where('d.user_domain_id = :userId', { userId });
+            }
             if (bancoId) {
-                qb.andWhere('contaOrigem.banco_id = :bancoId', { bancoId });
+                if (userId) {
+                    qb.andWhere('contaOrigem.banco_id = :bancoId', { bancoId });
+                } else {
+                    qb.where('contaOrigem.banco_id = :bancoId', { bancoId });
+                }
             }
 
             const rows = await qb.getMany();
@@ -55,17 +61,23 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
     /**
      * Find all active recurring expenses for a user
      */
-    public async findActiveByUserId(userId: string): Promise<DespesaRecorrente[]> {
+    public async findActiveByUserId(userId?: string): Promise<DespesaRecorrente[]> {
         try {
-            const rows = await this.repo.createQueryBuilder('d')
+            const qb = this.repo.createQueryBuilder('d')
                 .leftJoinAndSelect('d.categoria', 'categoria')
                 .leftJoinAndSelect('d.contaOrigem', 'contaOrigem')
                 .leftJoinAndSelect('d.contaDestino', 'contaDestino')
                 .leftJoinAndSelect('d.contaPoupanca', 'contaPoupanca')
-                .where('d.user_domain_id = :userId', { userId })
-                .andWhere('d.ativo = :ativo', { ativo: true })
-                .orderBy('d.id', 'ASC')
-                .getMany();
+                .orderBy('d.id', 'ASC');
+
+            if (userId) {
+                qb.where('d.user_domain_id = :userId', { userId })
+                  .andWhere('d.ativo = :ativo', { ativo: true });
+            } else {
+                qb.where('d.ativo = :ativo', { ativo: true });
+            }
+
+            const rows = await qb.getMany();
 
             const res: DespesaRecorrente[] = [];
             for (const r of rows) {
@@ -85,7 +97,7 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
      * Find recurring expenses that are fully scheduled for their recurrence type,
      * optionally filtered by bank
      */
-    public async findWithValor(userId: string, bancoId?: string): Promise<DespesaRecorrente[]> {
+    public async findWithValor(userId?: string, bancoId?: string): Promise<DespesaRecorrente[]> {
         try {
             const qb = this.repo.createQueryBuilder('d')
                 .leftJoinAndSelect('d.categoria', 'categoria')
@@ -128,7 +140,7 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
      * Find recurring expenses that are not fully scheduled for their recurrence type,
      * optionally filtered by bank and/or tipo
      */
-    public async findWithoutValor(userId: string, bancoId?: string, tipo?: string): Promise<DespesaRecorrente[]> {
+    public async findWithoutValor(userId?: string, bancoId?: string, tipo?: string): Promise<DespesaRecorrente[]> {
         try {
             const qb = this.repo.createQueryBuilder('d')
                 .leftJoinAndSelect('d.categoria', 'categoria')

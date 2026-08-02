@@ -246,7 +246,7 @@ export class TransacaoMap extends Mapper<Transacao> {
     /**
      * Converts a Transacao domain entity into an ITransacaoDTO for API responses.
      */
-    public static toDTO(transacao: Transacao): ITransacaoDTO {
+    public static toDTO(transacao: Transacao, userNome?: string): ITransacaoDTO {
         const userDomainId = (transacao as unknown as DomainWithUser).userDomainId ?? '';
 
         return {
@@ -264,22 +264,27 @@ export class TransacaoMap extends Mapper<Transacao> {
             tipo: transacao.tipo.value,
             categoria: CategoriaMap.toDTO(transacao.categoria),
             status: transacao.status.value,
-            conta: (() => {
-                if (!transacao.conta) return undefined;
-                const contaDto = ContaMap.toDTO(transacao.conta);
-                // Prefer transaction-level user id if available to ensure consistency
-                if (userDomainId) contaDto.userId = String(userDomainId);
-                return contaDto;
-            })(),
-            cartaoCredito: (() => {
-                if (!transacao.cartaoCredito) return undefined;
-                const cartaoDto = CartaoCreditoMap.toDTO(transacao.cartaoCredito);
-                if (userDomainId) cartaoDto.userId = String(userDomainId);
-                return cartaoDto;
-            })(),
-            contaDestino: transacao.contaDestino ? ContaMap.toDTO(transacao.contaDestino) : undefined,
-            contaPoupanca: transacao.contaPoupanca ? ContaMap.toDTO(transacao.contaPoupanca) : undefined,
-            userId: userDomainId
-        } as ITransacaoDTO;
+            conta: transacao.conta ? {
+                id: transacao.conta.id.toString(),
+                nome: transacao.conta.nome.value,
+                icon: transacao.conta.icon.value
+            } : undefined,
+            cartaoCredito: transacao.cartaoCredito ? {
+                id: transacao.cartaoCredito.id.toString(),
+                nome: transacao.cartaoCredito.nome.value,
+                icon: transacao.cartaoCredito.icon.value
+            } : undefined,
+            contaDestino: transacao.contaDestino ? {
+                id: transacao.contaDestino.id.toString(),
+                nome: transacao.contaDestino.nome.value,
+                icon: transacao.contaDestino.icon.value
+            } : undefined,
+            contaPoupanca: transacao.contaPoupanca ? {
+                id: transacao.contaPoupanca.id.toString(),
+                nome: transacao.contaPoupanca.nome.value,
+                icon: transacao.contaPoupanca.icon.value
+            } : undefined,
+            user: userDomainId ? { id: userDomainId, nome: userNome } : undefined
+        };
     }
 }

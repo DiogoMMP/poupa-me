@@ -7,5 +7,5 @@ import type { ITransacaoDTO } from '../../../dto/ITransacaoDTO.js';
  */
 export default interface IDespesaRecorrenteProcessadorService {
     processarRecorrencias(userId: string): Promise<Result<void>>;
-    gerarTransacaoSemValor(despesaId: string, dto: IGerarTransacaoSemValorDTO, userId: string): Promise<Result<ITransacaoDTO>>;
+    gerarTransacaoSemValor(despesaId: string, dto: IGerarTransacaoSemValorDTO, userId: string, userRole?: string): Promise<Result<ITransacaoDTO>>;
 }

@@ -3,6 +3,7 @@ import { Result } from '../../core/logic/Result.js';
 import type IDespesaRecorrenteService from './IServices/IDespesaRecorrenteService.js';
 import type IDespesaRecorrenteRepo from '../../repos/DespesaRecorrente/IRepos/IDespesaRecorrenteRepo.js';
 import type IDespesaRecorrenteQueryRepo from '../../repos/DespesaRecorrente/IRepos/IDespesaRecorrenteQueryRepo.js';
+import type IUserRepo from '../../repos/User/IUserRepo.js';
 import type { IDespesaRecorrenteDTO, ICreateDespesaRecorrenteDTO, IUpdateDespesaRecorrenteDTO } from '../../dto/IDespesaRecorrenteDTO.js';
 import { DespesaRecorrenteMap } from '../../mappers/DespesaRecorrenteMap.js';
 import { DespesaRecorrente } from '../../domain/DespesaRecorrente/Entities/DespesaRecorrente.js';
@@ -19,8 +20,53 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
     constructor(
         @Inject('DespesaRecorrenteRepo') private despesaRepo: IDespesaRecorrenteRepo,
         @Inject('DespesaRecorrenteQueryRepo') private despesaQueryRepo: IDespesaRecorrenteQueryRepo,
+        @Inject('CategoriaRepo') private categoriaRepo: any,
+        @Inject('ContaRepo') private contaRepo: any,
+        @Inject('UserRepo') private userRepo: IUserRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {}
+
+    private async getUserNome(userId?: string): Promise<string | undefined> {
+        if (!userId) return undefined;
+        try {
+            const user = await this.userRepo.findByDomainId(userId);
+            return user?.name.value;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private async enrichDespesaDTO(despesa: DespesaRecorrente, map: Map<string, { nome?: string; icon?: string }>): Promise<IDespesaRecorrenteDTO> {
+        const uid = despesa.userId.toString();
+        const userNome = await this.getUserNome(uid);
+        return DespesaRecorrenteMap.toDTO(despesa, map, userNome);
+    }
+
+    private async enrichDespesaDTOList(despesas: DespesaRecorrente[], map: Map<string, { nome?: string; icon?: string }>): Promise<IDespesaRecorrenteDTO[]> {
+        const userNameCache = new Map<string, string | undefined>();
+        return await Promise.all(despesas.map(async (d) => {
+            const uid = d.userId.toString();
+            if (!userNameCache.has(uid)) {
+                userNameCache.set(uid, await this.getUserNome(uid));
+            }
+            return DespesaRecorrenteMap.toDTO(d, map, userNameCache.get(uid));
+        }));
+    }
+
+    private async getInfoMap(userId?: string): Promise<Map<string, { nome?: string; icon?: string }>> {
+        const [categorias, contas] = await Promise.all([
+            this.categoriaRepo.findAll(userId),
+            this.contaRepo.findAll(userId)
+        ]);
+        const map = new Map<string, { nome?: string; icon?: string }>();
+        for (const c of categorias) {
+            map.set(c.id.toString(), { nome: c.nome.value, icon: c.icon.value });
+        }
+        for (const c of contas) {
+            map.set(c.id.toString(), { nome: c.nome.value, icon: c.icon.value });
+        }
+        return map;
+    }
 
     /**
      * Create a new recurring expense
@@ -73,7 +119,8 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
             if (despesaOrError.isFailure) return Result.fail<IDespesaRecorrenteDTO>(String(despesaOrError.error));
 
             const saved = await this.despesaRepo.save(despesaOrError.getValue());
-            return Result.ok<IDespesaRecorrenteDTO>(DespesaRecorrenteMap.toDTO(saved));
+            const map = await this.getInfoMap(userId);
+            return Result.ok<IDespesaRecorrenteDTO>(await this.enrichDespesaDTO(saved, map));
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.createDespesa error: %o', err);
             return Result.fail<IDespesaRecorrenteDTO>('Error creating DespesaRecorrente');
@@ -83,12 +130,12 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
     /**
      * Update an existing recurring expense
      */
-    public async updateDespesa(despesaId: string, dto: IUpdateDespesaRecorrenteDTO, userId: string): Promise<Result<IDespesaRecorrenteDTO>> {
+    public async updateDespesa(despesaId: string, dto: IUpdateDespesaRecorrenteDTO, userId: string, userRole?: string): Promise<Result<IDespesaRecorrenteDTO>> {
         try {
             const existing = await this.despesaRepo.findById(despesaId);
             if (!existing) return Result.fail<IDespesaRecorrenteDTO>('Despesa not found');
 
-            if (existing.userId.toString() !== userId) return Result.fail<IDespesaRecorrenteDTO>('Unauthorized');
+            if (userRole !== 'Admin' && existing.userId.toString() !== userId) return Result.fail<IDespesaRecorrenteDTO>('Unauthorized');
 
             const nomeOrError = dto.nome ? Nome.create(dto.nome) : Result.ok<Nome>(existing.nome);
             if (nomeOrError.isFailure) return Result.fail<IDespesaRecorrenteDTO>(String(nomeOrError.error));
@@ -139,7 +186,8 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
             if (updatedOrError.isFailure) return Result.fail<IDespesaRecorrenteDTO>(String(updatedOrError.error));
 
             const saved = await this.despesaRepo.update(updatedOrError.getValue());
-            return Result.ok<IDespesaRecorrenteDTO>(DespesaRecorrenteMap.toDTO(saved));
+            const map = await this.getInfoMap(existing.userId.toString());
+            return Result.ok<IDespesaRecorrenteDTO>(await this.enrichDespesaDTO(saved, map));
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.updateDespesa error: %o', err);
             return Result.fail<IDespesaRecorrenteDTO>('Error updating DespesaRecorrente');
@@ -149,13 +197,13 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
     /**
      * Delete a recurring expense
      */
-    public async deleteDespesa(despesaId: string, userId: string): Promise<Result<void>> {
+    public async deleteDespesa(despesaId: string, userId: string, userRole?: string): Promise<Result<void>> {
         try {
             const existing = await this.despesaRepo.findById(despesaId);
             if (!existing) return Result.fail<void>('Despesa not found');
 
             // Authorization
-            if (existing.userId.toString() !== userId) return Result.fail<void>('Unauthorized');
+            if (userRole !== 'Admin' && existing.userId.toString() !== userId) return Result.fail<void>('Unauthorized');
 
             await this.despesaRepo.delete(despesaId);
             return Result.ok<void>();
@@ -168,42 +216,49 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
     /**
      * Get a recurring expense by domain ID
      */
-    public async getDespesa(despesaId: string, userId: string): Promise<Result<IDespesaRecorrenteDTO>> {
+    public async getDespesa(despesaId: string, userId: string, userRole?: string): Promise<Result<IDespesaRecorrenteDTO>> {
         try {
             const despesa = await this.despesaRepo.findById(despesaId);
             if (!despesa) return Result.fail<IDespesaRecorrenteDTO>('Despesa not found');
 
             // Authorization
-            if (despesa.userId.toString() !== userId) return Result.fail<IDespesaRecorrenteDTO>('Unauthorized');
+            if (userRole !== 'Admin' && despesa.userId.toString() !== userId) return Result.fail<IDespesaRecorrenteDTO>('Unauthorized');
 
-            return Result.ok<IDespesaRecorrenteDTO>(DespesaRecorrenteMap.toDTO(despesa));
+            const map = await this.getInfoMap(despesa.userId.toString());
+            return Result.ok<IDespesaRecorrenteDTO>(await this.enrichDespesaDTO(despesa, map));
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.getDespesa error: %o', err);
             return Result.fail<IDespesaRecorrenteDTO>('Error fetching DespesaRecorrente');
         }
     }
 
-    public async getAllDespesas(userId: string, bancoId?: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
+    public async getAllDespesas(userId: string, bancoId?: string, userRole?: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
         try {
-            const despesas = await this.despesaQueryRepo.findAll(userId, bancoId);
-            return Result.ok<IDespesaRecorrenteDTO[]>(despesas.map(d => DespesaRecorrenteMap.toDTO(d)));
+            const filterUserId = userRole === 'Admin' ? undefined : userId;
+            const despesas = await this.despesaQueryRepo.findAll(filterUserId, bancoId);
+            const map = await this.getInfoMap(filterUserId);
+            const dtos = await this.enrichDespesaDTOList(despesas, map);
+            return Result.ok<IDespesaRecorrenteDTO[]>(dtos);
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.getAllDespesas error: %o', err);
             return Result.fail<IDespesaRecorrenteDTO[]>('Error fetching DespesaRecorrentes');
         }
     }
 
-    public async getDespesasComValor(userId: string, bancoId?: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
+    public async getDespesasComValor(userId: string, bancoId?: string, userRole?: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
         try {
-            const despesas = await this.despesaQueryRepo.findWithValor(userId, bancoId);
-            return Result.ok<IDespesaRecorrenteDTO[]>(despesas.map(d => DespesaRecorrenteMap.toDTO(d)));
+            const filterUserId = userRole === 'Admin' ? undefined : userId;
+            const despesas = await this.despesaQueryRepo.findWithValor(filterUserId, bancoId);
+            const map = await this.getInfoMap(filterUserId);
+            const dtos = await this.enrichDespesaDTOList(despesas, map);
+            return Result.ok<IDespesaRecorrenteDTO[]>(dtos);
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.getDespesasComValor error: %o', err);
             return Result.fail<IDespesaRecorrenteDTO[]>('Error fetching recurring expenses with valor');
         }
     }
 
-    public async getDespesasSemValor(userId: string, bancoId?: string, tipo?: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
+    public async getDespesasSemValor(userId: string, bancoId?: string, tipo?: string, userRole?: string): Promise<Result<IDespesaRecorrenteDTO[]>> {
         try {
             let validTipo: string | undefined = undefined;
             if (tipo) {
@@ -214,8 +269,11 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
                 validTipo = tipoResult.getValue().value;
             }
 
-            const despesas = await this.despesaQueryRepo.findWithoutValor(userId, bancoId, validTipo);
-            return Result.ok<IDespesaRecorrenteDTO[]>(despesas.map(d => DespesaRecorrenteMap.toDTO(d)));
+            const filterUserId = userRole === 'Admin' ? undefined : userId;
+            const despesas = await this.despesaQueryRepo.findWithoutValor(filterUserId, bancoId, validTipo);
+            const map = await this.getInfoMap(filterUserId);
+            const dtos = await this.enrichDespesaDTOList(despesas, map);
+            return Result.ok<IDespesaRecorrenteDTO[]>(dtos);
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.getDespesasSemValor error: %o', err);
             return Result.fail<IDespesaRecorrenteDTO[]>('Error fetching recurring expenses without valor');

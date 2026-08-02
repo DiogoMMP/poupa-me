@@ -1,37 +1,27 @@
 import type {ICategoriaDTO} from "./ICategoriaDTO.js";
-import type {IContaDTO} from "./IContaDTO.js";
-import type {ICartaoCreditoDTO} from "./ICartaoCreditoDTO.js";
-
-export interface IDataProps {
-    dia: number;
-    mes: number;
-    ano: number;
-}
-
-export interface IDinheiroProps {
-    valor: number;
-    moeda: string;
-}
+import type {IEntityReferenceDTO} from "./shared/IEntityReferenceDTO.js";
+import type {IDinheiroDTO} from "./shared/IDinheiroDTO.js";
+import type {IDataDTO} from "./shared/IDataDTO.js";
 
 export interface ITransacaoDTO {
     id: string;
-    data: IDataProps;
+    data: IDataDTO;
     descricao: string;
-    valor: IDinheiroProps;
+    valor: IDinheiroDTO;
     tipo: string;
     categoria: ICategoriaDTO;
     status: string;
-    conta?: IContaDTO;
-    cartaoCredito?: ICartaoCreditoDTO;
-    contaDestino?: IContaDTO;
-    contaPoupanca?: IContaDTO;
-    userId: string;
+    conta?: IEntityReferenceDTO;
+    cartaoCredito?: IEntityReferenceDTO;
+    contaDestino?: IEntityReferenceDTO;
+    contaPoupanca?: IEntityReferenceDTO;
+    user?: IEntityReferenceDTO;
 }
 
 export interface ITransacaoInputDTO {
-    data: IDataProps;
+    data: IDataDTO;
     descricao: string;
-    valor: IDinheiroProps;
+    valor: IDinheiroDTO;
     categoriaId: string;
     contaId?: string;
     cartaoCreditoId?: string;
@@ -42,9 +32,9 @@ export interface ITransacaoInputDTO {
 }
 
 export interface ITransacaoReembolsoDTO {
-    data: IDataProps;
+    data: IDataDTO;
     descricao: string;
-    valor: IDinheiroProps;
+    valor: IDinheiroDTO;
     categoriaId: string;
     contaId?: string;
     cartaoCreditoId?: string;
@@ -52,9 +42,9 @@ export interface ITransacaoReembolsoDTO {
 }
 
 export interface ITransacaoUpdateDTO {
-    data?: IDataProps;
+    data?: IDataDTO;
     descricao?: string;
-    valor?: IDinheiroProps;
+    valor?: IDinheiroDTO;
     tipo?: string;
     categoriaId?: string;
     status?: string;

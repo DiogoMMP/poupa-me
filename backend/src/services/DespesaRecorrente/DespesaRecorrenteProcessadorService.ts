@@ -86,12 +86,13 @@ export default class DespesaRecorrenteProcessadorService implements IDespesaReco
     public async gerarTransacaoSemValor(
         despesaId: string,
         dto: IGerarTransacaoSemValorDTO,
-        userId: string
+        userId: string,
+        userRole?: string
     ): Promise<Result<ITransacaoDTO>> {
         try {
             const regra = await this.despesaRepo.findById(despesaId);
             if (!regra) return Result.fail<ITransacaoDTO>('Despesa not found');
-            if (regra.userId.toString() !== userId) return Result.fail<ITransacaoDTO>('Unauthorized');
+            if (userRole !== 'Admin' && regra.userId.toString() !== userId) return Result.fail<ITransacaoDTO>('Unauthorized');
 
             // Validate that the rule is not fully scheduled
             const tipo = regra.tipo.value;

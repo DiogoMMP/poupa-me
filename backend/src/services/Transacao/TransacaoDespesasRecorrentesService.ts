@@ -11,6 +11,7 @@ import type ITransacaoDespesasRecorrentesRepo from "../../repos/Transacao/IRepos
 import type ICategoriaRepo from "../../repos/Categoria/ICategoriaRepo.js";
 import type IContaRepo from "../../repos/Conta/IContaRepo.js";
 import type ICartaoCreditoRepo from "../../repos/CartaoCredito/ICartaoCreditoRepo.js";
+import type IUserRepo from "../../repos/User/IUserRepo.js";
 import { Transacao } from "../../domain/Transacao/Entities/Transacao.js";
 import { Descricao } from "../../domain/Transacao/ValueObjects/Descricao.js";
 import { Data } from "../../domain/Shared/ValueObjects/Data.js";
@@ -32,8 +33,36 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
     @Inject("CategoriaRepo") private categoriaRepo: ICategoriaRepo,
     @Inject("ContaRepo") private contaRepo: IContaRepo,
     @Inject("CartaoCreditoRepo") private cartaoCreditoRepo: ICartaoCreditoRepo,
+    @Inject("UserRepo") private userRepo: IUserRepo,
     @Inject("logger") private logger: { error: (...args: unknown[]) => void },
   ) {}
+
+  private async getUserNome(userId?: string): Promise<string | undefined> {
+    if (!userId) return undefined;
+    try {
+      const user = await this.userRepo.findByDomainId(userId);
+      return user?.name.value;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async enrichTransactionsWithUserName(rows: Transacao[]): Promise<ITransacaoDTO[]> {
+    const userNameCache = new Map<string, string | undefined>();
+    return await Promise.all(rows.map(async (r) => {
+      const uid = (r as unknown as { userDomainId?: string }).userDomainId;
+      if (uid && !userNameCache.has(uid)) {
+        userNameCache.set(uid, await this.getUserNome(uid));
+      }
+      return TransacaoMap.toDTO(r, uid ? userNameCache.get(uid) : undefined);
+    }));
+  }
+
+  private async toEnrichedDTO(transacao: Transacao): Promise<ITransacaoDTO> {
+    const uid = (transacao as unknown as { userDomainId?: string }).userDomainId;
+    const userNome = await this.getUserNome(uid);
+    return TransacaoMap.toDTO(transacao, userNome);
+  }
 
   /**
    * Creates a new "Despesa Mensal" type Transacao based on the provided input DTO. This method validates the input,
@@ -144,7 +173,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
 
       await this.contaRepo.update(contaOrigemFresh);
 
-      return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+      return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(savedTransacao));
     } catch (e) {
       this.logger.error("TransacaoService.createDespesaMensal error: %o", e);
       return Result.fail<ITransacaoDTO>("Error creating despesa mensal");
@@ -257,7 +286,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
 
       await this.contaRepo.update(contaOrigemFresh);
 
-      return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+      return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(savedTransacao));
     } catch (e) {
       this.logger.error("TransacaoService.createDespesaSemanal error: %o", e);
       return Result.fail<ITransacaoDTO>("Error creating despesa semanal");
@@ -370,7 +399,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
 
       await this.contaRepo.update(contaOrigemFresh);
 
-      return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+      return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(savedTransacao));
     } catch (e) {
       this.logger.error("TransacaoService.createDespesaAnual error: %o", e);
       return Result.fail<ITransacaoDTO>("Error creating despesa anual");
@@ -470,7 +499,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
         const savedTransacao =
           await this.transacaoRepo.update(updatedTransacao);
 
-        return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+        return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(savedTransacao));
       }
     } catch (e) {
       this.logger.error(
@@ -581,7 +610,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
         await this.contaRepo.update(contaDestino);
       }
 
-      return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(savedTransacao));
+      return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(savedTransacao));
     } catch (e) {
       this.logger.error("TransacaoService.createPoupanca error: %o", e);
       return Result.fail<ITransacaoDTO>("Error creating poupança");
@@ -673,7 +702,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
       await this.contaRepo.update(contaPoupancaFresh);
 
       const saved = await this.transacaoRepo.update(updated);
-      return Result.ok<ITransacaoDTO>(TransacaoMap.toDTO(saved));
+      return Result.ok<ITransacaoDTO>(await this.toEnrichedDTO(saved));
     } catch (e) {
       this.logger.error("TransacaoService.concluirPoupanca error: %o", e);
       return Result.fail<ITransacaoDTO>("Error concluding poupança");
@@ -864,9 +893,8 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
     try {
       const rows: Transacao[] =
         await this.despesasRecorrentesRepo.findDespesaRecorrente(filters);
-      return Result.ok<ITransacaoDTO[]>(
-        rows.map((r: Transacao) => TransacaoMap.toDTO(r)),
-      );
+      const dtos = await this.enrichTransactionsWithUserName(rows);
+      return Result.ok<ITransacaoDTO[]>(dtos);
     } catch (e) {
       this.logger.error("TransacaoService.findDespesaRecorrente error: %o", e);
       return Result.fail<ITransacaoDTO[]>(

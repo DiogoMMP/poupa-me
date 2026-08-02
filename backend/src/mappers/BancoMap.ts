@@ -3,7 +3,7 @@ import { Banco } from '../domain/Banco/Entities/Banco.js';
 import { Nome } from '../domain/Shared/ValueObjects/Nome.js';
 import { Icon } from '../domain/Shared/ValueObjects/Icon.js';
 import { UniqueEntityID } from '../core/domain/UniqueEntityID.js';
-import type { IBancoDTO } from '../dto/IBancoDTO.js';
+import type { IBancoDTO, IBancoSummaryDTO } from '../dto/IBancoDTO.js';
 
 /**
  * Mapper for the Banco aggregate. Handles conversion between domain entities,
@@ -67,13 +67,37 @@ export class BancoMap extends Mapper<Banco> {
      * @param banco - Banco domain entity
      * @returns IBancoDTO
      */
-    public static toDTO(banco: Banco): IBancoDTO {
+    public static toDTO(
+        banco: Banco,
+        contasCartoesMap?: Map<string, { nome: string; icon: string }>,
+        userNome?: string
+    ): IBancoDTO {
         return {
             id: banco.id.toString(),
-            userId: banco.userId.toString(),
+            user: banco.userId ? { id: banco.userId.toString(), nome: userNome } : undefined,
             nome: banco.nome.value,
             icon: banco.icon.value,
-            contasCartoesSelecionados: banco.contasCartoesSelecionados
+            contasCartoesSelecionados: banco.contasCartoesSelecionados?.map(id => {
+                const info = contasCartoesMap?.get(id);
+                return {
+                    id,
+                    nome: info?.nome,
+                    icon: info?.icon
+                };
+            })
+        };
+    }
+
+    /**
+     * Converts a Banco domain entity into a lightweight summary DTO (no contasCartoesSelecionados).
+     * Used for GET /banco list responses.
+     */
+    public static toSummaryDTO(banco: Banco, userNome?: string): IBancoSummaryDTO {
+        return {
+            id: banco.id.toString(),
+            user: banco.userId ? { id: banco.userId.toString(), nome: userNome } : undefined,
+            nome: banco.nome.value,
+            icon: banco.icon.value
         };
     }
 }

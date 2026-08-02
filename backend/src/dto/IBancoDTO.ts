@@ -1,13 +1,26 @@
+import { IEntityReferenceDTO } from "./shared/IEntityReferenceDTO.js";
+
 /**
- * Data Transfer Object for Banco entity.
- * Used for API communication.
+ * Data Transfer Object for Banco entity (detail view — includes contasCartoesSelecionados).
+ * Used for GET /banco/:id
  */
 export interface IBancoDTO {
     id: string;
-    userId: string;
+    user?: IEntityReferenceDTO;
     nome: string;
     icon: string;
-    contasCartoesSelecionados?: string[];
+    contasCartoesSelecionados?: IEntityReferenceDTO[];
+}
+
+/**
+ * Lightweight DTO for Banco list responses (no contasCartoesSelecionados).
+ * Used for GET /banco
+ */
+export interface IBancoSummaryDTO {
+    id: string;
+    user?: IEntityReferenceDTO;
+    nome: string;
+    icon: string;
 }
 
 /**

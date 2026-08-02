@@ -9,6 +9,7 @@ import despesaRecorrenteRoute from "./routes/DespesaRecorrente/index.js";
 import iACategorizacaoRoute from "./routes/IACategorizacaoRoute.js";
 import healthRoute from "./routes/Health.js"
 import estatisticasRoute from "./routes/EstatisticasRoute.js";
+import dashboardRoute from "./routes/DashboardRoute.js";
 
 export default () => {
 	const app = Router();
@@ -42,6 +43,9 @@ export default () => {
 
 	// Register Estatisticas routes
 	estatisticasRoute(app);
+
+	// Register Dashboard routes
+	dashboardRoute(app);
 
 	return app
 }

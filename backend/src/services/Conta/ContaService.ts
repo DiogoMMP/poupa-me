@@ -2,6 +2,8 @@ import { Service, Inject } from 'typedi';
 import { Result } from '../../core/logic/Result.js';
 import type IContaService from './IContaService.js';
 import type IContaRepo from '../../repos/Conta/IContaRepo.js';
+import type IBancoRepo from '../../repos/Banco/IBancoRepo.js';
+import type IUserRepo from '../../repos/User/IUserRepo.js';
 import type { IContaDTO, IContaInputDTO, IContaUpdateDTO } from '../../dto/IContaDTO.js';
 import { ContaMap } from '../../mappers/ContaMap.js';
 import { Nome } from '../../domain/Shared/ValueObjects/Nome.js';
@@ -17,8 +19,28 @@ import { Conta } from '../../domain/Conta/Entities/Conta.js';
 export default class ContaService implements IContaService {
     constructor(
         @Inject('ContaRepo') private contaRepo: IContaRepo,
+        @Inject('BancoRepo') private bancoRepo: IBancoRepo,
+        @Inject('UserRepo') private userRepo: IUserRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {}
+
+    private async getUserNome(userId: string): Promise<string | undefined> {
+        try {
+            const user = await this.userRepo.findByDomainId(userId);
+            return user?.name.value;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private async getBancoMap(userId?: string): Promise<Map<string, { nome: string; icon: string }>> {
+        const bancos = await this.bancoRepo.findAll(userId);
+        const map = new Map<string, { nome: string; icon: string }>();
+        for (const b of bancos) {
+            map.set(b.id.toString(), { nome: b.nome.value, icon: b.icon.value });
+        }
+        return map;
+    }
 
     /**
      * Creates a new Conta based on the provided input DTO. Validates and maps the input to a domain entity, then persists it using the repository.
@@ -50,7 +72,9 @@ export default class ContaService implements IContaService {
 
             const contaDomain = contaOrError.getValue();
             const saved = await this.contaRepo.save(contaDomain);
-            return Result.ok<IContaDTO>(ContaMap.toDTO(saved));
+            const map = await this.getBancoMap(inputDTO.userId);
+            const userNome = await this.getUserNome(String(inputDTO.userId));
+            return Result.ok<IContaDTO>(ContaMap.toDTO(saved, saved.bancoId ? map.get(saved.bancoId) : undefined, userNome));
         } catch (err) {
             this.logger.error('ContaService.createConta error: %o', err);
             return Result.fail<IContaDTO>('Error creating Conta');
@@ -89,7 +113,9 @@ export default class ContaService implements IContaService {
             if (updatedOrError.isFailure) return Result.fail<IContaDTO>(String(updatedOrError.error));
 
             const saved = await this.contaRepo.update(updatedOrError.getValue());
-            return Result.ok<IContaDTO>(ContaMap.toDTO(saved));
+            const map = await this.getBancoMap(saved.userId.toString());
+            const userNome = await this.getUserNome(saved.userId.toString());
+            return Result.ok<IContaDTO>(ContaMap.toDTO(saved, saved.bancoId ? map.get(saved.bancoId) : undefined, userNome));
         } catch (err) {
             this.logger.error('ContaService.updateConta error: %o', err);
             return Result.fail<IContaDTO>('Error updating Conta');
@@ -120,7 +146,9 @@ export default class ContaService implements IContaService {
         try {
             const conta = await this.contaRepo.findById(id);
             if (!conta) return Result.fail<IContaDTO>('Not found');
-            return Result.ok<IContaDTO>(ContaMap.toDTO(conta));
+            const map = await this.getBancoMap(conta.userId.toString());
+            const userNome = await this.getUserNome(conta.userId.toString());
+            return Result.ok<IContaDTO>(ContaMap.toDTO(conta, conta.bancoId ? map.get(conta.bancoId) : undefined, userNome));
         } catch (err) {
             this.logger.error('ContaService.findContaById error: %o', err);
             return Result.fail<IContaDTO>('Error fetching Conta');
@@ -137,7 +165,16 @@ export default class ContaService implements IContaService {
     public async findAllContas(userId?: string, bancoId?: string): Promise<Result<IContaDTO[]>> {
         try {
             const contas = await this.contaRepo.findAll(userId, bancoId);
-            return Result.ok<IContaDTO[]>(contas.map(c => ContaMap.toDTO(c)));
+            const map = await this.getBancoMap(userId);
+            const userNameCache = new Map<string, string | undefined>();
+            const dtos = await Promise.all(contas.map(async c => {
+                const uid = c.userId.toString();
+                if (!userNameCache.has(uid)) {
+                    userNameCache.set(uid, await this.getUserNome(uid));
+                }
+                return ContaMap.toDTO(c, c.bancoId ? map.get(c.bancoId) : undefined, userNameCache.get(uid));
+            }));
+            return Result.ok<IContaDTO[]>(dtos);
         } catch (err) {
             this.logger.error('ContaService.findAllContas error: %o', err);
             return Result.fail<IContaDTO[]>('Error fetching Contas');

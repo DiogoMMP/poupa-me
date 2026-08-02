@@ -147,20 +147,45 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
         };
     }
 
-    public static toDTO(despesa: DespesaRecorrente): IDespesaRecorrenteDTO {
+    public static toDTO(
+        despesa: DespesaRecorrente,
+        infoMap?: Map<string, { nome?: string; icon?: string }>,
+        userNome?: string
+    ): IDespesaRecorrenteDTO {
+        const catInfo = infoMap?.get(despesa.categoriaId.toString());
+        const origInfo = infoMap?.get(despesa.contaOrigemId.toString());
+        const destInfo = despesa.contaDestinoId ? infoMap?.get(despesa.contaDestinoId.toString()) : undefined;
+        const poupInfo = despesa.contaPoupancaId ? infoMap?.get(despesa.contaPoupancaId.toString()) : undefined;
+
         return {
             id: despesa.id.toString(),
-            userId: despesa.userId.toString(),
+            user: despesa.userId ? { id: despesa.userId.toString(), nome: userNome } : undefined,
             nome: despesa.nome.value,
             icon: despesa.icon,
             valor: despesa.valor
                 ? { valor: despesa.valor.value, moeda: despesa.valor.moeda }
                 : undefined,
             diaDoMes: despesa.diaDoMes,
-            categoriaId: despesa.categoriaId.toString(),
-            contaOrigemId: despesa.contaOrigemId.toString(),
-            contaDestinoId: despesa.contaDestinoId?.toString(),
-            contaPoupancaId: despesa.contaPoupancaId?.toString(),
+            categoria: {
+                id: despesa.categoriaId.toString(),
+                nome: catInfo?.nome ?? '',
+                icon: catInfo?.icon ?? ''
+            },
+            contaOrigem: {
+                id: despesa.contaOrigemId.toString(),
+                nome: origInfo?.nome,
+                icon: origInfo?.icon
+            },
+            contaDestino: despesa.contaDestinoId ? {
+                id: despesa.contaDestinoId.toString(),
+                nome: destInfo?.nome,
+                icon: destInfo?.icon
+            } : undefined,
+            contaPoupanca: despesa.contaPoupancaId ? {
+                id: despesa.contaPoupancaId.toString(),
+                nome: poupInfo?.nome,
+                icon: poupInfo?.icon
+            } : undefined,
             tipo: despesa.tipo.value,
             ultimoProcessamento: despesa.ultimoProcessamento,
             ativo: despesa.ativo,

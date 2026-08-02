@@ -59,8 +59,15 @@ export default (app: Router) => {
    *       properties:
    *         id:
    *           type: string
-   *         userId:
-   *           type: string
+   *         user:
+   *           type: object
+   *           properties:
+   *             id:
+   *               type: string
+   *               example: "USR00000000001"
+   *             nome:
+   *               type: string
+   *               example: "Diogo Silva"
    *         nome:
    *           type: string
    *         icon:
@@ -71,10 +78,30 @@ export default (app: Router) => {
    *           $ref: '#/components/schemas/IDinheiroProps'
    *         periodo:
    *           $ref: '#/components/schemas/Periodo'
-   *         contaPagamentoId:
-   *           type: string
-   *         bancoId:
-   *           type: string
+   *         contaPagamento:
+   *           type: object
+   *           properties:
+   *             id:
+   *               type: string
+   *               example: "CNT00000000001"
+   *             nome:
+   *               type: string
+   *               example: "Saldo Real"
+   *             icon:
+   *               type: string
+   *               example: "😍"
+   *         banco:
+   *           type: object
+   *           properties:
+   *             id:
+   *               type: string
+   *               example: "BNC00000000001"
+   *             nome:
+   *               type: string
+   *               example: "Santander"
+   *             icon:
+   *               type: string
+   *               example: "😊"
    *     CartaoCreditoInput:
    *       type: object
    *       required: [nome, icon, limiteCredito, periodo, contaPagamentoId]
@@ -365,7 +392,10 @@ export default (app: Router) => {
    *               cartaoCredito:
    *                 id: "CCR00000000001"
    *                 nome: "Visa"
-   *               userId: "swagger-dev"
+   *                 icon: "💳"
+   *               user:
+   *                 id: "swagger-dev"
+   *                 nome: "Diogo Silva"
    */
   route.post('/:id/pagar', isAuth, (req, res, next) => ctrl.pagarCartao(req as AuthenticatedRequest, res, next));
 };

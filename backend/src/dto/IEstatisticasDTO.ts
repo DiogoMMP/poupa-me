@@ -1,20 +1,21 @@
 import {ICategoriaDTO} from "./ICategoriaDTO.js";
-import {IDataProps, IDinheiroProps} from "./ITransacaoDTO.js";
+import {IDataDTO} from "./shared/IDataDTO.js";
+import {IDinheiroDTO} from "./shared/IDinheiroDTO.js";
 
 /**
  * Statistics for a single category returned by the statistics endpoint.
  */
 export interface ICategoriaEstatistica {
     categoria: ICategoriaDTO;
-    total: IDinheiroProps;
+    total: IDinheiroDTO;
 }
 
 /**
  * Daily history entry used to build charts.
  */
 export interface IHistoricoDiario {
-    data: IDataProps;
-    total: IDinheiroProps;
+    data: IDataDTO;
+    total: IDinheiroDTO;
 }
 
 /**

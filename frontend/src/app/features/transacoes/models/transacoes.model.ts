@@ -1,5 +1,9 @@
-import { ContasModel } from '../../contas/models/contas.model';
-import { CartoesCreditoModel } from '../../cartoes-credito/models/cartoes-credito.model';
+export interface EntityReferenceModel {
+  id: string;
+  nome?: string;
+  descricao?: string;
+  icon?: string;
+}
 
 /**
  * UI model used by transaction lists and components
@@ -15,7 +19,10 @@ export interface TransacaoModel {
   tipo: string;
   categoria: { id?: string; nome: string; icon: string };
   status: string;
-  conta?: ContasModel;
-  cartaoCredito?: CartoesCreditoModel;
-  userId: string;
+  conta?: EntityReferenceModel;
+  cartaoCredito?: EntityReferenceModel;
+  contaDestino?: EntityReferenceModel;
+  contaPoupanca?: EntityReferenceModel;
+  user?: EntityReferenceModel;
+  userId?: string;
 }

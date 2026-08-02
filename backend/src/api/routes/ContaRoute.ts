@@ -29,19 +29,36 @@ export default (app: Router) => {
    *       properties:
    *         id:
    *           type: string
-   *           example: "CON-2026-00001"
-   *         userId:
-   *           type: string
+   *           example: "CNT00000000001"
+   *         user:
+   *           type: object
+   *           properties:
+   *             id:
+   *               type: string
+   *               example: "USR00000000001"
+   *             nome:
+   *               type: string
+   *               example: "Diogo Silva"
    *         nome:
    *           type: string
+   *           example: "Saldo Real"
    *         icon:
    *           type: string
+   *           example: "😍"
    *         saldo:
    *           $ref: '#/components/schemas/IDinheiroProps'
-   *         transacoes:
-   *           type: array
-   *           items:
-   *             type: object
+   *         banco:
+   *           type: object
+   *           properties:
+   *             id:
+   *               type: string
+   *               example: "BNC00000000001"
+   *             nome:
+   *               type: string
+   *               example: "Santander"
+   *             icon:
+   *               type: string
+   *               example: "😊"
    *     ContaInput:
    *       type: object
    *       required: [nome, icon]

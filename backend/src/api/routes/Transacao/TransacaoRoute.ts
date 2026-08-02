@@ -31,9 +31,28 @@ const route = Router();
  *         moeda:
  *           type: string
  *           example: EUR
+ *     EntityReference:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         nome:
+ *           type: string
+ *         icon:
+ *           type: string
+ *     UserReference:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         nome:
+ *           type: string
  *     Transacao:
  *       type: object
  *       properties:
+ *         id:
+ *           type: string
+ *           example: "TRN-2026-00000000001"
  *         data:
  *           $ref: '#/components/schemas/IData'
  *         descricao:
@@ -42,20 +61,18 @@ const route = Router();
  *           $ref: '#/components/schemas/IDinheiroProps'
  *         tipo:
  *           type: string
- *           enum: ["Entrada","Saída","Crédito","Reembolso","Despesa Mensal"]
+ *           enum: ["Entrada","Saída","Crédito","Reembolso","Despesa Mensal","Despesa Semanal","Despesa Anual","Poupança"]
  *         status:
  *           type: string
  *           enum: ["Pendente","Concluído"]
  *         categoria:
- *           $ref: '#/components/schemas/Categoria'
+ *           $ref: '#/components/schemas/EntityReference'
  *         conta:
- *           $ref: '#/components/schemas/Conta'
- *         contaId:
- *           type: string
- *           description: Domain id of the associated account (when present)
- *         userId:
- *           type: string
- *           description: Domain id of the owning user
+ *           $ref: '#/components/schemas/EntityReference'
+ *         cartaoCredito:
+ *           $ref: '#/components/schemas/EntityReference'
+ *         user:
+ *           $ref: '#/components/schemas/UserReference'
  *     TransacaoInput:
  *       type: object
  *       required: [data, descricao, valor, categoriaId, contaId]
