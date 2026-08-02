@@ -101,7 +101,7 @@ export const CatalogoPesquisavel: Story = {
 export const Tamanhos: Story = {
   render: () => ({
     template: `
-      <div style="display: flex; align-items: center; gap: 24px; color: #334155; font-family: sans-serif;">
+      <div style="display: flex; align-items: center; gap: 24px; color: var(--brand-text, #e2e8f0); font-family: sans-serif;">
         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
           <app-icon name="Coins" [size]="16" color="currentColor"></app-icon>
           <span style="font-size: 12px;">16px</span>

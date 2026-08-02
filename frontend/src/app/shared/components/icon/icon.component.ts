@@ -27,7 +27,7 @@ export class IconComponent {
 
   /**
    * Nome do ícone correspondente ao vetor SVG do Dazzle Icons (ex: `'Bank'`, `'CreditCard'`, `'User'`, etc.).
-   * Consulte o catálogo `Lista` no Storybook para visualizar todos os 1.763 ícones disponíveis.
+   * Consulte "Icon > Catalogo Pesquisavel" no Storybook para visualizar todos os 1.763 ícones disponíveis.
    */
   @Input() name: IconName = 'Bank';
 
