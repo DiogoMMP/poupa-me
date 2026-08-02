@@ -1,0 +1,16 @@
+{
+  "release-type": "node",
+  "packages": {
+    "backend": {},
+    "frontend": {}
+  },
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "groupName": "poupa-me",
+      "components": ["backend", "frontend"]
+    }
+  ],
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true
+}
