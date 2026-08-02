@@ -55,9 +55,7 @@ export const Despesa: Story = {
       conta: {
         id: 'c1',
         nome: 'Conta à Ordem',
-        icon: '🏦',
-        saldo: { valor: 1240.55, moeda: 'EUR' },
-        bancoId: 'b1'
+        icon: '🏦'
       }
     },
     showActions: true
@@ -84,9 +82,7 @@ export const Receita: Story = {
       conta: {
         id: 'c2',
         nome: 'Conta Poupança',
-        icon: '🏦',
-        saldo: { valor: 5320.10, moeda: 'EUR' },
-        bancoId: 'b1'
+        icon: '🏦'
       }
     },
     showActions: true
@@ -113,18 +109,12 @@ export const EmProcessamento: Story = {
       conta: {
         id: 'c1',
         nome: 'Conta à Ordem',
-        icon: '🏦',
-        saldo: { valor: 1240.55, moeda: 'EUR' },
-        bancoId: 'b1'
+        icon: '🏦'
       },
       cartaoCredito: {
         id: 'cc1',
         nome: 'Cartão Gold',
-        icon: '💳',
-        limiteCredito: { valor: 2000, moeda: 'EUR' },
-        saldoUtilizado: { valor: 350, moeda: 'EUR' },
-        periodo: { dataInicio: '2026-07-01', dataFim: '2026-07-31' },
-        contaPagamentoId: 'c1'
+        icon: '💳'
       }
     },
     showActions: true,
