@@ -111,7 +111,11 @@ export default class TransacaoPagarCartaoRepo implements ITransacaoPagarCartaoRe
                 tipo: tipoOrError.getValue(),
                 categoria: categoriaDomain,
                 status: statusOrError.getValue(),
-                cartaoCredito: cartaoDomain
+                cartaoCredito: cartaoDomain,
+                // This record only documents that a payment happened; the actual balance changes (marking the
+                // paid-off transactions as Concluído and reducing saldoUtilizado) already happened above, directly.
+                // It must never be treated as a normal Crédito charge that debits the payment account.
+                isPagamentoCartao: true
             };
 
             const paymentOrError = Transacao.create(paymentProps);

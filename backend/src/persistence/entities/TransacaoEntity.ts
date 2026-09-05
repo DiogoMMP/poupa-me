@@ -81,6 +81,9 @@ export class TransacaoEntity {
     @Column({ name: 'user_domain_id', type: 'varchar', length: 50 })
     userDomainId!: string;
 
+    @Column({ name: 'is_pagamento_cartao', type: 'boolean', default: false })
+    isPagamentoCartao!: boolean;
+
     @CreateDateColumn({ name: 'created_at' })
     createdAt!: Date;
 

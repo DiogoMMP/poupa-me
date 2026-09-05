@@ -291,43 +291,61 @@ export default class TransacaoService implements ITransacaoService {
         return Result.ok<void>();
     }
 
-    /** Reverts the impact of a Crédito transaction. */
+    /**
+     * Reverts the impact of a Crédito transaction. The payment account was debited at creation time regardless of
+     * status, so that debit is always reverted here. The card's saldoUtilizado only tracks unpaid (Pendente)
+     * charges, so it is only reverted if this transaction was still Pendente.
+     *
+     * The auto-generated "Pagamento X" record (isPagamentoCartao) is exempt: it never debited the account and its
+     * card impact was already applied directly by pagarCartao, so it carries no impact to revert here.
+     */
     public async revertCreditoImpact(transacao: Transacao): Promise<Result<void>> {
+        if (transacao.isPagamentoCartao) return Result.ok<void>();
         if (!transacao.cartaoCredito) return Result.fail<void>('CartaoCredito not found for Crédito');
         const cartao = await this.cartaoCreditoRepo.findById(transacao.cartaoCredito.id.toString());
         if (!cartao) return Result.fail<void>('Associated credit card not found');
 
-        const revertCardResult = cartao.reduzirUtilizacao(transacao.valor);
-        if (revertCardResult.isFailure) return Result.fail<void>(String(revertCardResult.error));
-
         if (!cartao.contaPagamentoId) return Result.fail<void>('Payment account ID not found for credit card');
         const contaPagamento = await this.contaRepo.findById(cartao.contaPagamentoId.toString());
         if (!contaPagamento) return Result.fail<void>('Payment account not found for credit card');
+
         const revertAccountResult = contaPagamento.adicionarSaldo(transacao.valor);
         if (revertAccountResult.isFailure) return Result.fail<void>(String(revertAccountResult.error));
-
-        await this.cartaoCreditoRepo.update(cartao);
         await this.contaRepo.update(contaPagamento);
+
+        if (transacao.status.value === 'Pendente') {
+            const revertCardResult = cartao.reduzirUtilizacao(transacao.valor);
+            if (revertCardResult.isFailure) return Result.fail<void>(String(revertCardResult.error));
+            await this.cartaoCreditoRepo.update(cartao);
+        }
+
         return Result.ok<void>();
     }
 
-    /** Reverts the impact of a Reembolso transaction. */
+    /**
+     * Reverts the impact of a Reembolso transaction. The refund credited to the payment account at creation time is
+     * always reverted here. The card's saldoUtilizado adjustment only applies while Pendente, so it is only
+     * reverted if this transaction was still Pendente.
+     */
     public async revertReembolsoImpact(transacao: Transacao): Promise<Result<void>> {
         if (!transacao.cartaoCredito) return Result.fail<void>('CartaoCredito not found for Reembolso');
         const cartao = await this.cartaoCreditoRepo.findById(transacao.cartaoCredito.id.toString());
         if (!cartao) return Result.fail<void>('Associated credit card not found');
 
-        const revertCardResult = cartao.adicionarUtilizacao(transacao.valor);
-        if (revertCardResult.isFailure) return Result.fail<void>(String(revertCardResult.error));
-
         if (!cartao.contaPagamentoId) return Result.fail<void>('Payment account ID not found for credit card');
         const contaPagamento = await this.contaRepo.findById(cartao.contaPagamentoId.toString());
         if (!contaPagamento) return Result.fail<void>('Payment account not found for credit card');
+
         const revertAccountResult = contaPagamento.subtrairSaldo(transacao.valor);
         if (revertAccountResult.isFailure) return Result.fail<void>(String(revertAccountResult.error));
-
-        await this.cartaoCreditoRepo.update(cartao);
         await this.contaRepo.update(contaPagamento);
+
+        if (transacao.status.value === 'Pendente') {
+            const revertCardResult = cartao.adicionarUtilizacao(transacao.valor);
+            if (revertCardResult.isFailure) return Result.fail<void>(String(revertCardResult.error));
+            await this.cartaoCreditoRepo.update(cartao);
+        }
+
         return Result.ok<void>();
     }
 
@@ -346,43 +364,60 @@ export default class TransacaoService implements ITransacaoService {
         return Result.ok<void>();
     }
 
-    /** Applies the impact of a Crédito transaction. */
+    /**
+     * Applies the impact of a Crédito transaction. The payment account is always debited, mirroring the money
+     * leaving the account at purchase time. The card's saldoUtilizado only tracks unpaid charges, so it is only
+     * increased while the transaction is Pendente.
+     *
+     * The auto-generated "Pagamento X" record (isPagamentoCartao) is exempt: editing it must never move money on
+     * either the account or the card, since it is only a record of a payment already applied by pagarCartao.
+     */
     public async applyCreditoImpact(transacao: Transacao): Promise<Result<void>> {
+        if (transacao.isPagamentoCartao) return Result.ok<void>();
         if (!transacao.cartaoCredito) return Result.fail<void>('CartaoCredito not found');
         const cartao = await this.cartaoCreditoRepo.findById(transacao.cartaoCredito.id.toString());
         if (!cartao) return Result.fail<void>('Associated credit card not found');
 
-        const applyCardResult = cartao.adicionarUtilizacao(transacao.valor);
-        if (applyCardResult.isFailure) return Result.fail<void>(String(applyCardResult.error));
-
         if (!cartao.contaPagamentoId) return Result.fail<void>('Payment account ID not found for credit card');
         const contaPagamento = await this.contaRepo.findById(cartao.contaPagamentoId.toString());
         if (!contaPagamento) return Result.fail<void>('Payment account not found');
+
         const applyAccountResult = contaPagamento.subtrairSaldo(transacao.valor);
         if (applyAccountResult.isFailure) return Result.fail<void>(String(applyAccountResult.error));
-
-        await this.cartaoCreditoRepo.update(cartao);
         await this.contaRepo.update(contaPagamento);
+
+        if (transacao.status.value === 'Pendente') {
+            const applyCardResult = cartao.adicionarUtilizacao(transacao.valor);
+            if (applyCardResult.isFailure) return Result.fail<void>(String(applyCardResult.error));
+            await this.cartaoCreditoRepo.update(cartao);
+        }
+
         return Result.ok<void>();
     }
 
-    /** Applies the impact of a Reembolso transaction. */
+    /**
+     * Applies the impact of a Reembolso transaction. The payment account is always credited with the refund. The
+     * card's saldoUtilizado reduction only takes effect while the transaction is Pendente.
+     */
     public async applyReembolsoImpact(transacao: Transacao): Promise<Result<void>> {
         if (!transacao.cartaoCredito) return Result.fail<void>('CartaoCredito not found');
         const cartao = await this.cartaoCreditoRepo.findById(transacao.cartaoCredito.id.toString());
         if (!cartao) return Result.fail<void>('Associated credit card not found');
 
-        const applyCardResult = cartao.reduzirUtilizacao(transacao.valor);
-        if (applyCardResult.isFailure) return Result.fail<void>(String(applyCardResult.error));
-
         if (!cartao.contaPagamentoId) return Result.fail<void>('Payment account ID not found for credit card');
         const contaPagamento = await this.contaRepo.findById(cartao.contaPagamentoId.toString());
         if (!contaPagamento) return Result.fail<void>('Payment account not found');
+
         const applyAccountResult = contaPagamento.adicionarSaldo(transacao.valor);
         if (applyAccountResult.isFailure) return Result.fail<void>(String(applyAccountResult.error));
-
-        await this.cartaoCreditoRepo.update(cartao);
         await this.contaRepo.update(contaPagamento);
+
+        if (transacao.status.value === 'Pendente') {
+            const applyCardResult = cartao.reduzirUtilizacao(transacao.valor);
+            if (applyCardResult.isFailure) return Result.fail<void>(String(applyCardResult.error));
+            await this.cartaoCreditoRepo.update(cartao);
+        }
+
         return Result.ok<void>();
     }
 
@@ -446,7 +481,9 @@ export default class TransacaoService implements ITransacaoService {
                 status,
                 conta: existing.conta,
                 cartaoCredito: existing.cartaoCredito,
-                contaDestino: existing.contaDestino
+                contaDestino: existing.contaDestino,
+                contaPoupanca: existing.contaPoupanca,
+                isPagamentoCartao: existing.isPagamentoCartao
             }, existing.id);
 
             if (updatedOrError.isFailure) return Result.fail<ITransacaoDTO>(String(updatedOrError.error));

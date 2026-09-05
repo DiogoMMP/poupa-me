@@ -79,7 +79,8 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 tipo: raw['tipo'],
                 status: raw['status'],
                 categoria: categoriaRow,
-                categoriaId: categoriaRow.id
+                categoriaId: categoriaRow.id,
+                isPagamentoCartao: Boolean(raw['is_pagamento_cartao'] ?? false)
             } as Record<string, unknown>;
 
             // if the domain object already contains conta or cartaoCredito, prefer that and resolve to persistence entity
@@ -258,7 +259,8 @@ export default class TransacaoRepo implements ITransacaoRepo {
                     moeda: valor.moeda ?? 'EUR',
                     tipo: String(raw['tipo'] ?? ''),
                     status: String(raw['status'] ?? ''),
-                    categoriaId: categoriaRow.id
+                    categoriaId: categoriaRow.id,
+                    isPagamentoCartao: Boolean(raw['is_pagamento_cartao'] ?? false)
                 };
 
                 // Only update foreign keys if they were provided (to avoid overwriting with null)
@@ -308,7 +310,8 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 status: raw['status'],
                 categoria: categoriaRow,
                 categoriaId: categoriaRow.id,
-                userDomainId: userDomainId
+                userDomainId: userDomainId,
+                isPagamentoCartao: Boolean(raw['is_pagamento_cartao'] ?? false)
             } as Record<string, unknown>;
             const contaDomainId2 = raw['contaId'] ?? raw['conta_id'] ?? raw['conta'] ?? undefined;
             if (contaDomainId2) {
