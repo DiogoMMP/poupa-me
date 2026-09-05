@@ -3,7 +3,7 @@
  */
 export interface BancosDTO {
   id?: string;
-  userId?: string;
+  user?: { id: string; nome?: string };
   nome: string;
   icon: string;
   contasCartoesSelecionados?: string[];
