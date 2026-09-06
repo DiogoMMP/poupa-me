@@ -1,6 +1,8 @@
+import { EntityReference } from '../../../shared/models/entity-reference.model';
+
 export interface BancosModel {
   id: string;
-  userId?: string;
+  user?: EntityReference;
   nome: string;
   icon: string;
   contasCartoesSelecionados?: string[];

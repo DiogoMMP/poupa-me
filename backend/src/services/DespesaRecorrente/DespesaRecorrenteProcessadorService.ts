@@ -192,11 +192,12 @@ export default class DespesaRecorrenteProcessadorService implements IDespesaReco
                 this.logger.error('DespesaRecorrenteProcessadorService.gerarTransacao: rule without valor defined, skipping');
                 return;
             }
+            const dataAgendada = this.getDataAgendada(regra, hoje);
             const baseDTO = {
                 data: {
-                    dia: hoje.getDate(),
-                    mes: hoje.getMonth() + 1,
-                    ano: hoje.getFullYear()
+                    dia: dataAgendada.getDate(),
+                    mes: dataAgendada.getMonth() + 1,
+                    ano: dataAgendada.getFullYear()
                 },
                 descricao: `${regra.nome.value}`,
                 valor: {
@@ -253,6 +254,35 @@ export default class DespesaRecorrenteProcessadorService implements IDespesaReco
         } catch (err) {
             this.logger.error('DespesaRecorrenteProcessadorService.gerarTransacao error: %o', err);
         }
+    }
+
+    /**
+     * Computes the date the transaction should be recorded on: the rule's own scheduled
+     * day (diaDoMes/diaDaSemana/mes), not the real-world day processing happened to run on —
+     * so a rule scheduled for day 1 stays dated day 1 even if only processed on day 5.
+     */
+    private getDataAgendada(regra: DespesaRecorrente, hoje: Date): Date {
+        const tipoValue = regra.tipo.value;
+
+        if (tipoValue === 'Despesa Mensal' || tipoValue === 'Poupança') {
+            const dia = regra.diaDoMes ?? hoje.getDate();
+            return new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+        }
+
+        if (tipoValue === 'Despesa Anual') {
+            const mes = (regra.mes ?? hoje.getMonth() + 1) - 1;
+            const dia = regra.diaDoMes ?? hoje.getDate();
+            return new Date(hoje.getFullYear(), mes, dia);
+        }
+
+        if (tipoValue === 'Despesa Semanal' && regra.diaDaSemana !== undefined) {
+            const diff = regra.diaDaSemana - this.getDiaDaSemana(hoje);
+            const data = new Date(hoje);
+            data.setDate(data.getDate() + diff);
+            return data;
+        }
+
+        return hoje;
     }
 
     private getDiaDaSemana(data: Date): number {

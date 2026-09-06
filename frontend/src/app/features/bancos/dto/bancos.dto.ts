@@ -1,9 +1,11 @@
+import { EntityReference } from '../../../shared/models/entity-reference.model';
+
 /**
  * Data Transfer Object for banco
  */
 export interface BancosDTO {
   id?: string;
-  user?: { id: string; nome?: string };
+  user?: EntityReference;
   nome: string;
   icon: string;
   contasCartoesSelecionados?: string[];

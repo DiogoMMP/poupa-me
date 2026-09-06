@@ -11,14 +11,14 @@ export class ContasMapper {
   static toModel(dto: ContasDto): ContasModel {
     return {
       id: dto.id || '',
-      userId: dto.user?.id,
+      user: dto.user,
       nome: dto.nome,
       icon: dto.icon,
       saldo: {
         valor: dto.saldo.valor,
         moeda: dto.saldo.moeda
       },
-      bancoId: dto.banco?.id ?? ''
+      banco: dto.banco
     };
   }
 
@@ -34,7 +34,7 @@ export class ContasMapper {
         valor: model.saldo.valor,
         moeda: model.saldo.moeda
       },
-      banco: model.bancoId ? { id: model.bancoId } : undefined
+      banco: model.banco
     };
   }
 

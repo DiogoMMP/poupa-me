@@ -21,7 +21,7 @@ export class BancosService {
   }
 
   getDashboardData(id: string): Observable<DashboardDTO> {
-    return this.http.get<DashboardDTO>(`${this.apiUrl}/${id}/dashboard`, {withCredentials: true});
+    return this.http.get<DashboardDTO>(`${environment.apiBaseUrl}/dashboard/${id}`, {withCredentials: true});
   }
 
   create(dto: BancosInputDTO): Observable<BancosDTO> {
