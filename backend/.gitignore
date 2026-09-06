@@ -56,5 +56,3 @@ Thumbs.db
 # Ignore generated plantuml diagrams (if present)
 *.png
 *.svg
-
-migrations
