@@ -3,14 +3,14 @@
  */
 export interface ContasDto {
     id?: string;
-    userId?: string;
+    user?: { id: string; nome?: string };
     nome: string;
     icon: string;
     saldo: {
         valor: number;
         moeda: string;
     };
-    bancoId: string;
+    banco?: { id: string; nome?: string; icon?: string };
 }
 
 /**

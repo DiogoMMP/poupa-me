@@ -16,7 +16,7 @@ export interface ExtratoCartaoDTO {
  */
 export interface CartoesCreditoDTO {
     id?: string;
-    userId?: string;
+    user?: { id: string; nome?: string };
     nome: string;
     icon: string;
     limiteCredito: {
@@ -39,8 +39,8 @@ export interface CartoesCreditoDTO {
             ano: number;
         };
     };
-    contaPagamentoId: string;
-    bancoId?: string;
+    contaPagamento: { id: string; nome?: string; icon?: string };
+    banco?: { id: string; nome?: string; icon?: string };
 }
 
 /**

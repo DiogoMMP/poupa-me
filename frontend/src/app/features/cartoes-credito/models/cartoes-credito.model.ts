@@ -16,6 +16,7 @@ export interface CartoesCreditoModel {
     dataFim: string; // ISO date string
   };
   contaPagamentoId: string;
+  contaPagamentoNome?: string;
   bancoId?: string;
 }
 

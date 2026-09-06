@@ -174,7 +174,8 @@ export class TransacaoMap extends Mapper<Transacao> {
                 ...(contaDomain ? { conta: contaDomain } : {}),
                 ...(contaDestinoDomain ? { contaDestino: contaDestinoDomain } : {}),
                 ...(contaPoupancaDomain ? { contaPoupanca: contaPoupancaDomain } : {}),
-                ...(cartaoCreditoDomain ? { cartaoCredito: cartaoCreditoDomain } : {})
+                ...(cartaoCreditoDomain ? { cartaoCredito: cartaoCreditoDomain } : {}),
+                isPagamentoCartao: Boolean(r['isPagamentoCartao'] ?? r['is_pagamento_cartao'] ?? false)
             },
             new UniqueEntityID(String(r['domainId'] ?? r['id']))
         );
@@ -239,7 +240,8 @@ export class TransacaoMap extends Mapper<Transacao> {
             conta_destino_id: transacao.contaDestino ? transacao.contaDestino.id.toString() : undefined,
             conta_poupanca_id: transacao.contaPoupanca ? transacao.contaPoupanca.id.toString() : undefined,
             status: transacao.status.value,
-            user_domain_id: userDomainId ?? undefined
+            user_domain_id: userDomainId ?? undefined,
+            is_pagamento_cartao: transacao.isPagamentoCartao
         };
     }
 
@@ -284,7 +286,8 @@ export class TransacaoMap extends Mapper<Transacao> {
                 nome: transacao.contaPoupanca.nome.value,
                 icon: transacao.contaPoupanca.icon.value
             } : undefined,
-            user: userDomainId ? { id: userDomainId, nome: userNome } : undefined
+            user: userDomainId ? { id: userDomainId, nome: userNome } : undefined,
+            isPagamentoCartao: transacao.isPagamentoCartao
         };
     }
 }

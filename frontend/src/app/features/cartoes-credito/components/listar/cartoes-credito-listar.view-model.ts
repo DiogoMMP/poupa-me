@@ -6,7 +6,6 @@ import { CartoesCreditoModel } from '../../models/cartoes-credito.model';
 import { CartoesCreditoMapper } from '../../mappers/cartoes-credito.mapper';
 import { AuthService } from '../../../auth/services/auth.service';
 import { SelectedBancoService } from '../../../../services/selected-banco.service';
-import { ContasService } from '../../../contas/services/contas.service';
 import { ExtratoCartaoDTO } from '../../dto/cartoes-credito.dto';
 
 /**
@@ -16,7 +15,6 @@ import { ExtratoCartaoDTO } from '../../dto/cartoes-credito.dto';
 @Injectable()
 export class CartoesCreditoListViewModel {
   private service = inject(CartoesCreditoService);
-  private contasService = inject(ContasService);
   private notification = inject(NotificationService);
   public auth = inject(AuthService);
   private selectedBanco = inject(SelectedBancoService);
@@ -27,8 +25,6 @@ export class CartoesCreditoListViewModel {
 
   // Map to store extrato details per cartão ID
   private extratosMap = new Map<string, ExtratoCartaoDTO>();
-  // Map to store payment account (conta) names by conta ID (used as the payment account for cards)
-  private contasNamesMap = new Map<string, string>();
   // Map to cache percentage used per cartão (computed from extrato endpoint)
   private percentMap = new Map<string, number>();
 
@@ -57,7 +53,6 @@ export class CartoesCreditoListViewModel {
     if (!bancoId) {
       this.cartoes$.next([]);
       this.extratosMap.clear();
-      this.contasNamesMap.clear();
       this.isLoading$.next(false);
       return;
     }
@@ -68,8 +63,8 @@ export class CartoesCreditoListViewModel {
         const models = CartoesCreditoMapper.toModelArray(dtos);
         this.cartoes$.next(models);
 
-        // Load extratos and payment account names for all cartões
-        this.loadDetalhes(models, bancoId);
+        // Load extratos for all cartões
+        this.loadDetalhes(models);
       },
       error: (_err) => {
         this.notification.error('Falha ao carregar cartões');
@@ -79,9 +74,9 @@ export class CartoesCreditoListViewModel {
   }
 
   /**
-   * Load extrato details for all cartões and payment account names
+   * Load extrato details for all cartões
    */
-  private loadDetalhes(cartoes: CartoesCreditoModel[], bancoId: string): void {
+  private loadDetalhes(cartoes: CartoesCreditoModel[]): void {
     if (cartoes.length === 0) {
       this.isLoading$.next(false);
       return;
@@ -90,20 +85,6 @@ export class CartoesCreditoListViewModel {
     // Reset maps for fresh load
     this.extratosMap.clear();
     this.percentMap.clear();
-
-    // Load payment accounts to get names
-    this.contasService.getAll(bancoId).subscribe({
-      next: (contas) => {
-        contas.forEach(conta => {
-          if (conta.id) {
-            this.contasNamesMap.set(conta.id, conta.nome);
-          }
-        });
-      },
-      error: () => {
-        // Silent fail loading payment account names
-      }
-    });
 
     // Load extratos for all cartões
     const extratoRequests = cartoes.map(cartao =>
@@ -145,14 +126,6 @@ export class CartoesCreditoListViewModel {
    */
   getExtrato(cartaoId: string): ExtratoCartaoDTO | null {
     return this.extratosMap.get(cartaoId) || null;
-  }
-
-  /**
-   * Get conta name by conta ID
-   */
-  getContaNome(contaId: string | null): string {
-    if (!contaId) return '-';
-    return this.contasNamesMap.get(contaId) || '-';
   }
 
   getValorAPagar(cartaoId: string): number {

@@ -22,6 +22,9 @@ interface TransacaoProps {
     cartaoCredito?: CartaoCredito;
     contaDestino?: Conta; // Only for Despesa Mensal/Semanal/Anual - conta that will receive the money
     contaPoupanca?: Conta; // Only for Poupança - the savings account that receives the transfer
+    // True for the auto-generated "Pagamento X" record created when a credit card is paid off. Its valor already
+    // reflects money movements applied directly by the payment flow, so it must never carry its own balance impact.
+    isPagamentoCartao?: boolean;
 }
 
 export class Transacao extends AggregateRoot<TransacaoProps> {
@@ -63,6 +66,10 @@ export class Transacao extends AggregateRoot<TransacaoProps> {
 
     get contaPoupanca(): Conta | undefined {
         return this.props.contaPoupanca;
+    }
+
+    get isPagamentoCartao(): boolean {
+        return this.props.isPagamentoCartao ?? false;
     }
 
     private constructor(props: TransacaoProps, id?: UniqueEntityID) {
