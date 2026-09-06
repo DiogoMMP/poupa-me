@@ -8,6 +8,7 @@ import { AuthService } from '../../../auth/services/auth.service';
 import { SelectedBancoService } from '../../../../services/selected-banco.service';
 import { ContasService } from '../../../contas/services/contas.service';
 import { ExtratoCartaoDTO } from '../../dto/cartoes-credito.dto';
+import { formatEntityReference as formatEntityReferenceUtil } from '../../../../shared/utils/entity-reference.util';
 
 /**
  * ViewModel for the lister component of Cartões. Responsible for loading the list of cartões
@@ -20,6 +21,7 @@ export class CartoesCreditoListViewModel {
   private notification = inject(NotificationService);
   public auth = inject(AuthService);
   private selectedBanco = inject(SelectedBancoService);
+  public formatEntityReference = formatEntityReferenceUtil;
 
   // State
   readonly isLoading$ = new BehaviorSubject<boolean>(false);

@@ -1,6 +1,8 @@
+import { EntityReference } from '../../../shared/models/entity-reference.model';
+
 export interface CartoesCreditoModel {
   id: string;
-  userId?: string;
+  user?: EntityReference;
   nome: string;
   icon: string;
   limiteCredito: {
@@ -16,6 +18,6 @@ export interface CartoesCreditoModel {
     dataFim: string; // ISO date string
   };
   contaPagamentoId: string;
-  bancoId?: string;
+  banco?: EntityReference;
 }
 

@@ -11,12 +11,14 @@ export interface ExtratoCartaoDTO {
   };
 }
 
+import { EntityReference } from '../../../shared/models/entity-reference.model';
+
 /**
  * Data Transfer Object for Cartão de Crédito
  */
 export interface CartoesCreditoDTO {
     id?: string;
-    userId?: string;
+    user?: EntityReference;
     nome: string;
     icon: string;
     limiteCredito: {
@@ -40,7 +42,7 @@ export interface CartoesCreditoDTO {
         };
     };
     contaPagamentoId: string;
-    bancoId?: string;
+    banco?: EntityReference;
 }
 
 /**

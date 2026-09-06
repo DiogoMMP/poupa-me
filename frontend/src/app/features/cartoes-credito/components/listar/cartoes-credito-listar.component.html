@@ -61,8 +61,8 @@
             <!-- Admin-only info and actions placed under the edit button -->
             <ng-container *ngIf="auth.user()?.role === 'Admin'">
               <div class="card-details admin-section">
-                <small><b>User ID:</b> {{ cartao.userId }}</small>
-                <small><b>Banco:</b> {{ cartao.bancoId }}</small>
+                <small><b>Utilizador:</b> {{ vm.formatEntityReference(cartao.user) }}</small>
+                <small><b>Banco:</b> {{ vm.formatEntityReference(cartao.banco) }}</small>
               </div>
               <button (click)="vm.deleteCartao(cartao.id)" class="btn-delete">
                 <svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 7h12v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3-4h6l1 1H8l1-1z" fill="currentColor"/></svg>
