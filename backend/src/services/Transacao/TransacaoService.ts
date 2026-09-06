@@ -326,8 +326,13 @@ export default class TransacaoService implements ITransacaoService {
      * Reverts the impact of a Reembolso transaction. The refund credited to the payment account at creation time is
      * always reverted here. The card's saldoUtilizado adjustment only applies while Pendente, so it is only
      * reverted if this transaction was still Pendente.
+     *
+     * The auto-generated "Pagamento X" record (isPagamentoCartao) is exempt: it is always created with tipo
+     * 'Crédito', never 'Reembolso', so this only guards against a record that was retyped by an edit — it must
+     * never move money either.
      */
     public async revertReembolsoImpact(transacao: Transacao): Promise<Result<void>> {
+        if (transacao.isPagamentoCartao) return Result.ok<void>();
         if (!transacao.cartaoCredito) return Result.fail<void>('CartaoCredito not found for Reembolso');
         const cartao = await this.cartaoCreditoRepo.findById(transacao.cartaoCredito.id.toString());
         if (!cartao) return Result.fail<void>('Associated credit card not found');
@@ -398,8 +403,12 @@ export default class TransacaoService implements ITransacaoService {
     /**
      * Applies the impact of a Reembolso transaction. The payment account is always credited with the refund. The
      * card's saldoUtilizado reduction only takes effect while the transaction is Pendente.
+     *
+     * The auto-generated "Pagamento X" record (isPagamentoCartao) is exempt: editing it must never move money on
+     * either the account or the card, since it is only a record of a payment already applied by pagarCartao.
      */
     public async applyReembolsoImpact(transacao: Transacao): Promise<Result<void>> {
+        if (transacao.isPagamentoCartao) return Result.ok<void>();
         if (!transacao.cartaoCredito) return Result.fail<void>('CartaoCredito not found');
         const cartao = await this.cartaoCreditoRepo.findById(transacao.cartaoCredito.id.toString());
         if (!cartao) return Result.fail<void>('Associated credit card not found');
