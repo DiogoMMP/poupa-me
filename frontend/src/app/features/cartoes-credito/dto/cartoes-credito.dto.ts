@@ -41,7 +41,7 @@ export interface CartoesCreditoDTO {
             ano: number;
         };
     };
-    contaPagamentoId: string;
+    contaPagamento: EntityReference;
     banco?: EntityReference;
 }
 

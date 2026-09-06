@@ -44,7 +44,7 @@
             <!-- Card details: period and payment account -->
             <div class="card-details">
               <small><b>Período:</b> {{ vm.formatDate(cartao.periodo.dataInicio) }} - {{ vm.formatDate(cartao.periodo.dataFim) }}</small>
-              <small><b>Conta de Pagamento:</b> {{ vm.getContaNome(cartao.contaPagamentoId) }}</small>
+              <small><b>Conta de Pagamento:</b> {{ cartao.contaPagamentoNome || '-' }}</small>
             </div>
           </div>
 

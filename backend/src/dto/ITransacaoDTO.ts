@@ -16,6 +16,8 @@ export interface ITransacaoDTO {
     contaDestino?: IEntityReferenceDTO;
     contaPoupanca?: IEntityReferenceDTO;
     user?: IEntityReferenceDTO;
+    /** True for the auto-generated "Pagamento X" record created by pagar cartão; it never carries its own balance impact. */
+    isPagamentoCartao?: boolean;
 }
 
 export interface ITransacaoInputDTO {

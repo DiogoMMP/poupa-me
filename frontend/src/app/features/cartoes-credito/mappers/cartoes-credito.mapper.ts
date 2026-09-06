@@ -26,7 +26,8 @@ export class CartoesCreditoMapper {
         dataInicio: this.dataPropsToISOString(dto.periodo.inicio),
         dataFim: this.dataPropsToISOString(dto.periodo.fecho)
       },
-      contaPagamentoId: dto.contaPagamentoId,
+      contaPagamentoId: dto.contaPagamento?.id ?? '',
+      contaPagamentoNome: dto.contaPagamento?.nome,
       banco: dto.banco
     };
   }
@@ -51,7 +52,7 @@ export class CartoesCreditoMapper {
         inicio: this.isoStringToDataProps(model.periodo.dataInicio),
         fecho: this.isoStringToDataProps(model.periodo.dataFim)
       },
-      contaPagamentoId: model.contaPagamentoId,
+      contaPagamento: { id: model.contaPagamentoId },
       banco: model.banco
     };
   }

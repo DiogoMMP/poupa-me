@@ -344,37 +344,25 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
                 return Result.fail<ITransacaoDTO>(String(novoSaldoResult.error));
             }
             const novoSaldoUtilizado = novoSaldoResult.getValue();
+            const novoPeriodoDomain = novoPeriodoVO.getValue();
 
-            // 5. Update the Card Entity with new balance and period
-            const updatedCartaoProps = {
-                userId: cartao.userId,
-                nome: cartao.nome,
-                icon: cartao.icon,
-                limiteCredito: cartao.limiteCredito,
-                saldoUtilizado: novoSaldoUtilizado,
-                periodo: novoPeriodoVO.getValue(),
-                contaPagamentoId: cartao.contaPagamentoId
-            };
-
-            const updatedCartaoOrError = CartaoCredito.create(updatedCartaoProps, cartao.id);
-            if (updatedCartaoOrError.isFailure) {
-                return Result.fail<ITransacaoDTO>(String(updatedCartaoOrError.error));
-            }
-
-            // 6. Persist the updated card
-            await this.cartaoRepo.update(updatedCartaoOrError.getValue());
-
-            // 7. Call TransacaoRepo to mark pending transactions and create payment transaction
+            // 5. Call TransacaoRepo to atomically: persist the card's new saldo/período, mark pending
+            // transactions as Concluído, and create the payment transaction (single DB transaction —
+            // see TransacaoPagarCartaoRepo.pagarCartao).
             // Use the card owner's userId, not the caller's (caller may be admin)
             const cartaoOwnerId = cartao.userId.toString();
             const periodoAntigoInicio = new Date(Date.UTC(cartao.periodo.inicio.year, cartao.periodo.inicio.month - 1, cartao.periodo.inicio.day));
             const periodoAntigoFecho = new Date(Date.UTC(cartao.periodo.fecho.year, cartao.periodo.fecho.month - 1, cartao.periodo.fecho.day));
+            const periodoNovoInicio = new Date(Date.UTC(novoPeriodoDomain.inicio.year, novoPeriodoDomain.inicio.month - 1, novoPeriodoDomain.inicio.day));
+            const periodoNovoFecho = new Date(Date.UTC(novoPeriodoDomain.fecho.year, novoPeriodoDomain.fecho.month - 1, novoPeriodoDomain.fecho.day));
 
             const transacaoPagamento = await this.transacaoRepo.pagarCartao(
                 cartaoId,
                 valorPagar.value,
                 cartaoOwnerId,
-                { inicio: periodoAntigoInicio, fecho: periodoAntigoFecho }
+                { inicio: periodoAntigoInicio, fecho: periodoAntigoFecho },
+                novoSaldoUtilizado.value,
+                { inicio: periodoNovoInicio, fecho: periodoNovoFecho }
             );
 
             const ownerNome = await this.getUserNome(cartaoOwnerId);
