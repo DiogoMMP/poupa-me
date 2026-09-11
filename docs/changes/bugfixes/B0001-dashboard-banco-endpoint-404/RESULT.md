@@ -6,8 +6,8 @@
 | **Branch** | `fix/dashboard-banco-endpoint-404` |
 | **Estado** | Implementado |
 | **Build** | `npm run build` (frontend) — passa, sem baseline de erros/warnings pré-existente |
-| **Testes** | `npm test` (frontend) — 1/1 passa; **1 teste novo** (o único no projeto frontend até esta data) |
-| **Commits** | Ainda não commitado (ver `commit-push`) |
+| **Testes** | `npm test` (frontend) — 1/1 passa; **1 teste novo** (o único no projeto frontend até esta data). Só passa depois de instalar localmente as dependências do Karma em falta em `package.json` (ver §4) — falha num checkout limpo |
+| **Commits** | `3947084` (`fix(bancos): request dashboard data at /dashboard/:id`) |
 
 ## 1. O que foi fechado
 
