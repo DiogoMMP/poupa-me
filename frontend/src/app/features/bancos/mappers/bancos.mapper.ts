@@ -24,6 +24,7 @@ export class BancosMapper {
   static toDto(model: BancosModel): BancosDTO {
     return {
       id: model.id,
+      user: model.user,
       nome: model.nome,
       icon: model.icon,
       contasCartoesSelecionados: model.contasCartoesSelecionados

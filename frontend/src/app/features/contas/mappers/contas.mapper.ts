@@ -28,6 +28,7 @@ export class ContasMapper {
   static toDto(model: ContasModel): ContasDto {
     return {
       id: model.id,
+      user: model.user,
       nome: model.nome,
       icon: model.icon,
       saldo: {

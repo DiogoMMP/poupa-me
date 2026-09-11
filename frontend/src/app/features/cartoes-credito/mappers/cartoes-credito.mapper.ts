@@ -38,6 +38,7 @@ export class CartoesCreditoMapper {
   static toDto(model: CartoesCreditoModel): CartoesCreditoDTO {
     return {
       id: model.id,
+      user: model.user,
       nome: model.nome,
       icon: model.icon,
       limiteCredito: {
