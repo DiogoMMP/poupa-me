@@ -11,7 +11,7 @@ export class CartoesCreditoMapper {
   static toModel(dto: CartoesCreditoDTO): CartoesCreditoModel {
     return {
       id: dto.id || '',
-      userId: dto.user?.id,
+      user: dto.user,
       nome: dto.nome,
       icon: dto.icon,
       limiteCredito: {
@@ -28,7 +28,7 @@ export class CartoesCreditoMapper {
       },
       contaPagamentoId: dto.contaPagamento?.id ?? '',
       contaPagamentoNome: dto.contaPagamento?.nome,
-      bancoId: dto.banco?.id
+      banco: dto.banco
     };
   }
 
@@ -38,6 +38,7 @@ export class CartoesCreditoMapper {
   static toDto(model: CartoesCreditoModel): CartoesCreditoDTO {
     return {
       id: model.id,
+      user: model.user,
       nome: model.nome,
       icon: model.icon,
       limiteCredito: {
@@ -53,7 +54,7 @@ export class CartoesCreditoMapper {
         fecho: this.isoStringToDataProps(model.periodo.dataFim)
       },
       contaPagamento: { id: model.contaPagamentoId },
-      banco: model.bancoId ? { id: model.bancoId } : undefined
+      banco: model.banco
     };
   }
 

@@ -7,6 +7,7 @@ import type ITransacaoDespesasRecorrentesService from '../Transacao/IServices/IT
 import type { IGerarTransacaoSemValorDTO } from '../../dto/IDespesaRecorrenteDTO.js';
 import type { ITransacaoDTO } from '../../dto/ITransacaoDTO.js';
 import type { DespesaRecorrente } from '../../domain/DespesaRecorrente/Entities/DespesaRecorrente.js';
+import { Data } from '../../domain/Shared/ValueObjects/Data.js';
 
 /**
  * Service for Recurring Expenses processing logic
@@ -192,11 +193,16 @@ export default class DespesaRecorrenteProcessadorService implements IDespesaReco
                 this.logger.error('DespesaRecorrenteProcessadorService.gerarTransacao: rule without valor defined, skipping');
                 return;
             }
+            const dataAgendada = this.getDataAgendada(regra, hoje);
+            if (!dataAgendada) {
+                this.logger.error('DespesaRecorrenteProcessadorService.gerarTransacao: regra com combinação de dia/mês inválida, skipping (regra=%s)', regra.id.toString());
+                return;
+            }
             const baseDTO = {
                 data: {
-                    dia: hoje.getDate(),
-                    mes: hoje.getMonth() + 1,
-                    ano: hoje.getFullYear()
+                    dia: dataAgendada.getDate(),
+                    mes: dataAgendada.getMonth() + 1,
+                    ano: dataAgendada.getFullYear()
                 },
                 descricao: `${regra.nome.value}`,
                 valor: {
@@ -253,6 +259,46 @@ export default class DespesaRecorrenteProcessadorService implements IDespesaReco
         } catch (err) {
             this.logger.error('DespesaRecorrenteProcessadorService.gerarTransacao error: %o', err);
         }
+    }
+
+    /**
+     * Computes the date the transaction should be recorded on: the rule's own scheduled
+     * day (diaDoMes/diaDaSemana/mes), not the real-world day processing happened to run on —
+     * so a rule scheduled for day 1 stays dated day 1 even if only processed on day 5.
+     */
+    /**
+     * Returns null when the rule's configured mes/diaDoMes does not form a real calendar date
+     * (e.g. diaDoMes=31 for a rule that has landed on April, or diaDoMes=29/mes=2 outside a leap
+     * year) — the caller must skip generating a transaction rather than let `new Date(...)`
+     * silently roll the date over into the following month.
+     */
+    private getDataAgendada(regra: DespesaRecorrente, hoje: Date): Date | null {
+        const tipoValue = regra.tipo.value;
+
+        if (tipoValue === 'Despesa Mensal' || tipoValue === 'Poupança') {
+            const dia = regra.diaDoMes ?? hoje.getDate();
+            const mes = hoje.getMonth() + 1;
+            const ano = hoje.getFullYear();
+            if (Data.createFromParts(dia, mes, ano, true).isFailure) return null;
+            return new Date(ano, hoje.getMonth(), dia);
+        }
+
+        if (tipoValue === 'Despesa Anual') {
+            const mesUm = regra.mes ?? hoje.getMonth() + 1;
+            const dia = regra.diaDoMes ?? hoje.getDate();
+            const ano = hoje.getFullYear();
+            if (Data.createFromParts(dia, mesUm, ano, true).isFailure) return null;
+            return new Date(ano, mesUm - 1, dia);
+        }
+
+        if (tipoValue === 'Despesa Semanal' && regra.diaDaSemana !== undefined) {
+            const diff = regra.diaDaSemana - this.getDiaDaSemana(hoje);
+            const data = new Date(hoje);
+            data.setDate(data.getDate() + diff);
+            return data;
+        }
+
+        return hoje;
     }
 
     private getDiaDaSemana(data: Date): number {

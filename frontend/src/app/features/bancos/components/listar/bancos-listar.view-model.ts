@@ -7,6 +7,7 @@ import { BancosMapper } from '../../mappers/bancos.mapper';
 import { DashboardModel } from '../../models/dashboard.model';
 import { DashboardMapper } from '../../mappers/dashboard.mapper';
 import { AuthService } from '../../../auth/services/auth.service';
+import { formatEntityReference as formatEntityReferenceUtil } from '../../../../shared/utils/entity-reference.util';
 
 /**
  * ViewModel for the lister component of Bancos. Responsible for loading the list of bancos and their dashboard data.
@@ -17,6 +18,7 @@ export class BancosListViewModel {
   private service = inject(BancosService);
   private notification = inject(NotificationService);
   public auth = inject(AuthService);
+  public formatEntityReference = formatEntityReferenceUtil;
 
   // State
   readonly isLoading$ = new BehaviorSubject<boolean>(false);

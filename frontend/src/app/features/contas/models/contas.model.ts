@@ -1,11 +1,13 @@
+import { EntityReference } from '../../../shared/models/entity-reference.model';
+
 export interface ContasModel {
   id: string;
-  userId?: string;
+  user?: EntityReference;
   nome: string;
   icon: string;
   saldo: {
     valor: number;
     moeda: string;
   };
-  bancoId: string;
+  banco?: EntityReference;
 }

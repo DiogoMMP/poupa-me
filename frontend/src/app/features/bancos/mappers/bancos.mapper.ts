@@ -11,7 +11,7 @@ export class BancosMapper {
   static toModel(dto: BancosDTO): BancosModel {
     return {
       id: dto.id || '',
-      userId: dto.user?.id,
+      user: dto.user,
       nome: dto.nome,
       icon: dto.icon,
       contasCartoesSelecionados: dto.contasCartoesSelecionados || []
@@ -24,6 +24,7 @@ export class BancosMapper {
   static toDto(model: BancosModel): BancosDTO {
     return {
       id: model.id,
+      user: model.user,
       nome: model.nome,
       icon: model.icon,
       contasCartoesSelecionados: model.contasCartoesSelecionados

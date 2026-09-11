@@ -1,16 +1,18 @@
+import { EntityReference } from '../../../shared/models/entity-reference.model';
+
 /**
  * Data Transfer Object for Contas
  */
 export interface ContasDto {
     id?: string;
-    user?: { id: string; nome?: string };
+    user?: EntityReference;
     nome: string;
     icon: string;
     saldo: {
         valor: number;
         moeda: string;
     };
-    banco?: { id: string; nome?: string; icon?: string };
+    banco?: EntityReference;
 }
 
 /**
