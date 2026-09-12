@@ -102,11 +102,6 @@ button svg polygon {
   transform: translateY(0);
 }
 
-/* Card hover effect modifier */
-.card--hover {
-  cursor: pointer;
-}
-
 /* Center card content when inside a grid */
 .cards-grid .card {
   display: flex;
