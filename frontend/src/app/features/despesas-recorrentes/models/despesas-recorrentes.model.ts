@@ -6,7 +6,7 @@ export type TipoDespesaRecorrente = 'Despesa Mensal' | 'Poupança' | 'Despesa Se
  */
 export interface DespesaRecorrenteModel {
   id: string;
-  userId: string;
+  userId?: string;
   nome: string;
   icon: string;
   valor?: number;
