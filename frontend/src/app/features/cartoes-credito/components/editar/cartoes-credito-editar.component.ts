@@ -7,6 +7,8 @@ import { CartoesCreditoEditarViewModel } from './cartoes-credito-editar.view-mod
 import { CartoesCreditoModel } from '../../models/cartoes-credito.model';
 
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { SelectComponent } from '../../../../shared/components/select/select.component';
+import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
 /**
  * Component to edit an existing credit card. It loads the card data based on the ID from the route,
  * allows the user to change the card fields (except saldoUtilizado) and submit the changes.
@@ -14,7 +16,7 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 @Component({
   selector: 'app-cartao-credito-editar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe],
   templateUrl: './cartoes-credito-editar.component.html',
   styleUrls: ['./cartoes-credito-editar.component.css'],
   providers: [CartoesCreditoEditarViewModel]

@@ -6,10 +6,12 @@ import { TransacoesCriarCreditoViewModel } from './transacoes-criar-credito.view
 import { IaCategorizacaoService } from '../../../ia-categorizacao/ia-categorizacao.service';
 
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { SelectComponent } from '../../../../shared/components/select/select.component';
+import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
 @Component({
   selector: 'app-transacoes-criar-credito',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe],
   templateUrl: './transacoes-criar-credito.component.html',
   styleUrls: ['./transacoes-criar-credito.component.css'],
   providers: [TransacoesCriarCreditoViewModel]

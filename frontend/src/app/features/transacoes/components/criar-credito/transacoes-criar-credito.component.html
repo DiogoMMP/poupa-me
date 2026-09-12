@@ -55,21 +55,15 @@
       <!-- Categoria -->
       <div class="form-field">
         <label class="form-label">Categoria</label>
-        <select formControlName="categoriaId" class="form-select">
-          <option value="" disabled>Selecione uma categoria</option>
-          <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">
-            {{ cat.icon }} {{ cat.nome }}
-          </option>
-        </select>
+        <app-select formControlName="categoriaId" placeholder="Selecione uma categoria"
+          [options]="(vm.categorias$ | async | toSelectOptions)"></app-select>
       </div>
 
       <!-- Cartão -->
       <div class="form-field">
         <label class="form-label">Cartão</label>
-        <select formControlName="cartaoCreditoId" class="form-select">
-          <option value="" disabled>Selecione um cartão</option>
-          <option *ngFor="let c of vm.cartoes$ | async" [value]="c.id">{{ c.icon }} {{ c.nome }}</option>
-        </select>
+        <app-select formControlName="cartaoCreditoId" placeholder="Selecione um cartão"
+          [options]="(vm.cartoes$ | async | toSelectOptions)"></app-select>
       </div>
 
       <div class="form-actions">

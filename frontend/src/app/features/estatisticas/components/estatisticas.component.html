@@ -19,17 +19,11 @@
         <div class="filter-row">
           <div class="filter-field">
             <label class="filter-label">Mês</label>
-            <select [(ngModel)]="selectedMonth">
-              <option value="">Mês Atual</option>
-              <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
-            </select>
+            <app-select [(ngModel)]="selectedMonth" [options]="monthOptions"></app-select>
           </div>
           <div class="filter-field">
             <label class="filter-label">Ano</label>
-            <select [(ngModel)]="selectedYear">
-              <option value="">Ano Atual</option>
-              <option *ngFor="let y of years" [value]="y">{{ y }}</option>
-            </select>
+            <app-select [(ngModel)]="selectedYear" [options]="yearOptions"></app-select>
           </div>
         </div>
         <div class="filter-actions">

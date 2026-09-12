@@ -8,12 +8,14 @@ import { DespesaRecorrenteModel } from '../../models/despesas-recorrentes.model'
 import { formatData } from './despesas-recorrentes-listar.formatter';
 
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { SelectComponent } from '../../../../shared/components/select/select.component';
+import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
 const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-despesas-recorrentes-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, IconComponent],
+  imports: [CommonModule, FormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe],
   templateUrl: './despesas-recorrentes-listar.component.html',
   styleUrls: ['./despesas-recorrentes-listar.component.css'],
   providers: [DespesasRecorrentesListViewModel]

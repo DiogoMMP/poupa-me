@@ -6,6 +6,8 @@ import { createPicker } from 'picmo';
 import { CartoesCreditoCriarViewModel } from './cartoes-credito-criar.view-model';
 
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { SelectComponent } from '../../../../shared/components/select/select.component';
+import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
 /**
  * Component to create a new credit card. It provides a form where the user can enter the
  * card name and choose an icon, then submit to create a new card record.
@@ -13,7 +15,7 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 @Component({
   selector: 'app-cartao-credito-criar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe],
   templateUrl: './cartoes-credito-criar.component.html',
   styleUrls: ['./cartoes-credito-criar.component.css'],
   providers: [CartoesCreditoCriarViewModel]

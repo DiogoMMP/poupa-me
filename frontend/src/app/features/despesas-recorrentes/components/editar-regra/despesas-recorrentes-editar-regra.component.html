@@ -53,23 +53,14 @@
       <!-- Tipo -->
       <div class="form-field">
         <label class="form-label">Tipo</label>
-        <select formControlName="tipo" class="form-select">
-          <option value="Despesa Semanal">Despesa Semanal</option>
-          <option value="Despesa Mensal">Despesa Mensal</option>
-          <option value="Despesa Anual">Despesa Anual</option>
-          <option value="Poupança">Poupança</option>
-        </select>
+        <app-select formControlName="tipo" [options]="tipoOptions"></app-select>
       </div>
 
       <!-- Categoria -->
       <div class="form-field">
         <label class="form-label">Categoria</label>
-        <select formControlName="categoriaId" class="form-select">
-          <option [ngValue]="null" disabled>Selecione uma categoria</option>
-          <option *ngFor="let cat of vm.categorias$ | async" [ngValue]="cat.id">
-            {{ cat.icon }} {{ cat.nome }}
-          </option>
-        </select>
+        <app-select formControlName="categoriaId" placeholder="Selecione uma categoria"
+          [options]="(vm.categorias$ | async | toSelectOptions)"></app-select>
       </div>
 
       <!-- Imediata -->
@@ -88,34 +79,22 @@
       <!-- Conta Origem -->
       <div class="form-field">
         <label class="form-label">Conta de Origem</label>
-        <select formControlName="contaOrigemId" class="form-select">
-          <option [ngValue]="null" disabled>Selecione uma conta</option>
-          <option *ngFor="let conta of vm.contas$ | async" [ngValue]="conta.id">
-            {{ conta.icon }} {{ conta.nome }}
-          </option>
-        </select>
+        <app-select formControlName="contaOrigemId" placeholder="Selecione uma conta"
+          [options]="(vm.contas$ | async | toSelectOptions)"></app-select>
       </div>
 
       <!-- Conta Destino -->
       <div class="form-field" *ngIf="!isImediata">
         <label class="form-label">Conta de Destino</label>
-        <select formControlName="contaDestinoId" class="form-select">
-          <option [ngValue]="null" disabled>Selecione uma conta</option>
-          <option *ngFor="let conta of vm.contas$ | async" [ngValue]="conta.id">
-            {{ conta.icon }} {{ conta.nome }}
-          </option>
-        </select>
+        <app-select formControlName="contaDestinoId" placeholder="Selecione uma conta"
+          [options]="(vm.contas$ | async | toSelectOptions)"></app-select>
       </div>
 
       <!-- Conta Poupança (só aparece quando tipo = Poupança) -->
       <div class="form-field" *ngIf="isPoupanca">
         <label class="form-label">Conta Poupança</label>
-        <select formControlName="contaPoupancaId" class="form-select">
-          <option [ngValue]="null" disabled>Selecione a conta poupança</option>
-          <option *ngFor="let conta of vm.contas$ | async" [ngValue]="conta.id">
-            {{ conta.icon }} {{ conta.nome }}
-          </option>
-        </select>
+        <app-select formControlName="contaPoupancaId" placeholder="Selecione a conta poupança"
+          [options]="(vm.contas$ | async | toSelectOptions)"></app-select>
       </div>
 
       <!-- Repetição semanal -->
@@ -124,16 +103,8 @@
           Dia da Semana
           <span class="form-label-hint">(opcional - pode preencher mais tarde)</span>
         </label>
-        <select id="diaDaSemana" formControlName="diaDaSemana" class="form-select">
-          <option [ngValue]="null" disabled>Selecione o dia da semana</option>
-          <option [ngValue]="1">Segunda-feira</option>
-          <option [ngValue]="2">Terça-feira</option>
-          <option [ngValue]="3">Quarta-feira</option>
-          <option [ngValue]="4">Quinta-feira</option>
-          <option [ngValue]="5">Sexta-feira</option>
-          <option [ngValue]="6">Sábado</option>
-          <option [ngValue]="7">Domingo</option>
-        </select>
+        <app-select formControlName="diaDaSemana" placeholder="Selecione o dia da semana"
+          [options]="diaDaSemanaOptions"></app-select>
       </div>
 
       <!-- Dia do Mês -->

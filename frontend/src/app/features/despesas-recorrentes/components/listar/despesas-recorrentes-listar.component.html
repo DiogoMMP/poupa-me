@@ -5,11 +5,11 @@
 
     <div class="page-actions">
       <button routerLink="/despesas-recorrentes/listar-regras" class="btn-secondary">
-        <app-icon name="List" [size]="24"></app-icon>
+        <app-icon name="List" [size]="24" class="svg-icon"></app-icon>
         Ver Regras
       </button>
       <button routerLink="/despesas-recorrentes/nova-regra">
-        <app-icon name="Plus" [size]="24"></app-icon>
+        <app-icon name="Plus" [size]="24" class="svg-icon"></app-icon>
         Nova Regra
       </button>
     </div>
@@ -115,10 +115,8 @@
         <div class="filter-row">
           <div class="filter-field">
             <label class="filter-label">Categoria</label>
-            <select [(ngModel)]="pendenteFilterForm.categoriaId">
-              <option value="">Todas as categorias</option>
-              <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">{{ cat.icon }} {{ cat.nome }}</option>
-            </select>
+            <app-select [(ngModel)]="pendenteFilterForm.categoriaId"
+              [options]="(vm.categorias$ | async | toSelectOptions:true:'Todas')"></app-select>
           </div>
         </div>
         <div class="filter-actions">
@@ -213,17 +211,13 @@
         <div class="filter-row">
           <div class="filter-field">
             <label class="filter-label">Categoria</label>
-            <select [(ngModel)]="concluidaFilterForm.categoriaId">
-              <option value="">Todas as categorias</option>
-              <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">{{ cat.icon }} {{ cat.nome }}</option>
-            </select>
+            <app-select [(ngModel)]="concluidaFilterForm.categoriaId"
+              [options]="(vm.categorias$ | async | toSelectOptions:true:'Todas')"></app-select>
           </div>
           <div class="filter-field">
             <label class="filter-label">Período</label>
-            <select [(ngModel)]="concluidaFilterForm.period">
-              <option value="">Qualquer período</option>
-              <option *ngFor="let p of vm.PERIODS" [value]="p">{{ p }}</option>
-            </select>
+            <app-select [(ngModel)]="concluidaFilterForm.period"
+              [options]="(vm.PERIODS | toSelectOptions:true:'Qualquer período')"></app-select>
           </div>
         </div>
         <div class="filter-actions">

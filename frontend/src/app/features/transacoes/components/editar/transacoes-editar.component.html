@@ -57,12 +57,8 @@
       <!-- Categoria -->
       <div class="form-field">
         <label class="form-label">Categoria</label>
-        <select formControlName="categoriaId" class="form-select">
-          <option value="" disabled>Selecione uma categoria</option>
-          <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">
-            {{ cat.icon }} {{ cat.nome }}
-          </option>
-        </select>
+        <app-select formControlName="categoriaId" placeholder="Selecione uma categoria"
+          [options]="(vm.categorias$ | async | toSelectOptions)"></app-select>
         <div class="field-error" *ngIf="form.get('categoriaId')?.touched && form.get('categoriaId')?.invalid">Categoria é obrigatória.</div>
       </div>
 
@@ -70,29 +66,20 @@
       <ng-container *ngIf="vm.transacao$ | async as transacao">
         <div class="form-field" *ngIf="transacao && transacao.tipo !== 'Crédito' && transacao.tipo !== 'Reembolso'">
           <label class="form-label">Conta</label>
-          <select formControlName="contaId" class="form-select">
-            <option value="">Nenhuma / Selecionar conta</option>
-            <option *ngFor="let conta of vm.contas$ | async" [value]="conta.id">
-              {{ conta.icon }} {{ conta.nome }}
-            </option>
-          </select>
+          <app-select formControlName="contaId"
+            [options]="(vm.contas$ | async | toSelectOptions:true:'Nenhuma / Selecionar conta')"></app-select>
         </div>
 
         <div class="form-field" *ngIf="transacao && (transacao.tipo === 'Crédito' || transacao.tipo === 'Reembolso')">
           <label class="form-label">Cartão</label>
-          <select formControlName="cartaoCreditoId" class="form-select">
-            <option value="">Nenhum / Selecionar cartão</option>
-            <option *ngFor="let c of vm.cartoes$ | async" [value]="c.id">{{ c.icon }} {{ c.nome }}</option>
-          </select>
+          <app-select formControlName="cartaoCreditoId"
+            [options]="(vm.cartoes$ | async | toSelectOptions:true:'Nenhum / Selecionar cartão')"></app-select>
         </div>
       </ng-container>
 
       <div class="form-field">
         <label class="form-label">Estado</label>
-        <select formControlName="status" class="form-select">
-          <option value="Pendente">Pendente</option>
-          <option value="Concluído">Concluído</option>
-        </select>
+        <app-select formControlName="status" [options]="statusOptions"></app-select>
       </div>
 
       <div class="form-actions">

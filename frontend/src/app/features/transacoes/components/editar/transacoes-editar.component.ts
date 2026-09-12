@@ -5,10 +5,12 @@ import { RouterModule, ActivatedRoute } from '@angular/router';
 import { TransacoesEditarViewModel } from './transacoes-editar.view-model';
 
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { SelectComponent, AppSelectOption } from '../../../../shared/components/select/select.component';
+import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
 @Component({
   selector: 'app-transacoes-editar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe],
   templateUrl: './transacoes-editar.component.html',
   styleUrls: ['./transacoes-editar.component.css'],
   providers: [TransacoesEditarViewModel]
@@ -19,6 +21,11 @@ export class TransacoesEditarComponent implements OnInit {
   private route = inject(ActivatedRoute);
 
   form: FormGroup;
+
+  readonly statusOptions: AppSelectOption[] = [
+    { value: 'Pendente', label: 'Pendente' },
+    { value: 'Concluído', label: 'Concluído' },
+  ];
 
   constructor() {
     this.form = this.fb.group({
