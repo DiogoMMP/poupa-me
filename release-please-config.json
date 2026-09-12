@@ -12,5 +12,6 @@
     }
   ],
   "bump-minor-pre-major": true,
-  "bump-patch-for-minor-pre-major": true
+  "bump-patch-for-minor-pre-major": true,
+  "bootstrap-sha": "e37749bdd1658ef4442482a9a8e3434bf521f368"
 }
