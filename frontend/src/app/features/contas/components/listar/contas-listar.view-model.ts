@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { ContasService } from '../../services/contas.service';
 import { NotificationService } from '../../../../services/notification.service';
+import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 import { ContasModel } from '../../models/contas.model';
 import { ContasMapper } from '../../mappers/contas.mapper';
 import { AuthService } from '../../../auth/services/auth.service';
@@ -15,6 +16,7 @@ import { SelectedBancoService } from '../../../../services/selected-banco.servic
 export class ContasListViewModel {
   private service = inject(ContasService);
   private notification = inject(NotificationService);
+  private confirmDialog = inject(ConfirmDialogService);
   public auth = inject(AuthService);
   private selectedBanco = inject(SelectedBancoService);
 
@@ -69,11 +71,12 @@ export class ContasListViewModel {
    * the changes.
    * @param id The id of the conta to delete
    */
-  deleteConta(id: string): void {
+  async deleteConta(id: string): Promise<void> {
     if (!id) return;
 
     // simple confirmation
-    if (!confirm('Tem a certeza que pretende eliminar esta Conta?')) return;
+    const confirmed = await this.confirmDialog.confirm('Tem a certeza que pretende eliminar esta Conta?', { variant: 'danger' });
+    if (!confirmed) return;
 
     this.service.delete(id).subscribe({
       next: () => {

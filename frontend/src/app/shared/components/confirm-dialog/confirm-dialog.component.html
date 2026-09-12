@@ -1,0 +1,21 @@
+<div *ngIf="svc.request() as req" class="confirm-overlay" (click)="onCancel()">
+  <div
+    class="confirm-dialog"
+    role="alertdialog"
+    aria-modal="true"
+    [attr.aria-label]="req.title || req.message"
+    (click)="$event.stopPropagation()">
+    <h3 *ngIf="req.title" class="confirm-title">{{ req.title }}</h3>
+    <p class="confirm-message">{{ req.message }}</p>
+
+    <div class="confirm-actions">
+      <button type="button" class="confirm-btn confirm-btn--secondary" (click)="onCancel()">{{ req.cancelText }}</button>
+      <button
+        type="button"
+        class="confirm-btn"
+        [class.confirm-btn--danger]="req.variant === 'danger'"
+        [class.confirm-btn--primary]="req.variant !== 'danger'"
+        (click)="onConfirm()">{{ req.confirmText }}</button>
+    </div>
+  </div>
+</div>

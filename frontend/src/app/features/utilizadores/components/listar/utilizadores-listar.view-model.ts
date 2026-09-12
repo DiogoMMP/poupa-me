@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { UtilizadoresService } from '../../services/utilizadores.service';
 import { NotificationService } from '../../../../services/notification.service';
+import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 import { UtilizadoresModel } from '../../models/utilizadores.model';
 import { UtilizadoresMapper } from '../../mappers/utilizadores.mapper';
 import { AuthService } from '../../../auth/services/auth.service';
@@ -13,6 +14,7 @@ import { AuthService } from '../../../auth/services/auth.service';
 export class UtilizadoresListViewModel {
   private service = inject(UtilizadoresService);
   private notification = inject(NotificationService);
+  private confirmDialog = inject(ConfirmDialogService);
   public auth = inject(AuthService);
 
   // State
@@ -43,9 +45,10 @@ export class UtilizadoresListViewModel {
    * the changes.
    * @param email The email of the utilizador to delete
    */
-  deleteUserByEmail(email: string): void {
+  async deleteUserByEmail(email: string): Promise<void> {
     if (!email) return;
-    if (!confirm('Tem a certeza que pretende eliminar este utilizador?')) return;
+    const confirmed = await this.confirmDialog.confirm('Tem a certeza que pretende eliminar este utilizador?', { variant: 'danger' });
+    if (!confirmed) return;
 
     this.service.deleteByEmail(email).subscribe({
       next: () => {

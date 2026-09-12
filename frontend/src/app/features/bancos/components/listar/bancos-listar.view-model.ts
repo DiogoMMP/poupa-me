@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, forkJoin } from 'rxjs';
 import { BancosService } from '../../services/bancos.service';
 import { NotificationService } from '../../../../services/notification.service';
+import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 import { BancosModel } from '../../models/bancos.model';
 import { BancosMapper } from '../../mappers/bancos.mapper';
 import { DashboardModel } from '../../models/dashboard.model';
@@ -17,6 +18,7 @@ import { formatEntityReference as formatEntityReferenceUtil } from '../../../../
 export class BancosListViewModel {
   private service = inject(BancosService);
   private notification = inject(NotificationService);
+  private confirmDialog = inject(ConfirmDialogService);
   public auth = inject(AuthService);
   public formatEntityReference = formatEntityReferenceUtil;
 
@@ -57,11 +59,12 @@ export class BancosListViewModel {
    * the changes.
    * @param id The id of the banco to delete
    */
-  deleteBanco(id: string): void {
+  async deleteBanco(id: string): Promise<void> {
     if (!id) return;
 
     // simple confirmation
-    if (!confirm('Tem a certeza que pretende eliminar este banco?')) return;
+    const confirmed = await this.confirmDialog.confirm('Tem a certeza que pretende eliminar este banco?', { variant: 'danger' });
+    if (!confirmed) return;
 
     this.service.delete(id).subscribe({
       next: () => {

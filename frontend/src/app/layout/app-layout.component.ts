@@ -5,6 +5,7 @@ import { HeaderComponent } from './header/header.component';
 import { NavComponent } from './nav/nav.component';
 import { FooterComponent } from './footer/footer.component';
 import { NotificationsComponent } from './notification/notifications.component';
+import { ConfirmDialogComponent } from '../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
  * Main application layout component.
@@ -13,7 +14,7 @@ import { NotificationsComponent } from './notification/notifications.component';
 @Component({
   selector: 'app-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule, HeaderComponent, NavComponent, FooterComponent, RouterOutlet, NotificationsComponent],
+  imports: [CommonModule, RouterModule, HeaderComponent, NavComponent, FooterComponent, RouterOutlet, NotificationsComponent, ConfirmDialogComponent],
   templateUrl: "app-layout.component.html",
   styleUrl: "app-layout.component.css",
   host: { class: 'app-layout' }

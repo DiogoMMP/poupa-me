@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { CategoriasService } from '../../services/categorias.service';
 import { NotificationService } from '../../../../services/notification.service';
+import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 import { CategoriasModel } from '../../models/categorias.model';
 import { CategoriasMapper } from '../../mappers/categorias.mapper';
 import { AuthService } from '../../../auth/services/auth.service';
@@ -13,6 +14,7 @@ import { AuthService } from '../../../auth/services/auth.service';
 export class CategoriasListViewModel {
   private service = inject(CategoriasService);
   private notification = inject(NotificationService);
+  private confirmDialog = inject(ConfirmDialogService);
   public auth = inject(AuthService);
 
   // State
@@ -44,9 +46,10 @@ export class CategoriasListViewModel {
    * the changes.
    * @param id The id of the categoria to delete
    */
-  deleteCategoria(id: string): void {
+  async deleteCategoria(id: string): Promise<void> {
     if (!id) return;
-    if (!confirm('Tem a certeza que pretende eliminar esta categoria?')) return;
+    const confirmed = await this.confirmDialog.confirm('Tem a certeza que pretende eliminar esta categoria?', { variant: 'danger' });
+    if (!confirmed) return;
 
     this.service.delete(id).subscribe({
       next: () => {
