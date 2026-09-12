@@ -7,16 +7,20 @@
 
   <!-- Banco Selector -->
   <div class="banco-selector">
-    <select
-      #bankSel
-      class="select-banco"
-      (change)="onBancoChange(bankSel.value)"
-    >
-      <option value="" [selected]="!selectedBancoId()">Selecionar Banco</option>
-      <option *ngFor="let banco of bancos()" [value]="banco.id" [selected]="banco.id === selectedBancoId()">
-        {{ banco.icon }} {{ banco.nome }}
-      </option>
-    </select>
+    <a *ngIf="!isLoading() && sortedBancos().length === 0; else selectField"
+       routerLink="/bancos/criar" class="banco-empty-link">
+      <span>Criar o primeiro banco</span>
+      <app-icon name="Plus" [size]="16"></app-icon>
+    </a>
+
+    <ng-template #selectField>
+      <app-select
+        [options]="bancoOptions()"
+        [placeholder]="isLoading() ? 'A carregar bancos...' : 'Selecionar Banco'"
+        [ngModel]="selectedBancoId()"
+        (ngModelChange)="onBancoChange($event)">
+      </app-select>
+    </ng-template>
   </div>
 
 </header>

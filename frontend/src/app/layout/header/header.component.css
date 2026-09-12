@@ -1,4 +1,5 @@
 .app-header {
+  box-sizing: border-box;
   position: relative;
   width: 100%;
   min-height: 120px; /* increased to accommodate banco selector */
@@ -18,7 +19,6 @@
   justify-content: flex-start; /* align logo to the left */
   text-decoration: none;
   width: 100%;
-  padding-left: 0.5rem;
 }
 
 .logo-link h1 {
@@ -38,11 +38,32 @@
 
 /* Banco selector styles */
 .banco-selector {
-  width: 95%;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.select-banco {
-  width: 95%;
+.banco-empty-link {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--brand-text, #e2e8f0);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.banco-empty-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--brand-accent);
 }
 
 @media (max-width: 768px) {
@@ -54,14 +75,6 @@
 
   .logo-link {
     justify-content: center; /* center logo on mobile */
-    padding-left: 0; /* remove left padding on mobile */
   }
 
-  .banco-selector {
-    width: 98%;
-  }
-
-  .select-banco {
-    width: 98%;
-  }
 }
