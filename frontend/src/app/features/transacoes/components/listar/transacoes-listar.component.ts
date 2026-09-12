@@ -8,6 +8,7 @@ import { formatData } from './transacoes-listar.formatter';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { TransacaoItemComponent } from '../../../../shared/components/transacao-item/transacao-item.component';
 import { NovaTransacaoMenuComponent } from '../../../../shared/components/nova-transacao-menu/nova-transacao-menu.component';
+import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 
 const PAGE_SIZE = 10; // items per page
 
@@ -21,6 +22,7 @@ const PAGE_SIZE = 10; // items per page
 })
 export class TransacoesListComponent implements OnInit {
   public vm = inject(TransacoesListViewModel);
+  private confirmDialog = inject(ConfirmDialogService);
 
   /** Expose formatter utility directly to the template */
   readonly formatData = formatData;
@@ -103,9 +105,9 @@ export class TransacoesListComponent implements OnInit {
    * User clicked delete on a transaction — confirm then forward to ViewModel
    * @param t - transaction item
    */
-  onDelete(t: TransacaoModel): void {
+  async onDelete(t: TransacaoModel): Promise<void> {
     if (!t?.id) return;
-    const ok = confirm('Eliminar transação? Esta ação não pode ser desfeita.');
+    const ok = await this.confirmDialog.confirm('Eliminar transação? Esta ação não pode ser desfeita.', { variant: 'danger' });
     if (!ok) return;
     this.vm.deleteTransacao(t.id);
   }

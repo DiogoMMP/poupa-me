@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { CartoesCreditoPagarViewModel } from './cartoes-credito-pagar.view-model';
 import { CartoesCreditoModel } from '../../models/cartoes-credito.model';
+import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 
 /**
  * Component to edit an existing credit card. It loads the card data based on the ID from the route,
@@ -21,6 +22,7 @@ export class CartoesCreditoPagarComponent implements OnInit, OnDestroy {
   public vm: CartoesCreditoPagarViewModel = inject(CartoesCreditoPagarViewModel);
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
+  private confirmDialog = inject(ConfirmDialogService);
 
   form: FormGroup;
   id: string = '';
@@ -75,11 +77,12 @@ export class CartoesCreditoPagarComponent implements OnInit, OnDestroy {
    * This separation of concerns allows us to keep the component focused on the UI logic, while the view model handles
    * the business logic and state management.
    */
-  onSubmit() {
+  async onSubmit() {
     if (!this.form.valid) return;
 
     // confirmation
-    if (!confirm('Confirmar pagamento do período atual e configurar o próximo período?')) return;
+    const confirmed = await this.confirmDialog.confirm('Confirmar pagamento do período atual e configurar o próximo período?');
+    if (!confirmed) return;
 
     const periodoValue = (this.form.value as { periodo: { dataInicio: string; dataFim: string } }).periodo;
     this.vm.submitPagar(this.id, periodoValue);

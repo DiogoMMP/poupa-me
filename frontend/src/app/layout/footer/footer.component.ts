@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import {Router, RouterModule} from '@angular/router';
 import {AuthService} from '../../features/auth/services/auth.service';
 import {NotificationService} from '../../services/notification.service';
+import {environment} from '../../../environments/environment';
 /**
  * Footer component displaying application footer information.
  */
@@ -20,6 +21,7 @@ import {NotificationService} from '../../services/notification.service';
  */
 export class FooterComponent {
   readonly year = new Date().getFullYear();
+  readonly version = environment.version;
 
   private auth = inject(AuthService);
   user = this.auth.user;

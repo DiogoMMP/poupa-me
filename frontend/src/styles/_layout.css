@@ -43,11 +43,6 @@
   gap: 1.5rem;
 }
 
-/* Card with hover effect modifier */
-.card--hover {
-  cursor: pointer;
-}
-
 /* === RESPONSIVE LAYOUT === */
 @media (max-width: 768px) {
   .page-container {

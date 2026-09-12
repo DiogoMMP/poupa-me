@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { DespesasRecorrentesService } from '../../services/despesas-recorrentes.service';
 import { NotificationService } from '../../../../services/notification.service';
+import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 import { DespesasRecorrentesMapper } from '../../mappers/despesas-recorrentes.mapper';
 import { DespesaRecorrenteModel, TipoDespesaRecorrente } from '../../models/despesas-recorrentes.model';
 import { SelectedBancoService } from '../../../../services/selected-banco.service';
@@ -13,6 +14,7 @@ import { SelectedBancoService } from '../../../../services/selected-banco.servic
 export class DespesasRecorrentesListarRegrasViewModel {
   private service = inject(DespesasRecorrentesService);
   private notification = inject(NotificationService);
+  private confirmDialog = inject(ConfirmDialogService);
   private selectedBanco = inject(SelectedBancoService);
 
   // State
@@ -84,9 +86,10 @@ export class DespesasRecorrentesListarRegrasViewModel {
    * the changes.
    * @param id The id of the despesa recorrente regra to delete
    */
-  deleteRegra(id: string): void {
+  async deleteRegra(id: string): Promise<void> {
     if (!id) return;
-    if (!confirm('Tem a certeza que pretende eliminar esta regra?')) return;
+    const confirmed = await this.confirmDialog.confirm('Tem a certeza que pretende eliminar esta regra?', { variant: 'danger' });
+    if (!confirmed) return;
 
     this.service.delete(id).subscribe({
       next: () => {

@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, forkJoin } from 'rxjs';
 import { CartoesCreditoService } from '../../services/cartoes-credito.service';
 import { NotificationService } from '../../../../services/notification.service';
+import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 import { CartoesCreditoModel } from '../../models/cartoes-credito.model';
 import { CartoesCreditoMapper } from '../../mappers/cartoes-credito.mapper';
 import { AuthService } from '../../../auth/services/auth.service';
@@ -17,6 +18,7 @@ import { formatEntityReference as formatEntityReferenceUtil } from '../../../../
 export class CartoesCreditoListViewModel {
   private service = inject(CartoesCreditoService);
   private notification = inject(NotificationService);
+  private confirmDialog = inject(ConfirmDialogService);
   public auth = inject(AuthService);
   private selectedBanco = inject(SelectedBancoService);
   public formatEntityReference = formatEntityReferenceUtil;
@@ -190,11 +192,12 @@ export class CartoesCreditoListViewModel {
    * the changes.
    * @param id The id of the cartão to delete
    */
-  deleteCartao(id: string): void {
+  async deleteCartao(id: string): Promise<void> {
     if (!id) return;
 
     // simple confirmation
-    if (!confirm('Tem a certeza que pretende eliminar este Cartão?')) return;
+    const confirmed = await this.confirmDialog.confirm('Tem a certeza que pretende eliminar este Cartão?', { variant: 'danger' });
+    if (!confirmed) return;
 
     this.service.delete(id).subscribe({
       next: () => {
