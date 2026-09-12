@@ -1,0 +1,26 @@
+<div class="app-select" (click)="$event.stopPropagation()">
+  <button #trigger type="button" class="app-select-trigger"
+    [disabled]="disabled()"
+    (click)="toggleMenu($event)"
+    (keydown)="onTriggerKeydown($event)"
+    [attr.aria-expanded]="showMenu()"
+    aria-haspopup="listbox">
+    <span class="app-select-label">
+      <ng-container *ngIf="selectedOption() as opt; else placeholderLabel">{{ opt.label }}</ng-container>
+      <ng-template #placeholderLabel>{{ placeholder }}</ng-template>
+    </span>
+    <app-icon [name]="showMenu() ? 'ChevronUp' : 'ChevronDown'" [size]="16"></app-icon>
+  </button>
+
+  <ul class="app-select-list" role="listbox" *ngIf="showMenu()">
+    <li #optionEl *ngFor="let option of options"
+      role="option"
+      tabindex="-1"
+      [class.active]="option.value === value()"
+      [attr.aria-selected]="option.value === value()"
+      (click)="selectOption($event, option)"
+      (keydown)="onListKeydown($event, option)">
+      {{ option.label }}
+    </li>
+  </ul>
+</div>
