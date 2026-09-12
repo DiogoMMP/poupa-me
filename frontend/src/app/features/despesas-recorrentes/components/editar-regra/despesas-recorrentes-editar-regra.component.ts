@@ -7,10 +7,11 @@ import { Subscription } from 'rxjs';
 import { DespesasRecorrentesEditarRegraViewModel } from './despesas-recorrentes-editar-regra.view-model';
 import { TipoDespesaRecorrente, UpdateDespesaRecorrenteDTO } from '../../dto/despesas-recorrentes.dto';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 @Component({
   selector: 'app-despesas-recorrentes-editar-regra',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
   templateUrl: './despesas-recorrentes-editar-regra.component.html',
   styleUrls: ['./despesas-recorrentes-editar-regra.component.css'],
   providers: [DespesasRecorrentesEditarRegraViewModel]

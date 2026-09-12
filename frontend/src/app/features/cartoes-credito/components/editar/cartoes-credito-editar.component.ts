@@ -6,6 +6,7 @@ import { createPicker } from 'picmo';
 import { CartoesCreditoEditarViewModel } from './cartoes-credito-editar.view-model';
 import { CartoesCreditoModel } from '../../models/cartoes-credito.model';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 /**
  * Component to edit an existing credit card. It loads the card data based on the ID from the route,
  * allows the user to change the card fields (except saldoUtilizado) and submit the changes.
@@ -13,7 +14,7 @@ import { CartoesCreditoModel } from '../../models/cartoes-credito.model';
 @Component({
   selector: 'app-cartao-credito-editar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
   templateUrl: './cartoes-credito-editar.component.html',
   styleUrls: ['./cartoes-credito-editar.component.css'],
   providers: [CartoesCreditoEditarViewModel]

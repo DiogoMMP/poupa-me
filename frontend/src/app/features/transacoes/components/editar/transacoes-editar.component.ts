@@ -4,10 +4,11 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { TransacoesEditarViewModel } from './transacoes-editar.view-model';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 @Component({
   selector: 'app-transacoes-editar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
   templateUrl: './transacoes-editar.component.html',
   styleUrls: ['./transacoes-editar.component.css'],
   providers: [TransacoesEditarViewModel]

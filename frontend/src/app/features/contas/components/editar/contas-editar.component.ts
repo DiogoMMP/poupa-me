@@ -6,6 +6,7 @@ import { createPicker } from 'picmo';
 import { ContasEditarViewModel } from './contas-editar.view-model';
 import { ContasModel } from '../../models/contas.model';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 /**
  * Component to edit an existing account. It loads the account data based on the ID from the route,
  * allows the user to change the name and icon, and submit the changes.
@@ -13,7 +14,7 @@ import { ContasModel } from '../../models/contas.model';
 @Component({
   selector: 'app-conta-editar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
   templateUrl: './contas-editar.component.html',
   styleUrls: ['./contas-editar.component.css'],
   providers: [ContasEditarViewModel]

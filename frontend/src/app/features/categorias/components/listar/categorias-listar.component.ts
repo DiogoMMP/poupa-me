@@ -5,10 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { CategoriasListViewModel } from './categorias-listar.view-model';
 
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 @Component({
   selector: 'app-categorias-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, IconComponent],
   templateUrl: './categorias-listar.component.html',
   styleUrls: ['./categorias-listar.component.css'],
   providers: [CategoriasListViewModel]

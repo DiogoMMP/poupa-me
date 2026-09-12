@@ -8,13 +8,14 @@ import { TransacaoItemComponent } from '../../shared/components/transacao-item/t
 import { NovaTransacaoMenuComponent } from '../../shared/components/nova-transacao-menu/nova-transacao-menu.component';
 import { LoadingCoinComponent } from '../../shared/components/loading-coin/loading-coin.component';
 
+import { IconComponent } from '../../shared/components/icon/icon.component';
 /**
  * Dashboard component displaying the dashboard page content.
  */
 @Component({
   selector: 'app-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule, TransacaoItemComponent, NovaTransacaoMenuComponent, LoadingCoinComponent],
+  imports: [CommonModule, RouterModule, TransacaoItemComponent, NovaTransacaoMenuComponent, LoadingCoinComponent, IconComponent],
   templateUrl: 'dashboard.component.html',
   styleUrls: ['dashboard.component.css'],
   host: {class: 'page-dashboard'},

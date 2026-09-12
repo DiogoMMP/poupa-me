@@ -5,10 +5,11 @@ import { RouterModule } from '@angular/router';
 import { TransacoesCriarCreditoViewModel } from './transacoes-criar-credito.view-model';
 import { IaCategorizacaoService } from '../../../ia-categorizacao/ia-categorizacao.service';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 @Component({
   selector: 'app-transacoes-criar-credito',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
   templateUrl: './transacoes-criar-credito.component.html',
   styleUrls: ['./transacoes-criar-credito.component.css'],
   providers: [TransacoesCriarCreditoViewModel]

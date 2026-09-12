@@ -5,6 +5,7 @@ import { RouterModule, ActivatedRoute } from '@angular/router';
 import { createPicker } from 'picmo';
 import { CategoriasEditarViewModel } from './categorias-editar.view-model';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 /**
  * Component to edit an existing category. It loads the category by ID from the route,
  * allows the user to change the category name and icon, and submit the changes.
@@ -12,7 +13,7 @@ import { CategoriasEditarViewModel } from './categorias-editar.view-model';
 @Component({
   selector: 'app-categoria-editar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
   templateUrl: './categorias-editar.component.html',
   styleUrls: ['./categorias-editar.component.css'],
   providers: [CategoriasEditarViewModel]

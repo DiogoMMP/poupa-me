@@ -7,10 +7,11 @@ import { Subscription } from 'rxjs';
 import { DespesasRecorrentesNovaRegraViewModel } from './despesas-recorrentes-nova-regra.view-model';
 import { CreateDespesaRecorrenteDTO, TipoDespesaRecorrente } from '../../dto/despesas-recorrentes.dto';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 @Component({
   selector: 'app-despesas-recorrentes-nova-regra',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
   templateUrl: './despesas-recorrentes-nova-regra.component.html',
   styleUrls: ['./despesas-recorrentes-nova-regra.component.css'],
   providers: [DespesasRecorrentesNovaRegraViewModel]

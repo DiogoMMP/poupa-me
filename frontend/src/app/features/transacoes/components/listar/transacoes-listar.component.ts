@@ -10,12 +10,13 @@ import { TransacaoItemComponent } from '../../../../shared/components/transacao-
 import { NovaTransacaoMenuComponent } from '../../../../shared/components/nova-transacao-menu/nova-transacao-menu.component';
 import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 const PAGE_SIZE = 10; // items per page
 
 @Component({
   selector: 'app-transacoes-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PaginationComponent, TransacaoItemComponent, NovaTransacaoMenuComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PaginationComponent, TransacaoItemComponent, NovaTransacaoMenuComponent, IconComponent],
   templateUrl: './transacoes-listar.component.html',
   styleUrls: ['./transacoes-listar.component.css'],
   providers: [TransacoesListViewModel]

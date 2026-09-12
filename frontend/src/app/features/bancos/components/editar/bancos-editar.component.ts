@@ -5,6 +5,7 @@ import { RouterModule, ActivatedRoute } from '@angular/router';
 import { createPicker } from 'picmo';
 import { BancosEditarViewModel } from './bancos-editar.view-model';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 /**
  * Component to edit an existing bank. It loads the bank data based on the ID from the route,
  * allows the user to change the name and icon, and submit the changes.
@@ -12,7 +13,7 @@ import { BancosEditarViewModel } from './bancos-editar.view-model';
 @Component({
   selector: 'app-banco-editar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
   templateUrl: './bancos-editar.component.html',
   styleUrls: ['./bancos-editar.component.css'],
   providers: [BancosEditarViewModel]

@@ -2,6 +2,7 @@ import { Component, Input, HostListener, ChangeDetectionStrategy, signal, ViewEn
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
+import { IconComponent } from '../icon/icon.component';
 /**
  * Componente de menu suspenso (`dropdown`) rápido para criação de novas transações (despesa, receita ou transferência/pagamento de cartão).
  *
@@ -13,7 +14,7 @@ import { RouterModule } from '@angular/router';
 @Component({
   selector: 'app-nova-transacao-menu',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, IconComponent],
   templateUrl: './nova-transacao-menu.component.html',
   styleUrls: ['./nova-transacao-menu.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -5,10 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { BancosListViewModel } from './bancos-listar.view-model';
 
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 @Component({
   selector: 'app-bancos-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, IconComponent],
   templateUrl: './bancos-listar.component.html',
   styleUrls: ['./bancos-listar.component.css'],
   providers: [BancosListViewModel]

@@ -99,53 +99,17 @@ small {
   color: #61edd6;
 }
 
-/* Ensure inline svg inside the user link is smaller and uses brand text color by default */
-.login_flags .login-link.user svg {
-  width: 18px !important;
-  height: 18px !important;
+/* Ícone de utilizador (app-icon "CircleUser") segue a cor de texto da marca por defeito */
+.login_flags .login-link.user app-icon {
   display: inline-block;
   vertical-align: middle;
-  color: #e2e8f0; /* sets currentColor */
-  stroke: #e2e8f0 !important;
-  fill: none !important;
+  color: #e2e8f0;
 }
 
-/* Apply explicit stroke/fill to SVG shapes to override inline attributes that set colors */
-.login_flags .login-link.user svg path,
-.login_flags .login-link.user svg circle,
-.login_flags .login-link.user svg rect,
-.login_flags .login-link.user svg polygon,
-.login_flags .login-link.user svg ellipse {
-  stroke: #e2e8f0 !important;
-  fill: none !important;
-}
-
-/* Ensure stroke-width is reasonable at small size */
-.login_flags .login-link.user svg path,
-.login_flags .login-link.user svg circle {
-  stroke-width: 1.2 !important;
-}
-
-/* When hovered/focused, svg color follows the link hover color (set via color change) */
-.login_flags .login-link.user:hover svg,
-.login_flags .login-link.user:focus svg {
+/* Ao passar o rato/focar, a cor do ícone acompanha a cor de hover do link */
+.login_flags .login-link.user:hover app-icon,
+.login_flags .login-link.user:focus app-icon {
   color: #61edd6;
-  stroke: #61edd6 !important;
-}
-
-/* Ensure child shapes (paths, circles, etc.) also change color on hover/focus */
-.login_flags .login-link.user:hover svg path,
-.login_flags .login-link.user:focus svg path,
-.login_flags .login-link.user:hover svg circle,
-.login_flags .login-link.user:focus svg circle,
-.login_flags .login-link.user:hover svg rect,
-.login_flags .login-link.user:focus svg rect,
-.login_flags .login-link.user:hover svg polygon,
-.login_flags .login-link.user:focus svg polygon,
-.login_flags .login-link.user:hover svg ellipse,
-.login_flags .login-link.user:focus svg ellipse {
-  stroke: #61edd6 !important;
-  fill: none !important;
 }
 
 /* User icon styling */

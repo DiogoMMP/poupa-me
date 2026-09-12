@@ -5,16 +5,11 @@
 
     <div class="page-actions">
       <button routerLink="/despesas-recorrentes/listar-regras" class="btn-secondary">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
+        <app-icon name="List" [size]="24"></app-icon>
         Ver Regras
       </button>
       <button routerLink="/despesas-recorrentes/nova-regra">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M12 5V19M5 12H19" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"
-                stroke-linejoin="round"/>
-        </svg>
+        <app-icon name="Plus" [size]="24"></app-icon>
         Nova Regra
       </button>
     </div>
@@ -109,9 +104,7 @@
         <button class="filter-toggle-btn"
                 (click)="showPendenteFilters = !showPendenteFilters"
                 [class.active]="showPendenteFilters">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M3 7H21M6 12H18M10 17H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+          <app-icon name="Filter" [size]="16"></app-icon>
           Filtros
           <span class="filter-badge" *ngIf="hasActivePendenteFilters()">●</span>
         </button>
@@ -143,10 +136,7 @@
         <div class="transacoes-list">
           <div *ngFor="let t of paginate(all, pendentePage)" class="transacao-item card">
 
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="transacao-icon saidas-icon">
-              <path d="M12 4.5L17 9.5M12 4.5L7 9.5M12 4.5C12 4.5 12 12.8333 12 14.5C12 16.1667 11 19.5 7 19.5"
-                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <app-icon name="ArrowDownLeft" [size]="24" class="transacao-icon saidas-icon"></app-icon>
 
             <div class="transacao-details">
               <p class="transacao-descricao text-large">{{ t.descricao }}</p>
@@ -159,26 +149,17 @@
               <div class="transacao-actions">
                 <a class="btn-edit-small" [routerLink]="['/despesas-recorrentes/editar-transacao', t.id]" title="Editar"
                    aria-label="Editar transação">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-                      stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
+                  <app-icon name="Pencil" [size]="16"></app-icon>
                 </a>
 
                 <button class="btn-delete-small" title="Eliminar" aria-label="Eliminar transação"
                         (click)="vm.deleteTransacao(t.id)">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M3 6h18M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6M10 6V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"
-                          stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
+                  <app-icon name="Trash" [size]="16"></app-icon>
                 </button>
 
                 <button class="btn-concluir-small" title="Concluir" aria-label="Concluir transação"
                         (click)="vm.concluirTransacao(t)" [disabled]="vm.isBusy(t.id)">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
+                  <app-icon name="Check" [size]="16"></app-icon>
                 </button>
               </div>
 
@@ -221,9 +202,7 @@
         <button class="filter-toggle-btn"
                 (click)="showConcluidaFilters = !showConcluidaFilters"
                 [class.active]="showConcluidaFilters">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M3 7H21M6 12H18M10 17H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+          <app-icon name="Filter" [size]="16"></app-icon>
           Filtros
           <span class="filter-badge" *ngIf="hasActiveConcluidaFilters()">●</span>
         </button>
@@ -262,12 +241,7 @@
         <div class="transacoes-list">
           <div *ngFor="let t of paginate(all, concluidaPage)" class="transacao-item card">
 
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="transacao-icon concluido-icon">
-              <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" stroke="currentColor" stroke-width="1.2"
-                    stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M7.5 12.5l2.5 2.5L16.5 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-                    stroke-linejoin="round" fill="none"/>
-            </svg>
+            <app-icon name="CircleCheck" [size]="24" class="transacao-icon concluido-icon"></app-icon>
 
             <div class="transacao-details">
               <p class="transacao-descricao text-large">{{ t.descricao }}</p>
@@ -280,19 +254,12 @@
               <div class="transacao-actions">
                 <a class="btn-edit-small" [routerLink]="['/despesas-recorrentes/editar-transacao', t.id]" title="Editar"
                    aria-label="Editar transação">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-                      stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
+                  <app-icon name="Pencil" [size]="16"></app-icon>
                 </a>
 
                 <button class="btn-delete-small" title="Eliminar" aria-label="Eliminar transação"
                         (click)="vm.deleteTransacao(t.id)">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M3 6h18M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6M10 6V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"
-                          stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
+                  <app-icon name="Trash" [size]="16"></app-icon>
                 </button>
               </div>
 

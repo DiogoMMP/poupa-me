@@ -76,15 +76,7 @@
   align-items: center;
   justify-content: center;
   vertical-align: middle;
-}
-
-/* actual img inside wrapper */
-.nav-icon-img {
-  max-width: 100%;
-  max-height: 100%;
-  display: block;
-  object-fit: contain;
-  filter: brightness(0) invert(1); /* default white */
+  color: #ffffff; /* default white, app-icon herda via currentColor */
 }
 
 .nav-label {
@@ -104,15 +96,6 @@
   color: var(--nav-active-text);
   border-left-color: var(--nav-border);
   outline: none;
-}
-
-.nav-link:hover .nav-icon-img,
-.nav-link.active .nav-icon-img,
-.nav-link[aria-current="page"] .nav-icon-img,
-.nav-link:active .nav-icon-img,
-.nav-link:focus .nav-icon-img {
-  /* tint approximating --nav-active-text */
-  filter: invert(97%) sepia(67%) saturate(2545%) hue-rotate(145deg) brightness(107%) contrast(86%);
 }
 
 /* === RESPONSIVE ADJUSTMENTS === */

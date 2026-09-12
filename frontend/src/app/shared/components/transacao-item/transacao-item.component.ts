@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { TransacaoModel } from '../../../features/transacoes/models/transacoes.model';
 import { formatData } from '../../utils/date-formatter.util';
 
+import { IconComponent } from '../icon/icon.component';
 /**
  * Componente de item de transação individual para exibição em listas de extratos, relatórios ou paginação.
  * Suporta formatação de valores positivos/negativos, estado de conclusão, edição de rota e botões de ação.
@@ -17,7 +18,7 @@ import { formatData } from '../../utils/date-formatter.util';
 @Component({
   selector: 'app-transacao-item',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, IconComponent],
   templateUrl: './transacao-item.component.html',
   styleUrls: ['./transacao-item.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

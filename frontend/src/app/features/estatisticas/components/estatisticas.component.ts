@@ -8,13 +8,14 @@ import { FormsModule } from '@angular/forms';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { map } from 'rxjs/operators';
 
+import { IconComponent } from '../../../shared/components/icon/icon.component';
 /**
  * Estatisticas component.
  */
 @Component({
   selector: 'app-estatisticas',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule, FormsModule, NgxChartsModule],
+  imports: [CommonModule, RouterModule, FormsModule, NgxChartsModule, IconComponent],
   templateUrl: 'estatisticas.component.html',
   styleUrls: ['estatisticas.component.css'],
   host: {class: 'page-estatisticas'},

@@ -1,5 +1,6 @@
 import {Injectable, signal, computed} from '@angular/core';
 import {Role} from '../features/auth/services/auth.service';
+import type {IconName} from '../shared/components/icon/icon.component';
 
 /**
  * Menu item definition.
@@ -7,7 +8,7 @@ import {Role} from '../features/auth/services/auth.service';
 export interface MenuItem {
   id: string;
   labelKey: string;
-  icon: string;
+  icon: IconName;
   route?: string;
   roles: Role[];
   children?: MenuItem[];
@@ -26,7 +27,7 @@ export class MenuService {
     {
       id: 'Dashboard',
       labelKey: 'Dashboard',
-      icon: '/icons/dashboard.svg',
+      icon: 'Gauge',
       route: '/dashboard',
       roles: ['Admin', 'User']
     },
@@ -34,7 +35,7 @@ export class MenuService {
     {
       id: 'Estatísticas',
       labelKey: 'Estatísticas',
-      icon: '/icons/estatisticas.svg',
+      icon: 'ChartBar',
       route: '/estatisticas',
       roles: ['Admin', 'User']
     },
@@ -42,7 +43,7 @@ export class MenuService {
     {
       id: 'Bancos',
       labelKey: 'Bancos',
-      icon: '/icons/bancos.svg',
+      icon: 'Bank',
       route: '/bancos',
       roles: ['Admin', 'User']
     },
@@ -50,7 +51,7 @@ export class MenuService {
     {
       id: 'Contas',
       labelKey: 'Contas',
-      icon: '/icons/contas.svg',
+      icon: 'Wallet',
       route: '/contas',
       roles: ['Admin', 'User']
     },
@@ -58,7 +59,7 @@ export class MenuService {
     {
       id: 'Cartões de Crédito',
       labelKey: 'Cartões de Crédito',
-      icon: '/icons/cartoes.svg',
+      icon: 'CreditCard',
       route: '/cartoes-credito',
       roles: ['Admin', 'User']
     },
@@ -66,7 +67,7 @@ export class MenuService {
     {
       id: 'Transações',
       labelKey: 'Transações',
-      icon: '/icons/transacoes.svg',
+      icon: 'ArrowDownArrowUp',
       route: '/transacoes',
       roles: ['Admin', 'User']
     },
@@ -74,7 +75,7 @@ export class MenuService {
     {
       id: 'Despesas Recorrentes',
       labelKey: 'Despesas Recorrentes',
-      icon: '/icons/despesas_mensais.svg',
+      icon: 'Repeat',
       route: '/despesas-recorrentes',
       roles: ['Admin', 'User']
     },
@@ -82,7 +83,7 @@ export class MenuService {
     {
       id: 'Categorias',
       labelKey: 'Categorias',
-      icon: '/icons/categorias.svg',
+      icon: 'Tags',
       route: '/categorias',
       roles: ['Admin']
     },
@@ -90,7 +91,7 @@ export class MenuService {
     {
       id: 'Utilizadores',
       labelKey: 'Utilizadores',
-      icon: '/icons/usuarios.svg',
+      icon: 'Users',
       route: '/utilizadores',
       roles: ['Admin']
     }

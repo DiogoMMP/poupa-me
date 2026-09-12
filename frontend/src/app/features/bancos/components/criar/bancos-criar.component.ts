@@ -5,6 +5,7 @@ import { RouterModule, ActivatedRoute } from '@angular/router';
 import { createPicker } from 'picmo';
 import { BancosCriarViewModel } from './bancos-criar.view-model';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 /**
  * Component to create a new bank. It provides a form where the user can enter the
  * bank name and choose an icon, then submit to create a new bank record.
@@ -12,7 +13,7 @@ import { BancosCriarViewModel } from './bancos-criar.view-model';
 @Component({
   selector: 'app-banco-criar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
   templateUrl: './bancos-criar.component.html',
   styleUrls: ['./bancos-criar.component.css'],
   providers: [BancosCriarViewModel]
