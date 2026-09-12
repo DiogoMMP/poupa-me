@@ -1,5 +1,7 @@
 // ── Despesa Recorrente DTOs ────────────────────────────────────
 
+import { EntityReference } from '../../../shared/models/entity-reference.model';
+
 export interface DinheiroProps {
   valor: number;
   moeda: string;
@@ -15,15 +17,15 @@ export type TipoDespesaRecorrente = 'Despesa Mensal' | 'Poupança' | 'Despesa Se
 
 export interface DespesaRecorrenteDTO {
   id: string;
-  userId: string;
+  user?: EntityReference;
   nome: string;
   icon: string;
   valor?: DinheiroProps;
   diaDoMes?: number;
-  categoriaId: string;
-  contaOrigemId: string;
-  contaDestinoId?: string;
-  contaPoupancaId?: string;
+  categoria: EntityReference;
+  contaOrigem: EntityReference;
+  contaDestino?: EntityReference;
+  contaPoupanca?: EntityReference;
   tipo: TipoDespesaRecorrente;
   ultimoProcessamento: string | null;
   ativo: boolean;

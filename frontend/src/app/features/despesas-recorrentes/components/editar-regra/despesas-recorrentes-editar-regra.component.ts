@@ -99,8 +99,8 @@ export class DespesasRecorrentesEditarRegraComponent implements OnInit, OnDestro
         contaPoupancaId: regra.contaPoupancaId ?? null,
         imediata:        regra.imediata ?? false,
         valor: {
-          valor: regra.valor?.valor ?? null,
-          moeda: regra.valor?.moeda ?? 'EUR'
+          valor: regra.valor ?? null,
+          moeda: regra.moeda ?? 'EUR'
         },
         diaDaSemana: regra.diaDaSemana ?? null,
         diaDoMes: regra.diaDoMes ?? null,

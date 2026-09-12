@@ -8,7 +8,9 @@ import { ContasService } from '../../../contas/services/contas.service';
 import { CategoriasService } from '../../../categorias/services/categorias.service';
 import { ContasDto } from '../../../contas/dto/contas.dto';
 import { CategoriasDTO } from '../../../categorias/dto/categorias.dto';
-import { DespesaRecorrenteDTO, UpdateDespesaRecorrenteDTO } from '../../dto/despesas-recorrentes.dto';
+import { UpdateDespesaRecorrenteDTO } from '../../dto/despesas-recorrentes.dto';
+import { DespesaRecorrenteModel } from '../../models/despesas-recorrentes.model';
+import { DespesasRecorrentesMapper } from '../../mappers/despesas-recorrentes.mapper';
 
 @Injectable()
 export class DespesasRecorrentesEditarRegraViewModel {
@@ -22,7 +24,7 @@ export class DespesasRecorrentesEditarRegraViewModel {
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
   readonly contas$ = new BehaviorSubject<ContasDto[]>([]);
   readonly categorias$ = new BehaviorSubject<CategoriasDTO[]>([]);
-  readonly regra$ = new BehaviorSubject<DespesaRecorrenteDTO | null>(null);
+  readonly regra$ = new BehaviorSubject<DespesaRecorrenteModel | null>(null);
 
   get selectedBancoId(): string | null {
     return this.selectedBanco.currentBancoId;
@@ -37,7 +39,7 @@ export class DespesasRecorrentesEditarRegraViewModel {
     this.isLoading$.next(true);
     this.service.getById(id).subscribe({
       next: dto => {
-        this.regra$.next(dto);
+        this.regra$.next(DespesasRecorrentesMapper.toModel(dto));
         this.isLoading$.next(false);
       },
       error: () => {
