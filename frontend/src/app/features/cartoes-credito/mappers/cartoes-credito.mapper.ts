@@ -72,9 +72,9 @@ export class CartoesCreditoMapper {
     if (!data || !data.dia || !data.mes || !data.ano) {
       return '';
     }
-    // Create date with year, month (0-indexed), day
-    const date = new Date(data.ano, data.mes - 1, data.dia);
-    return date.toISOString();
+    // Build the plain yyyy-MM-dd string directly - never round-trip through Date/toISOString,
+    // which shifts the value by the browser's timezone offset.
+    return `${String(data.ano).padStart(4, '0')}-${String(data.mes).padStart(2, '0')}-${String(data.dia).padStart(2, '0')}`;
   }
 
   /**

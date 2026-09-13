@@ -58,10 +58,13 @@ export default class EstatisticasService implements IEstatisticasService {
                 const dt = toDateFromData((t as any).data);
                 return dt >= startDate && dt <= endDate;
             });
+            // Excludes the auto-generated "Pagamento X" record (isPagamentoCartao): its valor already
+            // sums up purchases that were already counted individually as they happened, so including
+            // it here would double-count that spending.
             const cartoesNoMes = cartaoTransacoes.filter(t => {
                 const dt = toDateFromData((t as any).data);
                 return dt >= startDate && dt <= endDate;
-            });
+            }).filter(t => !t.isPagamentoCartao);
 
             // 1) Monthly cashflow: totalIn = Entrada + Reembolso, totalOut = Saída + Crédito
             const sumValor = (arr: Array<{ tipo: { value: string }; valor: { value: number; moeda?: string } }>, tipos: string[]) =>
