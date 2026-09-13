@@ -49,21 +49,7 @@
 
       <div class="form-field" formGroupName="saldo">
         <label class="form-label">Saldo</label>
-        <div class="row-controls">
-          <input
-            type="number"
-            id="valor"
-            formControlName="valor"
-            class="form-input"
-            placeholder="Ex: 20.00">
-
-          <input
-            type="text"
-            id="currency"
-            formControlName="moeda"
-            class="form-input"
-            value="EUR">
-        </div>
+        <app-money-input formControlName="valor" placeholder="Ex: 20.00"></app-money-input>
       </div>
 
       <div class="form-actions">

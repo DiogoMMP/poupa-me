@@ -12,11 +12,7 @@
       <!-- Data -->
       <div class="form-field">
         <label for="data" class="form-label">Data</label>
-        <input
-          type="date"
-          id="data"
-          formControlName="data"
-          class="form-input">
+        <app-date-picker formControlName="data" placeholder="Selecionar data"></app-date-picker>
       </div>
 
       <!-- Descrição -->
@@ -34,22 +30,7 @@
       <!-- Valor -->
       <div class="form-field" formGroupName="valor">
         <label class="form-label">Valor</label>
-        <div class="row-controls">
-          <input
-            type="number"
-            id="valor"
-            formControlName="valor"
-            class="form-input"
-            placeholder="Ex: 50.00"
-            min="0.01"
-            step="0.01">
-          <input
-            type="text"
-            id="moeda"
-            formControlName="moeda"
-            class="form-input"
-            placeholder="EUR">
-        </div>
+        <app-money-input formControlName="valor" placeholder="Ex: 50.00" [min]="0.01"></app-money-input>
       </div>
 
       <!-- Categoria -->

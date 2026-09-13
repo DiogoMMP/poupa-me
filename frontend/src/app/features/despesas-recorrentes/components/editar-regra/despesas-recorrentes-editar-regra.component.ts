@@ -10,10 +10,12 @@ import { TipoDespesaRecorrente, UpdateDespesaRecorrenteDTO } from '../../dto/des
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
 import { SelectComponent, AppSelectOption } from '../../../../shared/components/select/select.component';
 import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
+import { MoneyInputComponent } from '../../../../shared/components/money-input/money-input.component';
+import { IntegerInputComponent } from '../../../../shared/components/integer-input/integer-input.component';
 @Component({
   selector: 'app-despesas-recorrentes-editar-regra',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe, MoneyInputComponent, IntegerInputComponent],
   templateUrl: './despesas-recorrentes-editar-regra.component.html',
   styleUrls: ['./despesas-recorrentes-editar-regra.component.css'],
   providers: [DespesasRecorrentesEditarRegraViewModel]

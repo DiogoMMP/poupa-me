@@ -8,10 +8,12 @@ import { IaCategorizacaoService } from '../../../ia-categorizacao/ia-categorizac
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
 import { SelectComponent } from '../../../../shared/components/select/select.component';
 import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
+import { DatePickerComponent } from '../../../../shared/components/date-picker/date-picker.component';
+import { MoneyInputComponent } from '../../../../shared/components/money-input/money-input.component';
 @Component({
   selector: 'app-transacoes-criar-saidas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe, DatePickerComponent, MoneyInputComponent],
   templateUrl: './transacoes-criar-saidas.component.html',
   styleUrls: ['./transacoes-criar-saidas.component.css'],
   providers: [TransacoesCriarSaidasViewModel]

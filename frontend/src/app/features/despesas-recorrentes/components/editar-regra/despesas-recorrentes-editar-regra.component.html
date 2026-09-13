@@ -113,14 +113,7 @@
           Dia do Mês
           <span class="form-label-hint">(opcional - pode preencher mais tarde)</span>
         </label>
-        <input
-          type="number"
-          id="diaDoMes"
-          formControlName="diaDoMes"
-          class="form-input"
-          placeholder="Ex: 15"
-          min="1"
-          max="31">
+        <app-integer-input formControlName="diaDoMes" placeholder="Ex: 15" [min]="1" [max]="31"></app-integer-input>
       </div>
 
       <!-- Mês -->
@@ -129,14 +122,7 @@
           Mês
           <span class="form-label-hint">(opcional - pode preencher mais tarde)</span>
         </label>
-        <input
-          type="number"
-          id="mes"
-          formControlName="mes"
-          class="form-input"
-          placeholder="Ex: 12"
-          min="1"
-          max="12">
+        <app-integer-input formControlName="mes" placeholder="Ex: 12" [min]="1" [max]="12"></app-integer-input>
       </div>
 
       <!-- Valor (opcional) -->
@@ -145,19 +131,7 @@
           Valor
           <span class="form-label-hint">(opcional — pode preencher mais tarde)</span>
         </label>
-        <div class="row-controls">
-          <input
-            type="number"
-            id="valorValor"
-            formControlName="valor"
-            class="form-input"
-            placeholder="Ex: 9.99">
-          <input
-            type="text"
-            id="valorMoeda"
-            formControlName="moeda"
-            class="form-input">
-        </div>
+        <app-money-input formControlName="valor" placeholder="Ex: 9.99"></app-money-input>
       </div>
 
       <div class="form-actions">

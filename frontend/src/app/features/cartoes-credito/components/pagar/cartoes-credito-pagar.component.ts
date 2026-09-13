@@ -7,6 +7,7 @@ import { CartoesCreditoModel } from '../../models/cartoes-credito.model';
 import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { DatePickerComponent } from '../../../../shared/components/date-picker/date-picker.component';
 /**
  * Component to edit an existing credit card. It loads the card data based on the ID from the route,
  * allows the user to change the card fields (except saldoUtilizado) and submit the changes.
@@ -14,7 +15,7 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 @Component({
   selector: 'app-cartao-credito-pagar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, IconComponent, DatePickerComponent],
   templateUrl: './cartoes-credito-pagar.component.html',
   styleUrls: ['./cartoes-credito-pagar.component.css'],
   providers: [CartoesCreditoPagarViewModel]

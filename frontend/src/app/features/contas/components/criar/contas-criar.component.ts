@@ -6,6 +6,7 @@ import { createPicker } from 'picmo';
 import { ContasCriarViewModel } from './contas-criar.view-model';
 
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { MoneyInputComponent } from '../../../../shared/components/money-input/money-input.component';
 /**
  * Component to create a new bank. It provides a form where the user can enter the
  * bank name and choose an icon, then submit to create a new bank record.
@@ -13,7 +14,7 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 @Component({
   selector: 'app-conta-criar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, MoneyInputComponent],
   templateUrl: './contas-criar.component.html',
   styleUrls: ['./contas-criar.component.css'],
   providers: [ContasCriarViewModel]

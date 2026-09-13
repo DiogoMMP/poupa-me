@@ -49,58 +49,22 @@
 
       <div class="form-field" formGroupName="limiteCredito">
         <label class="form-label">Limite de Crédito</label>
-        <div class="row-controls">
-          <input
-            type="number"
-            id="valor"
-            formControlName="valor"
-            class="form-input"
-            placeholder="Ex: 20.00">
-
-          <input
-            type="text"
-            id="currency"
-            formControlName="moeda"
-            class="form-input"
-            value="EUR">
-        </div>
+        <app-money-input formControlName="valor" placeholder="Ex: 20.00"></app-money-input>
       </div>
 
       <div class="form-field" formGroupName="saldoUtilizado">
         <label class="form-label">Saldo Utilizado</label>
-        <div class="row-controls">
-          <input
-            type="number"
-            id="valor"
-            formControlName="valor"
-            class="form-input"
-            placeholder="Ex: 20.00">
-
-          <input
-            type="text"
-            id="currency"
-            formControlName="moeda"
-            class="form-input"
-            value="EUR">
-        </div>
+        <app-money-input formControlName="valor" placeholder="Ex: 20.00"></app-money-input>
       </div>
 
       <div class="form-field" formGroupName="periodo">
         <label class="form-label">Período</label>
         <div class="row-controls">
           <label for="dataInicio" class="form-label">Início: </label>
-          <input
-            type="date"
-            id="dataInicio"
-            formControlName="dataInicio"
-            class="form-input">
+          <app-date-picker formControlName="dataInicio" placeholder="Selecionar data"></app-date-picker>
 
           <label for="dataFim" class="form-label">Fim: </label>
-          <input
-            type="date"
-            id="dataFim"
-            formControlName="dataFim"
-            class="form-input">
+          <app-date-picker formControlName="dataFim" placeholder="Selecionar data"></app-date-picker>
         </div>
       </div>
 

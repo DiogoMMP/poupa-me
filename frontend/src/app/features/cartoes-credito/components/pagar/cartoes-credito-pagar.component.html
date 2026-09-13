@@ -29,18 +29,10 @@
             <label class="form-label">Próximo Período</label>
             <div class="row-controls">
               <label for="dataInicio" class="form-label">Início: </label>
-              <input
-                type="date"
-                id="dataInicio"
-                formControlName="dataInicio"
-                class="form-input">
+              <app-date-picker formControlName="dataInicio" placeholder="Selecionar data"></app-date-picker>
 
               <label for="dataFim" class="form-label">Fim: </label>
-              <input
-                type="date"
-                id="dataFim"
-                formControlName="dataFim"
-                class="form-input">
+              <app-date-picker formControlName="dataFim" placeholder="Selecionar data"></app-date-picker>
             </div>
           </div>
 
