@@ -13,24 +13,24 @@
         Filtros
         <span class="filter-badge" *ngIf="hasActiveFilters()">●</span>
       </button>
+    </div>
+  </div>
 
-      <!-- Filters -->
-      <div class="filter-panel" *ngIf="showFilters">
-        <div class="filter-row">
-          <div class="filter-field">
-            <label class="filter-label">Mês</label>
-            <app-select [(ngModel)]="selectedMonth" [options]="monthOptions"></app-select>
-          </div>
-          <div class="filter-field">
-            <label class="filter-label">Ano</label>
-            <app-select [(ngModel)]="selectedYear" [options]="yearOptions"></app-select>
-          </div>
-        </div>
-        <div class="filter-actions">
-          <button class="btn-secondary" (click)="clearFilters()">Limpar</button>
-          <button (click)="applyFilters()">Aplicar</button>
-        </div>
+  <!-- Filters -->
+  <div class="filter-panel" *ngIf="showFilters && (hasBancoSelected$ | async)">
+    <div class="filter-row">
+      <div class="filter-field">
+        <label class="filter-label">Mês</label>
+        <app-select [(ngModel)]="selectedMonth" [options]="monthOptions"></app-select>
       </div>
+      <div class="filter-field">
+        <label class="filter-label">Ano</label>
+        <app-select [(ngModel)]="selectedYear" [options]="yearOptions"></app-select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button class="btn-secondary" (click)="clearFilters()">Limpar</button>
+      <button (click)="applyFilters()">Aplicar</button>
     </div>
   </div>
 
