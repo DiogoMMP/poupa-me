@@ -8,7 +8,7 @@ export interface BancosDTO {
   user?: EntityReference;
   nome: string;
   icon: string;
-  contasCartoesSelecionados?: string[];
+  contasCartoesSelecionados?: EntityReference[];
 }
 
 /**

@@ -14,7 +14,7 @@ export class BancosMapper {
       user: dto.user,
       nome: dto.nome,
       icon: dto.icon,
-      contasCartoesSelecionados: dto.contasCartoesSelecionados || []
+      contasCartoesSelecionados: (dto.contasCartoesSelecionados || []).map(ref => ref.id)
     };
   }
 
@@ -27,7 +27,7 @@ export class BancosMapper {
       user: model.user,
       nome: model.nome,
       icon: model.icon,
-      contasCartoesSelecionados: model.contasCartoesSelecionados
+      contasCartoesSelecionados: model.contasCartoesSelecionados?.map(id => ({ id }))
     };
   }
 
