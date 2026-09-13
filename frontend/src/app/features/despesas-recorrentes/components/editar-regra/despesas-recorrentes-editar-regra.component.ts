@@ -47,8 +47,8 @@ export class DespesasRecorrentesEditarRegraComponent implements OnInit, OnDestro
       moeda: ['EUR']
     }),
     diaDaSemana: [null],
-    diaDoMes: [null],
-    mes: [null],
+    diaDoMes: [null, [Validators.min(1), Validators.max(31)]],
+    mes: [null, [Validators.min(1), Validators.max(12)]],
   });
 
   get isImediata(): boolean {
