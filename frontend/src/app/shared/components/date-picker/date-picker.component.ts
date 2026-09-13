@@ -209,6 +209,7 @@ export class DatePickerComponent implements ControlValueAccessor {
 
     event.preventDefault();
     if (!this.showMenu()) {
+      this.onTouched();
       this.open();
       this.focusActiveDay();
     }
