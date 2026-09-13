@@ -32,7 +32,10 @@ export class DespesasRecorrentesGerarTransacaoComponent implements OnInit {
 
   constructor() {
     const today = new Date();
-    const todayStr = today.toISOString().substring(0, 10); // YYYY-MM-DD
+    // Build yyyy-MM-dd from local getters - toISOString() converts to UTC first, which can shift
+    // "today" to the previous day near midnight in positive-offset timezones (e.g. Portugal in DST).
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
     this.form = this.fb.group({
       valor: this.fb.group({
         valor: [null, [Validators.required, Validators.min(0.01)]],
