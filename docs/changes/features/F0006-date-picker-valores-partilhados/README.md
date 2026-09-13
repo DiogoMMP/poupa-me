@@ -5,7 +5,7 @@
 | **Tipo** | Feature (continuação da unificação de sistema de formulários iniciada na F0004) |
 | **Branch** | `feature/date-picker-valores-partilhados` (base: `develop`) |
 | **Estado** | Planeado |
-| **Âmbito** | Frontend: três novos componentes em `shared/components/` (`app-date-picker`, `app-money-input`, `app-integer-input`), migração de todos os `<input type="date">`/`<input type="number">` de formulário em 12 ficheiros, e um fix CSS no input de emoji |
+| **Âmbito** | Frontend: três novos componentes em `shared/components/` (`app-date-picker`, `app-money-input`, `app-integer-input`), migração de todos os `<input type="date">`/`<input type="number">` de formulário em 13 ficheiros, e um fix CSS no input de emoji |
 | **Verificação** | `cd frontend && npm run build` + `npm test`; inspeção visual manual (sem Cypress a correr nesta sessão) |
 
 ## 1. Situação
@@ -39,8 +39,8 @@ operativo/browser).
 - **A. Novo `shared/components/date-picker/` (`DatePickerComponent`, `ControlValueAccessor`)** —
   substitui os 13 `<input type="date">` em 10 ficheiros.
 - **B. Novo `shared/components/money-input/` (`MoneyInputComponent`, `ControlValueAccessor`)** —
-  substitui os 11 `<input type="number">` do campo monetário `valor` (sempre hoje acompanhado de um
-  `<input formControlName="moeda">` separado) em 8 ficheiros.
+  substitui os 13 `<input type="number">` do campo monetário `valor` (sempre hoje acompanhado de um
+  `<input formControlName="moeda">` separado) em 12 ficheiros.
 - **C. Novo `shared/components/integer-input/` (`IntegerInputComponent`, `ControlValueAccessor`)** —
   substitui os 4 `<input type="number">` de `diaDoMes`/`mes` (valores inteiros, não monetários) em
   `despesas-recorrentes/components/{nova-regra,editar-regra}`.
@@ -49,7 +49,7 @@ operativo/browser).
   `cursor: pointer` e realce ao passar o rato apesar de não ter nenhum `(click)` associado — dá a
   ilusão de ser clicável quando só o `.emoji-btn` ao lado deve abrir o *popup* do Picmo.
 
-**Escala:** 3 componentes novos, 28 substituições de `<input>` nativo em 12 formulários reais de
+**Escala:** 3 componentes novos, 30 substituições de `<input>` nativo em 13 formulários reais de
 produção, 1 fix CSS que cobre 10 ficheiros sem os alterar individualmente.
 
 ## 2. Resultado pretendido
@@ -128,7 +128,7 @@ clicar fora, navegação por teclado, sem depender de nenhum controlo nativo do 
    criar-credito,criar-reembolso,editar}`, `despesas-recorrentes/components/{gerar-transacao,
    editar-transacao}`, `cartoes-credito/components/{criar,editar,pagar}`.
 
-7. **Migração — dinheiro** (8 ficheiros): remove o `<input formControlName="moeda">` de cada
+7. **Migração — dinheiro** (12 ficheiros): remove o `<input formControlName="moeda">` de cada
    `form-field`/`row-controls` e troca o `<input type="number" formControlName="valor">` por
    `<app-money-input formControlName="valor">`: `contas/components/criar`,
    `despesas-recorrentes/components/{nova-regra,editar-regra,gerar-transacao,editar-transacao}`,
@@ -143,7 +143,7 @@ clicar fora, navegação por teclado, sem depender de nenhum controlo nativo do 
 - `cd frontend && npm run build` — sem baseline de erros pré-existente.
 - `cd frontend && npm test -- --watch=false --browsers=ChromeHeadless` — baseline atual 8/8; sem
   specs a cobrir os formulários migrados, não há regressão detetável por teste automático.
-- **Não verificável nesta sessão:** submissão real de cada um dos 12 formulários (valor enviado à
+- **Não verificável nesta sessão:** submissão real de cada um dos 13 formulários (valor enviado à
   API, seleção de data/valor no calendário/inputs num browser real), e confirmação visual de que o
   input de emoji deixou de parecer clicável. Ver `RESULT.md` §4.
 
@@ -162,7 +162,7 @@ clicar fora, navegação por teclado, sem depender de nenhum controlo nativo do 
 - **Risco: o fix CSS do emoji ser demasiado amplo e afetar outro `readonly` que ainda não existe.**
   **Mitigação:** regra scoped só a `.emoji-input-group input[readonly]`, não ao seletor genérico
   `.form-input[readonly]`.
-- **Risco: volume de ficheiros (12) tornar fácil deixar um `<input type="date">`/`type="number"`
+- **Risco: volume de ficheiros (13) tornar fácil deixar um `<input type="date">`/`type="number"`
   esquecido.** **Mitigação:** grep final `grep -rln 'type="date"\|type="number"' frontend/src/app`
   deve só devolver `date-picker`/`money-input`/`integer-input` (os `<input>` internos dos próprios
   componentes novos).

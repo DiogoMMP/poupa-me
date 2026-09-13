@@ -21,7 +21,7 @@
   13 `<input type="date">` em 10 ficheiros.
 - **B. `shared/components/money-input/money-input.component.{ts,html,css}`** — `MoneyInputComponent`,
   `ControlValueAccessor`, `<input type="number">` interno com sufixo visual "€" embutido. Substitui os
-  11 `<input type="number">` do campo `valor` em 8 ficheiros, e remove o `<input formControlName="moeda">`
+  13 `<input type="number">` do campo `valor` em 12 ficheiros, e remove o `<input formControlName="moeda">`
   que os acompanhava em cada um — o `FormControl` `moeda` continua a existir no `FormGroup` de cada
   consumidor, só deixou de ter um input visível, mantendo o valor fixo `'EUR'` que já tinha por
   omissão. **Zero mudanças em view-models/mappers** — confirmado por grep
@@ -79,10 +79,27 @@ desatualizado em `cartoes-credito-pagar.view-model.ts` que já não corresponde 
 - Sem outros desvios — a estrutura dos 3 componentes, o contrato de valor (ISO para datas, `number`
   para dinheiro/inteiro) e a decisão de manter `moeda` "fantasma" no `FormGroup` seguiram exatamente o
   que o `README.md` especificava.
+- **3 findings do CodeRabbit no PR #80, corrigidos nesta sessão (antes do merge):**
+  1. Contagem errada no inventário deste README/RESULT — o texto dizia "11 `<input type=number>` em
+     8 ficheiros"/"12 formulários", mas a própria tabela do README §1 (e o código) já tinham 13
+     ocorrências em 12 ficheiros, 13 formulários no total. Corrigido só na documentação (§1, §3, §4 do
+     README; §1, §4, §5 deste RESULT; índice `docs/changes/features/README.md`) — o código estava
+     certo, só o texto estava desatualizado.
+  2. `diaDoMes`/`mes` em `despesas-recorrentes` (nova-regra e editar-regra) não tinham
+     `Validators.min`/`max` no `FormControl` — o `app-integer-input` só aplica `[min]`/`[max]` ao
+     `<input>` nativo (trava as setas do browser), não valida o Angular form. Digitar `32`/`13`
+     deixava o formulário válido e só o backend rejeitava (400). Adicionado
+     `Validators.min(1)/max(31)` a `diaDoMes` e `Validators.min(1)/max(12)` a `mes` nos dois
+     `.component.ts`.
+  3. `DatePickerComponent.onTriggerKeydown()` abria o calendário por teclado (Enter/Espaço/seta-baixo)
+     sem chamar `onTouched()` — só `toggleMenu()` (clique de rato) chamava. Como os formulários
+     migrados só mostram o erro "obrigatório" quando `touched`, navegação só por teclado podia deixar
+     uma data vazia sem feedback. Adicionado `this.onTouched()` no mesmo ponto onde o menu abre por
+     teclado.
 
 ## 4. Não verificado nesta sessão
 
-- **Submissão real de cada um dos 12 formulários migrados** (valor enviado à API, seleção de data no
+- **Submissão real de cada um dos 13 formulários migrados** (valor enviado à API, seleção de data no
   calendário num browser real, navegação por teclado no calendário) — não disponível nesta sessão,
   sem browser interativo.
 - **Confirmação visual do layout dos pares de datas** (`cartoes-credito` criar/editar/pagar) após o
@@ -98,7 +115,7 @@ desatualizado em `cartoes-credito-pagar.view-model.ts` que já não corresponde 
 - `cd frontend && npm run build` — confirma compilação sem erros (verde, 435.58 kB inicial).
 - `cd frontend && npm test -- --watch=false --browsers=ChromeHeadless` — 8/8 specs (sem cobertura
   direta dos formulários/componentes migrados).
-- Inspeção manual: `cd frontend && npm start`, percorrer os 12 formulários listados no `README.md`
+- Inspeção manual: `cd frontend && npm start`, percorrer os 13 formulários listados no `README.md`
   §1 — testar seleção de data no calendário (incluindo navegação de mês e teclado), submissão do
   valor monetário (confirmar que o `€` aparece e que o payload enviado à API continua com
   `moeda: 'EUR'`), os 2 campos `diaDoMes`/`mes`, o layout dos pares "Início"/"Fim", e o input de
