@@ -170,21 +170,15 @@ export class CartoesCreditoListViewModel {
       console.warn('[CartoesCreditoListViewModel] formatDate - Missing date');
       return '-';
     }
-    try {
-      const date = new Date(isoDate);
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        console.warn('[CartoesCreditoListViewModel] formatDate - Invalid date:', isoDate);
-        return '-';
-      }
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const year = date.getFullYear();
-      return `${day}/${month}/${year}`;
-    } catch (error) {
-      console.error('[CartoesCreditoListViewModel] formatDate - Error formatting date:', isoDate, error);
+    // Parse yyyy-MM-dd directly - never round-trip through Date, which reinterprets the value
+    // in the browser's timezone and can shift the day.
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+    if (!match) {
+      console.warn('[CartoesCreditoListViewModel] formatDate - Invalid date:', isoDate);
       return '-';
     }
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
   }
 
   /**

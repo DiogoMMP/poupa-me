@@ -65,27 +65,29 @@ export class CartoesCreditoPagarViewModel {
    */
   computeDefaultPeriodoISO(cartao: CartoesCreditoModel): { dataInicioISO: string; dataFimISO: string } | null {
     if (!cartao || !cartao.periodo || !cartao.periodo.dataFim) return null;
+    // dataFim is a plain yyyy-MM-dd string; Date parses it as UTC midnight, so all arithmetic below
+    // uses the UTC getters/setters to avoid the browser's timezone offset shifting the day.
     const fecho = new Date(cartao.periodo.dataFim);
     if (isNaN(fecho.getTime())) return null;
 
     // start = day after fecho
     const start = new Date(fecho.getTime());
-    start.setDate(start.getDate() + 1);
+    start.setUTCDate(start.getUTCDate() + 1);
 
     // end = start + 1 month - 1 day
     const end = new Date(start.getTime());
-    const startMonth = end.getMonth();
-    end.setMonth(end.getMonth() + 1);
+    const startMonth = end.getUTCMonth();
+    end.setUTCMonth(end.getUTCMonth() + 1);
     // if adding month rolled over day (e.g., Jan 31 -> Mar 3), adjust by setting to last day of previous month
-    if (end.getMonth() !== ((startMonth + 1) % 12)) {
+    if (end.getUTCMonth() !== ((startMonth + 1) % 12)) {
       // set to last day of the target month
-      end.setDate(0); // day 0 of month -> last day of previous month
+      end.setUTCDate(0); // day 0 of month -> last day of previous month
     }
     // now subtract 1 day to make it end = start + 1 month - 1 day
-    end.setDate(end.getDate() - 1);
+    end.setUTCDate(end.getUTCDate() - 1);
 
     const pad = (n: number) => String(n).padStart(2, '0');
-    const toISODate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const toISODate = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 
     return { dataInicioISO: toISODate(start), dataFimISO: toISODate(end) };
   }
