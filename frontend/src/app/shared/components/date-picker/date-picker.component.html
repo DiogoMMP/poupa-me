@@ -1,0 +1,42 @@
+<div class="app-date-picker" (click)="$event.stopPropagation()">
+  <button #trigger type="button" class="app-date-picker-trigger"
+    [disabled]="disabled()"
+    (click)="toggleMenu($event)"
+    (keydown)="onTriggerKeydown($event)"
+    [attr.aria-expanded]="showMenu()"
+    aria-haspopup="dialog">
+    <span class="app-date-picker-label">
+      <ng-container *ngIf="value() as v; else placeholderLabel">{{ formatDisplay(v) }}</ng-container>
+      <ng-template #placeholderLabel>{{ placeholder }}</ng-template>
+    </span>
+    <app-icon name="Calendar" [size]="16"></app-icon>
+  </button>
+
+  <div class="app-date-picker-panel" role="dialog" *ngIf="showMenu()" (keydown)="onPanelKeydown($event)">
+    <div class="app-date-picker-header">
+      <button type="button" class="app-date-picker-nav" (click)="prevMonth($event)" aria-label="Mês anterior">
+        <app-icon name="ChevronLeft" [size]="14"></app-icon>
+      </button>
+      <span class="app-date-picker-month-label">{{ monthLabel() }}</span>
+      <button type="button" class="app-date-picker-nav" (click)="nextMonth($event)" aria-label="Mês seguinte">
+        <app-icon name="ChevronRight" [size]="14"></app-icon>
+      </button>
+    </div>
+
+    <div class="app-date-picker-weekdays">
+      <span *ngFor="let w of weekdayLabels">{{ w }}</span>
+    </div>
+
+    <div class="app-date-picker-grid" role="grid">
+      <button #dayEl type="button" *ngFor="let cell of days()" role="gridcell"
+        class="app-date-picker-day"
+        [class.muted]="!cell.inMonth"
+        [class.today]="cell.iso === todayIso"
+        [class.selected]="cell.iso === value()"
+        tabindex="-1"
+        (click)="selectDay($event, cell)">
+        {{ cell.day }}
+      </button>
+    </div>
+  </div>
+</div>

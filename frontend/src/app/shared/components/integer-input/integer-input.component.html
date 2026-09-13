@@ -1,0 +1,11 @@
+<input
+  type="number"
+  class="app-integer-input"
+  [value]="value()"
+  [placeholder]="placeholder"
+  [disabled]="disabled()"
+  [min]="min"
+  [max]="max"
+  step="1"
+  (input)="onInput($any($event.target).value)"
+  (blur)="onBlur()">

@@ -313,6 +313,16 @@ textarea::placeholder {
   width: auto !important;
 }
 
+/* O campo de texto do emoji é só de leitura/apresentação — só o .emoji-btn ao lado abre o popup */
+.emoji-input-group input[readonly] {
+  cursor: default;
+  pointer-events: none;
+}
+
+.emoji-input-group input[readonly]:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .form-field .row-controls .emoji-input-group .emoji-btn {
   flex: 0 0 48px !important;
   width: 48px !important;
@@ -335,6 +345,13 @@ textarea::placeholder {
 
 .form-field[formGroupName="periodo"] .row-controls .form-input:last-child {
   margin-left: 0;
+}
+
+/* app-date-picker não tem a classe .form-input (é um componente, não um <input>), mas precisa da
+   mesma divisão de espaço em pares Início/Fim (dentro ou fora de formGroupName="periodo") */
+.form-field .row-controls app-date-picker {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* Selection toggles (visual radios but allow multi-select) used across forms */
