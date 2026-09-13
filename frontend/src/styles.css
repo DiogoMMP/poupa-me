@@ -6,6 +6,14 @@
 @import './styles/_forms.css';
 
 /* === GLOBAL BASELINE & RESET === */
+
+/* padding/border passam a contar dentro de width/height em vez de a somar — evita que um elemento
+   com width:100% + padding transborde do contentor e fique cortado de forma assimétrica por um
+   ascendente com overflow:hidden (bug já repetido nesta app: header e rodapé da sidebar). */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 :root, html, body, app-root {
   height: 100%;
 }
