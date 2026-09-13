@@ -8,6 +8,8 @@ import { CartoesCreditoCriarViewModel } from './cartoes-credito-criar.view-model
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
 import { SelectComponent } from '../../../../shared/components/select/select.component';
 import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
+import { DatePickerComponent } from '../../../../shared/components/date-picker/date-picker.component';
+import { MoneyInputComponent } from '../../../../shared/components/money-input/money-input.component';
 /**
  * Component to create a new credit card. It provides a form where the user can enter the
  * card name and choose an icon, then submit to create a new card record.
@@ -15,7 +17,7 @@ import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.
 @Component({
   selector: 'app-cartao-credito-criar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe, DatePickerComponent, MoneyInputComponent],
   templateUrl: './cartoes-credito-criar.component.html',
   styleUrls: ['./cartoes-credito-criar.component.css'],
   providers: [CartoesCreditoCriarViewModel]

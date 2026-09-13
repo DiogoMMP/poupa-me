@@ -6,6 +6,8 @@ import { DespesasRecorrentesGerarTransacaoViewModel } from './despesas-recorrent
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { DatePickerComponent } from '../../../../shared/components/date-picker/date-picker.component';
+import { MoneyInputComponent } from '../../../../shared/components/money-input/money-input.component';
 /**
  * Component to generate a transaction for a sem-valor recurring expense.
  * Receives the despesa recorrente id from the route, loads the despesa details,
@@ -14,7 +16,7 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 @Component({
   selector: 'app-despesas-recorrentes-gerar-transacao',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, DatePickerComponent, MoneyInputComponent],
   templateUrl: './despesas-recorrentes-gerar-transacao.component.html',
   styleUrls: ['./despesas-recorrentes-gerar-transacao.component.css'],
   providers: [DespesasRecorrentesGerarTransacaoViewModel]

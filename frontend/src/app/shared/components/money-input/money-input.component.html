@@ -1,0 +1,13 @@
+<div class="app-money-input">
+  <input
+    type="number"
+    class="app-money-input-field"
+    [value]="value()"
+    [placeholder]="placeholder"
+    [disabled]="disabled()"
+    [min]="min"
+    [step]="step"
+    (input)="onInput($any($event.target).value)"
+    (blur)="onBlur()">
+  <span class="app-money-input-suffix">€</span>
+</div>

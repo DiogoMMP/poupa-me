@@ -5,10 +5,12 @@ import { RouterModule, ActivatedRoute } from '@angular/router';
 import { DespesasRecorrentesEditarTransacaoViewModel } from './transacoes-editar.view-model';
 
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { DatePickerComponent } from '../../../../shared/components/date-picker/date-picker.component';
+import { MoneyInputComponent } from '../../../../shared/components/money-input/money-input.component';
 @Component({
   selector: 'app-despesas-recorrentes-editar-transacao',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, DatePickerComponent, MoneyInputComponent],
   templateUrl: './transacoes-editar.component.html',
   styleUrls: ['./transacoes-editar.component.css'],
   providers: [DespesasRecorrentesEditarTransacaoViewModel]
