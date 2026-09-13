@@ -5,10 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { UtilizadoresListViewModel } from './utilizadores-listar.view-model';
 
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 @Component({
   selector: 'app-utilizadores-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, IconComponent],
   templateUrl: './utilizadores-listar.component.html',
   styleUrls: ['./utilizadores-listar.component.css'],
   providers: [UtilizadoresListViewModel]

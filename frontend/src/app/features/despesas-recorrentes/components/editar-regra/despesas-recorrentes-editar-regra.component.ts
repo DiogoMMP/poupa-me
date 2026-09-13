@@ -7,10 +7,13 @@ import { Subscription } from 'rxjs';
 import { DespesasRecorrentesEditarRegraViewModel } from './despesas-recorrentes-editar-regra.view-model';
 import { TipoDespesaRecorrente, UpdateDespesaRecorrenteDTO } from '../../dto/despesas-recorrentes.dto';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { SelectComponent, AppSelectOption } from '../../../../shared/components/select/select.component';
+import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
 @Component({
   selector: 'app-despesas-recorrentes-editar-regra',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe],
   templateUrl: './despesas-recorrentes-editar-regra.component.html',
   styleUrls: ['./despesas-recorrentes-editar-regra.component.css'],
   providers: [DespesasRecorrentesEditarRegraViewModel]
@@ -65,6 +68,23 @@ export class DespesasRecorrentesEditarRegraComponent implements OnInit, OnDestro
   get isDespesaAnual(): boolean {
     return this.form.get('tipo')?.value === 'Despesa Anual';
   }
+
+  readonly tipoOptions: AppSelectOption[] = [
+    { value: 'Despesa Semanal', label: 'Despesa Semanal' },
+    { value: 'Despesa Mensal', label: 'Despesa Mensal' },
+    { value: 'Despesa Anual', label: 'Despesa Anual' },
+    { value: 'Poupança', label: 'Poupança' },
+  ];
+
+  readonly diaDaSemanaOptions: AppSelectOption[] = [
+    { value: 1, label: 'Segunda-feira' },
+    { value: 2, label: 'Terça-feira' },
+    { value: 3, label: 'Quarta-feira' },
+    { value: 4, label: 'Quinta-feira' },
+    { value: 5, label: 'Sexta-feira' },
+    { value: 6, label: 'Sábado' },
+    { value: 7, label: 'Domingo' },
+  ];
 
   ngOnInit(): void {
     this.regraId = this.route.snapshot.paramMap.get('id');

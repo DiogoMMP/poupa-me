@@ -31,24 +31,31 @@ button:disabled {
 }
 
 button img,
-button svg {
+button svg:not(.app-icon-svg) {
   width: 18px;
   height: 18px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
-button svg {
+button svg:not(.app-icon-svg) {
   fill: currentColor;
   stroke: currentColor;
 }
 
-button svg path,
-button svg circle,
-button svg rect,
-button svg polygon {
+button svg:not(.app-icon-svg) path,
+button svg:not(.app-icon-svg) circle,
+button svg:not(.app-icon-svg) rect,
+button svg:not(.app-icon-svg) polygon {
   fill: inherit;
   stroke: inherit;
+}
+
+/* app-icon (Dazzle Icons) já define fill/stroke corretos por ícone via currentColor; só precisa
+   de herdar a cor de texto do botão através de `color`, sem os overrides genéricos acima. */
+button app-icon {
+  color: inherit;
+  flex-shrink: 0;
 }
 
 /* Generic inline SVG icon (16×16, viewBox 0 0 24 24) */
@@ -608,7 +615,8 @@ a:hover {
   transition: background 0.12s ease, transform 0.08s ease;
 }
 
-.btn-icon svg { width: 13px; height: 13px; }
+.btn-icon svg:not(.app-icon-svg) { width: 13px; height: 13px; }
+.btn-icon app-icon { color: inherit; }
 .btn-icon:hover { background: rgba(255,255,255,0.04); transform: translateY(-1px); box-shadow: none; }
 
 .btn-edit-small {
@@ -627,8 +635,9 @@ a:hover {
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.btn-edit-small svg { width: 15px !important; height: 15px !important; flex-shrink: 0; fill: currentColor; stroke: currentColor; }
-.btn-edit-small svg path { fill: inherit; stroke: inherit; }
+.btn-edit-small svg:not(.app-icon-svg) { width: 15px !important; height: 15px !important; flex-shrink: 0; fill: currentColor; stroke: currentColor; }
+.btn-edit-small svg:not(.app-icon-svg) path { fill: inherit; stroke: inherit; }
+.btn-edit-small app-icon { color: inherit; }
 .btn-edit-small:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(97,237,214,0.35); }
 
 .btn-delete-small {
@@ -646,8 +655,9 @@ a:hover {
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.btn-delete-small svg { width: 15px !important; height: 15px !important; flex-shrink: 0; fill: currentColor !important; stroke: currentColor !important; }
-.btn-delete-small svg path { fill: inherit !important; stroke: inherit !important; }
+.btn-delete-small svg:not(.app-icon-svg) { width: 15px !important; height: 15px !important; flex-shrink: 0; fill: currentColor !important; stroke: currentColor !important; }
+.btn-delete-small svg:not(.app-icon-svg) path { fill: inherit !important; stroke: inherit !important; }
+.btn-delete-small app-icon { color: inherit; }
 .btn-delete-small:hover:not(:disabled) { background: #dc2626; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(220,38,38,0.35); }
 
 .btn-concluir-small {
@@ -665,8 +675,9 @@ a:hover {
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.btn-concluir-small svg { width: 15px !important; height: 15px !important; flex-shrink: 0; fill: currentColor !important; stroke: currentColor !important; }
-.btn-concluir-small svg path { fill: inherit !important; stroke: inherit !important; }
+.btn-concluir-small svg:not(.app-icon-svg) { width: 15px !important; height: 15px !important; flex-shrink: 0; fill: currentColor !important; stroke: currentColor !important; }
+.btn-concluir-small svg:not(.app-icon-svg) path { fill: inherit !important; stroke: inherit !important; }
+.btn-concluir-small app-icon { color: inherit; }
 .btn-concluir-small:hover:not(:disabled) { background: #22c55e; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(34,197,94,0.35); }
 
 .transacao-actions {

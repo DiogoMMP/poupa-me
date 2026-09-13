@@ -1,10 +1,22 @@
 <div class="loading-coin-container" [ngClass]="'loading-coin--' + size">
-  <div class="coin-wrapper">
-    <div class="coin">
-      <div class="coin-face coin-front">€</div>
-      <div class="coin-face coin-back">€</div>
-    </div>
-    <div class="coin-shadow"></div>
-  </div>
+  <svg
+    [attr.width]="iconSize"
+    [attr.height]="iconSize"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    class="loading-coin-icon"
+    aria-hidden="true">
+    <line class="loading-ray" style="animation-delay: 0ms"    x1="12" y1="3" x2="12" y2="6"/>
+    <line class="loading-ray" style="animation-delay: 125ms"  x1="18.3652" y1="5.63477" x2="16.2441" y2="7.75586"/>
+    <line class="loading-ray" style="animation-delay: 250ms"  x1="21" y1="12" x2="18" y2="12"/>
+    <line class="loading-ray" style="animation-delay: 375ms"  x1="16.2422" y1="16.2422" x2="18.3633" y2="18.3633"/>
+    <line class="loading-ray" style="animation-delay: 500ms"  x1="12" y1="18" x2="12" y2="21"/>
+    <line class="loading-ray" style="animation-delay: 625ms"  x1="7.75781" y1="16.2422" x2="5.63477" y2="18.3652"/>
+    <line class="loading-ray" style="animation-delay: 750ms"  x1="6" y1="12" x2="3" y2="12"/>
+    <line class="loading-ray" style="animation-delay: 875ms"  x1="5.63672" y1="5.63672" x2="7.75977" y2="7.75977"/>
+  </svg>
   <p *ngIf="message" class="loading-message">{{ message }}</p>
 </div>

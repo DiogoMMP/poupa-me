@@ -8,13 +8,15 @@ import { FormsModule } from '@angular/forms';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { map } from 'rxjs/operators';
 
+import { IconComponent } from '../../../shared/components/icon/icon.component';
+import { SelectComponent, AppSelectOption } from '../../../shared/components/select/select.component';
 /**
  * Estatisticas component.
  */
 @Component({
   selector: 'app-estatisticas',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule, FormsModule, NgxChartsModule],
+  imports: [CommonModule, RouterModule, FormsModule, NgxChartsModule, IconComponent, SelectComponent],
   templateUrl: 'estatisticas.component.html',
   styleUrls: ['estatisticas.component.css'],
   host: {class: 'page-estatisticas'},
@@ -74,6 +76,20 @@ export class EstatisticasComponent implements OnInit {
   ];
 
   years: number[] = [];
+
+  /**
+   * Opções do `<app-select>` do mês, com "Mês Atual" como opção vazia real.
+   */
+  get monthOptions(): AppSelectOption[] {
+    return [{ value: '', label: 'Mês Atual' }, ...this.months];
+  }
+
+  /**
+   * Opções do `<app-select>` do ano, com "Ano Atual" como opção vazia real.
+   */
+  get yearOptions(): AppSelectOption[] {
+    return [{ value: '', label: 'Ano Atual' }, ...this.years.map(y => ({ value: y, label: String(y) }))];
+  }
 
 
   ngOnInit(): void {

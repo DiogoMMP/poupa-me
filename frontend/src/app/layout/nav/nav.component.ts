@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { MenuService } from '../../services/menu.service';
 import { AuthService, Role } from '../../features/auth/services/auth.service';
+import { IconComponent } from '../../shared/components/icon/icon.component';
 
 /**
  * Navigation component displaying the menu based on user role.
@@ -10,7 +11,7 @@ import { AuthService, Role } from '../../features/auth/services/auth.service';
 @Component({
   selector: 'app-nav',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, IconComponent],
   templateUrl: './nav.component.html',
   styleUrls: ['./nav.component.css'],
   host: { class: 'layout-nav' }

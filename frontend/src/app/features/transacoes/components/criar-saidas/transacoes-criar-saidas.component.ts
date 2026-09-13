@@ -5,10 +5,13 @@ import { RouterModule } from '@angular/router';
 import { TransacoesCriarSaidasViewModel } from './transacoes-criar-saidas.view-model';
 import { IaCategorizacaoService } from '../../../ia-categorizacao/ia-categorizacao.service';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { SelectComponent } from '../../../../shared/components/select/select.component';
+import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
 @Component({
   selector: 'app-transacoes-criar-saidas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent, SelectComponent, ToSelectOptionsPipe],
   templateUrl: './transacoes-criar-saidas.component.html',
   styleUrls: ['./transacoes-criar-saidas.component.css'],
   providers: [TransacoesCriarSaidasViewModel]

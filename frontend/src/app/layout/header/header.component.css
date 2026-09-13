@@ -1,4 +1,5 @@
 .app-header {
+  box-sizing: border-box;
   position: relative;
   width: 100%;
   min-height: 120px; /* increased to accommodate banco selector */
@@ -15,10 +16,10 @@
 .logo-link {
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* align logo to the left */
+  justify-content: var(--rail-justify, flex-start); /* centrado quando recolhida, à esquerda quando expandida */
   text-decoration: none;
   width: 100%;
-  padding-left: 0.5rem;
+  box-sizing: border-box;
 }
 
 .logo-link h1 {
@@ -26,23 +27,48 @@
   font-size: 20px;
   color: #e2e8f0;
   font-family: 'Protest Guerrilla', 'Segoe UI', Tahoma, Arial, sans-serif;
+  white-space: nowrap;
+  display: var(--label-display, inline-block);
 }
 
 .logo {
-  width: 20%;
-  max-width: 140px; /* smaller max width so it sits flush with sidebar */
-  height: auto;
+  width: 36px; /* tamanho fixo: continua visível quando a sidebar está recolhida a 68px */
+  height: 36px;
+  flex-shrink: 0;
   display: block;
   object-fit: contain;
 }
 
-/* Banco selector styles */
+/* Banco selector styles — esconde-se por completo quando a sidebar está recolhida (ver
+   app-layout.component.css: --label-display) */
 .banco-selector {
-  width: 95%;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  display: var(--label-display, block);
 }
 
-.select-banco {
-  width: 95%;
+.banco-empty-link {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--brand-text, #e2e8f0);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.banco-empty-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--brand-accent);
 }
 
 @media (max-width: 768px) {
@@ -54,14 +80,6 @@
 
   .logo-link {
     justify-content: center; /* center logo on mobile */
-    padding-left: 0; /* remove left padding on mobile */
   }
 
-  .banco-selector {
-    width: 98%;
-  }
-
-  .select-banco {
-    width: 98%;
-  }
 }

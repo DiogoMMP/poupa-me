@@ -4,13 +4,14 @@ import {Router, RouterModule} from '@angular/router';
 import {AuthService} from '../../features/auth/services/auth.service';
 import {NotificationService} from '../../services/notification.service';
 import {environment} from '../../../environments/environment';
+import { IconComponent } from '../../shared/components/icon/icon.component';
 /**
  * Footer component displaying application footer information.
  */
 @Component({
   selector: 'app-footer',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, IconComponent],
   templateUrl: 'footer.component.html',
   styleUrls: ['footer.component.css'],
   host: { class: 'layout-footer' }

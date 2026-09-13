@@ -5,6 +5,7 @@ import { RouterModule, ActivatedRoute } from '@angular/router';
 import { DespesasRecorrentesGerarTransacaoViewModel } from './despesas-recorrentes-gerar-transacao.view-model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 /**
  * Component to generate a transaction for a sem-valor recurring expense.
  * Receives the despesa recorrente id from the route, loads the despesa details,
@@ -13,7 +14,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-despesas-recorrentes-gerar-transacao',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
   templateUrl: './despesas-recorrentes-gerar-transacao.component.html',
   styleUrls: ['./despesas-recorrentes-gerar-transacao.component.css'],
   providers: [DespesasRecorrentesGerarTransacaoViewModel]

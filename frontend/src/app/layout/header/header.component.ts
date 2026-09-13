@@ -1,18 +1,22 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../services/notification.service';
 import { BancosService } from '../../features/bancos/services/bancos.service';
 import { SelectedBancoService } from '../../services/selected-banco.service';
 import { BancosDTO } from '../../features/bancos/dto/bancos.dto';
+import { IconComponent } from '../../shared/components/icon/icon.component';
+import { SelectComponent, AppSelectOption } from '../../shared/components/select/select.component';
 
 /**
- * Header component displaying the application header with user info and logout functionality.
+ * Header component displaying the application header with user info, logout functionality and the
+ * dropdown (`app-select`) to switch the globally active banco.
  */
 @Component({
   selector: 'app-header',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule, IconComponent, SelectComponent],
   templateUrl: 'header.component.html',
   styleUrls: ['header.component.css'],
   host: { class: 'layout-header' }
@@ -28,6 +32,21 @@ export class HeaderComponent implements OnInit {
 
   bancos = signal<BancosDTO[]>([]);
   selectedBancoId = signal<string | null>(null);
+  isLoading = signal(true);
+
+  /**
+   * Bancos ordenados alfabeticamente pelo nome (pt-PT), para a lista suspensa.
+   */
+  readonly sortedBancos = computed(() =>
+    [...this.bancos()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt'))
+  );
+
+  /**
+   * Opções do `<app-select>`, derivadas dos bancos ordenados.
+   */
+  readonly bancoOptions = computed<AppSelectOption[]>(() =>
+    this.sortedBancos().map(b => ({ value: b.id, label: `${b.icon} ${b.nome}` }))
+  );
 
   ngOnInit(): void {
     // Initialize with current value from service (may be loaded from localStorage)
@@ -42,11 +61,15 @@ export class HeaderComponent implements OnInit {
   }
 
   private loadBancos(): void {
+    this.isLoading.set(true);
     this.bancosService.getAll().subscribe({
       next: (bancos) => {
         this.bancos.set(bancos);
+        this.isLoading.set(false);
       },
       error: (err: any) => {
+        this.isLoading.set(false);
+
         // If not authenticated, skip noisy logging (user may be on public pages)
         if (err?.status === 401) {
           // optional: keep empty state
@@ -60,8 +83,7 @@ export class HeaderComponent implements OnInit {
     });
   }
 
-  onBancoChange(bancoId: string): void {
-    const id = bancoId || null;
-    this.selectedBancoService.selectBanco(id);
+  onBancoChange(bancoId: string | null): void {
+    this.selectedBancoService.selectBanco(bancoId || null);
   }
 }

@@ -1,9 +1,24 @@
-import { Component, Input, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, inject, signal, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { ICON_NAMES, ICON_REGISTRY, IconName } from './icon-registry';
+import type { IconName } from './icon-names';
 
-export { ICON_NAMES, ICON_REGISTRY, type IconName } from './icon-registry';
+export { ICON_NAMES } from './icon-names';
+export type { IconName } from './icon-names';
+
+/**
+ * O mapa nome->SVG (`ICON_REGISTRY`) tem ~2.3MB (1.763 ícones). É carregado com `import()` dinâmico,
+ * em vez de import estático, para que não entre no bundle inicial (eager) da app só por causa de
+ * `NavComponent`/`FooterComponent` usarem `<app-icon>` fora de qualquer rota lazy — fica antes num
+ * chunk assíncrono próprio, pedido uma única vez e partilhado por todas as instâncias.
+ */
+let registryPromise: Promise<Record<string, string>> | null = null;
+function loadIconRegistry(): Promise<Record<string, string>> {
+  if (!registryPromise) {
+    registryPromise = import('./icon-registry').then(m => m.ICON_REGISTRY);
+  }
+  return registryPromise;
+}
 
 /**
  * Componente de ícone reutilizável em SVG que suporta todos os 1.763 ícones da biblioteca Dazzle Icons.
@@ -22,7 +37,7 @@ export { ICON_NAMES, ICON_REGISTRY, type IconName } from './icon-registry';
   styleUrls: ['./icon.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class IconComponent {
+export class IconComponent implements OnChanges {
   private sanitizer = inject(DomSanitizer);
 
   /**
@@ -41,6 +56,8 @@ export class IconComponent {
    */
   @Input() color: string = 'currentColor';
 
+  private readonly svgHtml = signal<SafeHtml>(this.sanitizer.bypassSecurityTrustHtml(''));
+
   /**
    * Retorna o tamanho formatado em string, garantindo sufixo `px` quando é número.
    */
@@ -49,10 +66,19 @@ export class IconComponent {
   }
 
   /**
-   * Retorna o conteúdo SVG interno seguro e dinâmico associado ao ícone solicitado.
+   * Retorna o conteúdo SVG interno seguro, atualizado assim que o registo de ícones (carregado de
+   * forma assíncrona) resolve.
    */
   get svgInnerHtml(): SafeHtml {
-    const raw = ICON_REGISTRY[String(this.name)] || ICON_REGISTRY['Info'] || '';
-    return this.sanitizer.bypassSecurityTrustHtml(raw);
+    return this.svgHtml();
+  }
+
+  ngOnChanges(): void {
+    const requestedName = this.name;
+    loadIconRegistry().then(registry => {
+      if (this.name !== requestedName) return; // `name` já mudou entretanto; ignora resposta obsoleta
+      const raw = registry[String(requestedName)] || registry['Info'] || '';
+      this.svgHtml.set(this.sanitizer.bypassSecurityTrustHtml(raw));
+    });
   }
 }

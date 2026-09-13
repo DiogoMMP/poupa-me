@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { DespesasRecorrentesListarRegrasViewModel } from './despesas-recorrentes-listar-regras.view-model';
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 @Component({
   selector: 'app-despesas-recorrentes-listar-regras',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, IconComponent],
   templateUrl: './despesas-recorrentes-listar-regras.component.html',
   styleUrls: ['./despesas-recorrentes-listar-regras.component.css'],
   providers: [DespesasRecorrentesListarRegrasViewModel]

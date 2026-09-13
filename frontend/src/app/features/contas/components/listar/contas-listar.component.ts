@@ -6,10 +6,11 @@ import { ContasListViewModel } from './contas-listar.view-model';
 import { formatEntityReference as formatEntityReferenceUtil } from '../../../../shared/utils/entity-reference.util';
 
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 @Component({
   selector: 'app-contas-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, IconComponent],
   templateUrl: './contas-listar.component.html',
   styleUrls: ['./contas-listar.component.css'],
   providers: [ContasListViewModel]

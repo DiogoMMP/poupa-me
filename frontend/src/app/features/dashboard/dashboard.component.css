@@ -248,8 +248,6 @@
 .saldo-icon,
 .entradas-icon,
 .saidas-icon {
-  width: 48px;
-  height: 48px;
   flex-shrink: 0;
 }
 
@@ -260,9 +258,9 @@
   margin: 0 auto;
 }
 
-.saldo-icon path   { stroke: #61edd6; }
-.entradas-icon path { stroke: #4ade80; }
-.saidas-icon  path  { stroke: #ff6b6b; }
+.saldo-icon    { color: #61edd6; }
+.entradas-icon { color: #4ade80; }
+.saidas-icon   { color: #ff6b6b; }
 
 /* Resumo Financeiro */
 .resumo-financeiro {

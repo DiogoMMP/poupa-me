@@ -5,10 +5,11 @@ import { RouterModule } from '@angular/router';
 import { PerfilViewModel } from './perfil.view-model';
 import { AtualizarPerfilDTO } from '../dto/perfil.dto';
 
+import { IconComponent } from '../../../shared/components/icon/icon.component';
 @Component({
   selector: 'app-perfil',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, IconComponent],
   templateUrl: './perfil.component.html',
   styleUrls: ['./perfil.component.css'],
   providers: [PerfilViewModel]

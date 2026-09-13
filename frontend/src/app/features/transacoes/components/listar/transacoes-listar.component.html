@@ -21,9 +21,7 @@
         <button class="filter-toggle-btn"
                 (click)="showContaFilters = !showContaFilters"
                 [class.active]="showContaFilters">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M3 7H21M6 12H18M10 17H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+          <app-icon name="Filter" [size]="16"></app-icon>
           Filtros
           <span class="filter-badge" *ngIf="hasActiveContaFilters()">●</span>
         </button>
@@ -34,24 +32,18 @@
         <div class="filter-row">
           <div class="filter-field">
             <label class="filter-label">Conta</label>
-            <select [(ngModel)]="contaFilterForm.contaId">
-              <option value="">Todas as contas</option>
-              <option *ngFor="let c of vm.contas$ | async" [value]="c.id">{{ c.nome }}</option>
-            </select>
+            <app-select [(ngModel)]="contaFilterForm.contaId"
+              [options]="(vm.contas$ | async | toSelectOptions:false:'Todas')"></app-select>
           </div>
           <div class="filter-field">
             <label class="filter-label">Categoria</label>
-            <select [(ngModel)]="contaFilterForm.categoriaId">
-              <option value="">Todas as categorias</option>
-              <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">{{ cat.icon }} {{ cat.nome }}</option>
-            </select>
+            <app-select [(ngModel)]="contaFilterForm.categoriaId"
+              [options]="(vm.categorias$ | async | toSelectOptions:true:'Todas')"></app-select>
           </div>
           <div class="filter-field">
             <label class="filter-label">Período</label>
-            <select [(ngModel)]="contaFilterForm.period">
-              <option value="">Qualquer período</option>
-              <option *ngFor="let p of vm.PERIODS" [value]="p">{{ p }}</option>
-            </select>
+            <app-select [(ngModel)]="contaFilterForm.period"
+              [options]="(vm.PERIODS | toSelectOptions:true:'Qualquer período')"></app-select>
           </div>
         </div>
         <div class="filter-actions">
@@ -93,9 +85,7 @@
         <button class="filter-toggle-btn"
                 (click)="showCartaoFilters = !showCartaoFilters"
                 [class.active]="showCartaoFilters">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M3 7H21M6 12H18M10 17H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+          <app-icon name="Filter" [size]="16"></app-icon>
           Filtros
           <span class="filter-badge" *ngIf="hasActiveCartaoFilters()">●</span>
         </button>
@@ -106,31 +96,23 @@
         <div class="filter-row">
           <div class="filter-field">
             <label class="filter-label">Cartão</label>
-            <select [(ngModel)]="cartaoFilterForm.cartaoId">
-              <option value="">Todos os cartões</option>
-              <option *ngFor="let c of vm.cartoes$ | async" [value]="c.id">{{ c.nome }}</option>
-            </select>
+            <app-select [(ngModel)]="cartaoFilterForm.cartaoId"
+              [options]="(vm.cartoes$ | async | toSelectOptions:false:'Todos')"></app-select>
           </div>
           <div class="filter-field">
             <label class="filter-label">Categoria</label>
-            <select [(ngModel)]="cartaoFilterForm.categoriaId">
-              <option value="">Todas as categorias</option>
-              <option *ngFor="let cat of vm.categorias$ | async" [value]="cat.id">{{ cat.icon }} {{ cat.nome }}</option>
-            </select>
+            <app-select [(ngModel)]="cartaoFilterForm.categoriaId"
+              [options]="(vm.categorias$ | async | toSelectOptions:true:'Todas')"></app-select>
           </div>
           <div class="filter-field">
             <label class="filter-label">Estado</label>
-            <select [(ngModel)]="cartaoFilterForm.status">
-              <option value="">Todos os estados</option>
-              <option *ngFor="let s of vm.STATUSES" [value]="s">{{ s }}</option>
-            </select>
+            <app-select [(ngModel)]="cartaoFilterForm.status"
+              [options]="(vm.STATUSES | toSelectOptions:true:'Todos')"></app-select>
           </div>
           <div class="filter-field">
             <label class="filter-label">Período</label>
-            <select [(ngModel)]="cartaoFilterForm.period">
-              <option value="">Qualquer período</option>
-              <option *ngFor="let p of vm.PERIODS" [value]="p">{{ p }}</option>
-            </select>
+            <app-select [(ngModel)]="cartaoFilterForm.period"
+              [options]="(vm.PERIODS | toSelectOptions:true:'Qualquer período')"></app-select>
           </div>
         </div>
         <div class="filter-actions">

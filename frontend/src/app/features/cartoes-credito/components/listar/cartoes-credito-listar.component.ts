@@ -5,10 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { CartoesCreditoListViewModel } from './cartoes-credito-listar.view-model';
 
 
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 @Component({
   selector: 'app-cartao-credito-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, IconComponent],
   templateUrl: './cartoes-credito-listar.component.html',
   styleUrls: ['./cartoes-credito-listar.component.css'],
   providers: [CartoesCreditoListViewModel]
