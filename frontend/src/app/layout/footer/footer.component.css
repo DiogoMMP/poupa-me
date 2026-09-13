@@ -11,6 +11,7 @@
 }
 
 .app-footer {
+  box-sizing: border-box;
   width: 100%;
   background: transparent;
   text-align: center;
@@ -26,6 +27,13 @@
   gap: 0.5rem;
   align-items: center;
   width: 100%;
+}
+
+/* Quando a sidebar está recolhida, só o ícone do utilizador fica visível (como os ícones do
+   menu) — nome e copyright escondem-se (ver app-layout.component.css: --label-display) */
+.user-name,
+.copyright {
+  display: var(--label-display, inline-block);
 }
 
 .footer-links {
@@ -46,6 +54,7 @@ small {
 
 /* Login / user area */
 .login_flags {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -73,7 +82,6 @@ small {
 /* Style login/logout buttons like nav links */
 .login_flags .login-link,
 .login_flags .logout-btn {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
@@ -88,6 +96,18 @@ small {
   cursor: pointer;
   font-family: 'Macondo', 'Lavishly Yours', Georgia, serif;
   font-size: 13px;
+}
+
+/* O ícone do utilizador fica sempre visível; "Sair"/"Entrar" escondem-se quando a sidebar está
+   recolhida (mais específico que a regra partilhada acima, para vencer por especificidade CSS) */
+.login_flags .login-link.user,
+.login_flags .logout-btn.user {
+  display: inline-flex;
+}
+
+.login_flags .login-link:not(.user),
+.login_flags .logout-btn:not(.user) {
+  display: var(--label-flex-display, inline-flex);
 }
 
 /* Hover effect matching nav links */
