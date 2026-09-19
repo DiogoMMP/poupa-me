@@ -481,6 +481,34 @@ export default class TransacaoService implements ITransacaoService {
                 categoria = cat;
             }
 
+            let conta = existing.conta;
+            if (updateDTO.contaId) {
+                const c = await this.contaRepo.findById(updateDTO.contaId);
+                if (!c) return Result.fail<ITransacaoDTO>('Target Account not found');
+                conta = c;
+            }
+
+            let cartaoCredito = existing.cartaoCredito;
+            if (updateDTO.cartaoCreditoId) {
+                const cc = await this.cartaoCreditoRepo.findById(updateDTO.cartaoCreditoId);
+                if (!cc) return Result.fail<ITransacaoDTO>('Target Credit Card not found');
+                cartaoCredito = cc;
+            }
+
+            let contaDestino = existing.contaDestino;
+            if (updateDTO.contaDestinoId) {
+                const cd = await this.contaRepo.findById(updateDTO.contaDestinoId);
+                if (!cd) return Result.fail<ITransacaoDTO>('Destination Account not found');
+                contaDestino = cd;
+            }
+
+            let contaPoupanca = existing.contaPoupanca;
+            if (updateDTO.contaPoupancaId) {
+                const cp = await this.contaRepo.findById(updateDTO.contaPoupancaId);
+                if (!cp) return Result.fail<ITransacaoDTO>('Savings Account not found');
+                contaPoupanca = cp;
+            }
+
             const updatedOrError = Transacao.create({
                 descricao,
                 data,
@@ -488,10 +516,10 @@ export default class TransacaoService implements ITransacaoService {
                 tipo: tipoVO,
                 categoria,
                 status,
-                conta: existing.conta,
-                cartaoCredito: existing.cartaoCredito,
-                contaDestino: existing.contaDestino,
-                contaPoupanca: existing.contaPoupanca,
+                conta,
+                cartaoCredito,
+                contaDestino,
+                contaPoupanca,
                 isPagamentoCartao: existing.isPagamentoCartao
             }, existing.id);
 
