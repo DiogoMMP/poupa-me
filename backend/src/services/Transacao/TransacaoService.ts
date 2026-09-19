@@ -438,36 +438,10 @@ export default class TransacaoService implements ITransacaoService {
             const existing = await this.transacaoRepo.findById(id);
             if (!existing) return Result.fail<ITransacaoDTO>(`Transaction not found: ${id}`);
 
-            const tipo = existing.tipo.value;
-
-            // STEP 1: Revert the impact of the OLD transaction
-            let revertResult: Result<void>;
-            switch (tipo) {
-                case 'Entrada':
-                case 'Saída':
-                    revertResult = await this.revertEntradaSaidaImpact(existing);
-                    break;
-                case 'Crédito':
-                    revertResult = await this.revertCreditoImpact(existing);
-                    break;
-                case 'Reembolso':
-                    revertResult = await this.revertReembolsoImpact(existing);
-                    break;
-                case 'Despesa Mensal':
-                case 'Despesa Semanal':
-                case 'Despesa Anual':
-                    revertResult = await this.transacaoDespesasRecorrentesService.revertDespesaRecorrenteImpact(existing);
-                    break;
-                case 'Poupança':
-                    revertResult = await this.transacaoDespesasRecorrentesService.revertPoupancaImpact(existing);
-                    break;
-                default:
-                    return Result.fail<ITransacaoDTO>(`Unknown transaction type: ${tipo}`);
-            }
-
-            if (revertResult.isFailure) return Result.fail<ITransacaoDTO>(String(revertResult.error));
-
-            // STEP 2: Build updated transaction with new values
+            // STEP 1: Resolve and validate every new value BEFORE touching any balance. Any
+            // invalid reference (categoria/conta/cartão/etc.) must fail here, before STEP 2
+            // reverts the old transaction's impact — otherwise a failure after the revert would
+            // leave the old balance change persisted while the old transaction stays untouched.
             const descricao = updateDTO.descricao ? Descricao.create(updateDTO.descricao).getValue() : existing.descricao;
             const valor = updateDTO.valor ? Dinheiro.create(updateDTO.valor.valor, updateDTO.valor.moeda).getValue() : existing.valor;
             const data = updateDTO.data ? Data.createFromParts(updateDTO.data.dia, updateDTO.data.mes, updateDTO.data.ano).getValue() : existing.data;
@@ -528,6 +502,34 @@ export default class TransacaoService implements ITransacaoService {
 
             (updatedTransacao as unknown as Record<string, unknown>)['userDomainId'] =
                 (existing as unknown as Record<string, unknown>)['userDomainId'];
+
+            // STEP 2: Revert the impact of the OLD transaction
+            const tipo = existing.tipo.value;
+            let revertResult: Result<void>;
+            switch (tipo) {
+                case 'Entrada':
+                case 'Saída':
+                    revertResult = await this.revertEntradaSaidaImpact(existing);
+                    break;
+                case 'Crédito':
+                    revertResult = await this.revertCreditoImpact(existing);
+                    break;
+                case 'Reembolso':
+                    revertResult = await this.revertReembolsoImpact(existing);
+                    break;
+                case 'Despesa Mensal':
+                case 'Despesa Semanal':
+                case 'Despesa Anual':
+                    revertResult = await this.transacaoDespesasRecorrentesService.revertDespesaRecorrenteImpact(existing);
+                    break;
+                case 'Poupança':
+                    revertResult = await this.transacaoDespesasRecorrentesService.revertPoupancaImpact(existing);
+                    break;
+                default:
+                    return Result.fail<ITransacaoDTO>(`Unknown transaction type: ${tipo}`);
+            }
+
+            if (revertResult.isFailure) return Result.fail<ITransacaoDTO>(String(revertResult.error));
 
             // STEP 3: Apply the impact of the NEW transaction
             const newTipo = updatedTransacao.tipo.value;

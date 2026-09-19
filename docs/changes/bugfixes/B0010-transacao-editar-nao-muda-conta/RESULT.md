@@ -7,8 +7,8 @@
 | **Estado** | Implementado |
 | **Build** | `cd backend && npm run build` — sem erros (sem baseline de erros pré-existente) |
 | **Lint** | `cd backend && npm run lint` — 51 erros/7 avisos pré-existentes, nenhum nos ficheiros tocados (`TransacaoService.ts`, `TransacaoService.spec.ts`) |
-| **Testes** | `cd backend && npm test` — 19/19 sucesso (era 17/17 antes; +2 testes novos, ambos confirmados a falhar contra o código antigo antes da correção) |
-| **Commits** | Ainda não commitado nesta sessão (ver próximo passo) |
+| **Testes** | `cd backend && npm test` — 20/20 sucesso (era 17/17 antes do B0010; +3 testes novos no total, todos confirmados a falhar contra o código correspondente antes de cada correção) |
+| **Commits** | `83555c0` (correção original) + 1 commit adicional pós-revisão (ver §7) |
 
 ## 1. O que foi fechado
 
@@ -62,7 +62,31 @@ Nenhum. Implementação, mensagens de erro e testes seguiram exatamente o README
 
 | Ficheiro | Tipo |
 | :--- | :--- |
-| `backend/src/services/Transacao/TransacaoService.ts` | alterado |
-| `backend/src/services/Transacao/tests/TransacaoService.spec.ts` | alterado (+2 testes, +4 helpers de teste) |
+| `backend/src/services/Transacao/TransacaoService.ts` | alterado (correção original + correção adicional do §7) |
+| `backend/src/services/Transacao/tests/TransacaoService.spec.ts` | alterado (+3 testes, +4 helpers de teste) |
 | `docs/changes/bugfixes/B0010-transacao-editar-nao-muda-conta/README.md` | novo |
-| `docs/changes/bugfixes/B0010-transacao-editar-nao-muda-conta/RESULT.md` | novo |
+| `docs/changes/bugfixes/B0010-transacao-editar-nao-muda-conta/RESULT.md` | novo, atualizado no §7 |
+
+## 7. Correção adicional (revisão de código, PR #85)
+
+O CodeRabbit apontou, no comentário à linha `if (!c) return Result.fail<ITransacaoDTO>('Target
+Account not found');`, que `updateTransacao` reverte o impacto da transação **antiga** (STEP 1
+original) e **persiste** essa reversão (via `contaRepo.update`/`cartaoCreditoRepo.update` dentro de
+`revertEntradaSaidaImpact`/`revertCreditoImpact`/etc.) **antes** de validar se os novos ids do
+`updateDTO` (conta, cartão, contaDestino, contaPoupanca — e também `categoriaId`, que já tinha este
+problema antes deste bugfix) realmente existem. Se um desses ids fosse inválido, a função devolvia
+`Result.fail` e saía — mas a transação original nunca era atualizada (`transacaoRepo.update` só corre
+no fim), deixando o saldo da conta antiga já alterado enquanto a transação continuava a apontar para
+essa mesma conta: um `id` de conta inválido no pedido de update deixava a conta com o saldo
+incorreto de forma permanente.
+
+**Correção:** o método foi reordenado — toda a resolução/validação dos novos valores (categoria,
+conta, cartão, contaDestino, contaPoupanca, e a construção de `Transacao.create`) passou a acontecer
+**antes** de reverter o impacto da transação antiga. Só depois de existir uma `updatedTransacao`
+válida é que se reverte o impacto antigo (agora STEP 2) e se aplica o novo (STEP 3); se qualquer
+validação falhar, nenhuma conta/cartão chega a ser tocado.
+
+Acrescentado o teste `'should not touch any balance when the new contaId is invalid, since
+validation must happen before reverting the old impact'`, confirmado a falhar contra o código
+anterior (o saldo da conta antiga era efetivamente alterado — 100 → 120 — antes da falha) e a passar
+depois da correção.

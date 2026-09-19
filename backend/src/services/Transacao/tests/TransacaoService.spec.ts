@@ -256,6 +256,25 @@ describe('TransacaoService — updateTransacao aplica novas associações (issue
     expect(savedTransacao.conta?.id.toString()).toBe(contaB.id.toString());
   });
 
+  it('should not touch any balance when the new contaId is invalid, since validation must happen before reverting the old impact', async () => {
+    const contaA = buildConta('CNT00000000001', 'Conta A', 100);
+    const existing = buildSaidaTransacao('TRX00000000003', contaA);
+
+    transacaoRepo.findById.mockResolvedValue(existing);
+    // contaA (the transaction's own account) resolves fine — only the new, invalid id fails —
+    // so a false pass can't be caused by the OLD account lookup failing instead.
+    contaRepo.findById.mockImplementation(async (queriedId: string) => {
+      if (queriedId === contaA.id.toString()) return contaA;
+      return null;
+    });
+
+    const result = await service.updateTransacao(existing.id.toString(), { contaId: 'CNT00000000099' });
+
+    expect(result.isFailure).toBe(true);
+    expect(contaRepo.update).not.toHaveBeenCalled();
+    expect(transacaoRepo.update).not.toHaveBeenCalled();
+  });
+
   it('should move the transaction to the new cartão de crédito selected in the update, not the old one', async () => {
     const contaPagamento = buildConta('CNT00000000009', 'Conta Pagamento', 200);
     const cartaoA = buildCartaoComId('CRT00000000001', 'CNT00000000009');
