@@ -438,9 +438,73 @@ export default class TransacaoService implements ITransacaoService {
             const existing = await this.transacaoRepo.findById(id);
             if (!existing) return Result.fail<ITransacaoDTO>(`Transaction not found: ${id}`);
 
-            const tipo = existing.tipo.value;
+            // STEP 1: Resolve and validate every new value BEFORE touching any balance. Any
+            // invalid reference (categoria/conta/cartão/etc.) must fail here, before STEP 2
+            // reverts the old transaction's impact — otherwise a failure after the revert would
+            // leave the old balance change persisted while the old transaction stays untouched.
+            const descricao = updateDTO.descricao ? Descricao.create(updateDTO.descricao).getValue() : existing.descricao;
+            const valor = updateDTO.valor ? Dinheiro.create(updateDTO.valor.valor, updateDTO.valor.moeda).getValue() : existing.valor;
+            const data = updateDTO.data ? Data.createFromParts(updateDTO.data.dia, updateDTO.data.mes, updateDTO.data.ano).getValue() : existing.data;
+            const status = updateDTO.status ? Status.create(updateDTO.status).getValue() : existing.status;
+            const tipoVO = updateDTO.tipo ? Tipo.create(updateDTO.tipo).getValue() : existing.tipo;
 
-            // STEP 1: Revert the impact of the OLD transaction
+            let categoria = existing.categoria;
+            if (updateDTO.categoriaId) {
+                const cat = await this.categoriaRepo.findById(updateDTO.categoriaId);
+                if (!cat) return Result.fail<ITransacaoDTO>('Category not found');
+                categoria = cat;
+            }
+
+            let conta = existing.conta;
+            if (updateDTO.contaId) {
+                const c = await this.contaRepo.findById(updateDTO.contaId);
+                if (!c) return Result.fail<ITransacaoDTO>('Target Account not found');
+                conta = c;
+            }
+
+            let cartaoCredito = existing.cartaoCredito;
+            if (updateDTO.cartaoCreditoId) {
+                const cc = await this.cartaoCreditoRepo.findById(updateDTO.cartaoCreditoId);
+                if (!cc) return Result.fail<ITransacaoDTO>('Target Credit Card not found');
+                cartaoCredito = cc;
+            }
+
+            let contaDestino = existing.contaDestino;
+            if (updateDTO.contaDestinoId) {
+                const cd = await this.contaRepo.findById(updateDTO.contaDestinoId);
+                if (!cd) return Result.fail<ITransacaoDTO>('Destination Account not found');
+                contaDestino = cd;
+            }
+
+            let contaPoupanca = existing.contaPoupanca;
+            if (updateDTO.contaPoupancaId) {
+                const cp = await this.contaRepo.findById(updateDTO.contaPoupancaId);
+                if (!cp) return Result.fail<ITransacaoDTO>('Savings Account not found');
+                contaPoupanca = cp;
+            }
+
+            const updatedOrError = Transacao.create({
+                descricao,
+                data,
+                valor,
+                tipo: tipoVO,
+                categoria,
+                status,
+                conta,
+                cartaoCredito,
+                contaDestino,
+                contaPoupanca,
+                isPagamentoCartao: existing.isPagamentoCartao
+            }, existing.id);
+
+            if (updatedOrError.isFailure) return Result.fail<ITransacaoDTO>(String(updatedOrError.error));
+            const updatedTransacao = updatedOrError.getValue();
+
+            (updatedTransacao as unknown as Record<string, unknown>)['userDomainId'] =
+                (existing as unknown as Record<string, unknown>)['userDomainId'];
+
+            // STEP 2: Revert the impact of the OLD transaction
+            const tipo = existing.tipo.value;
             let revertResult: Result<void>;
             switch (tipo) {
                 case 'Entrada':
@@ -466,40 +530,6 @@ export default class TransacaoService implements ITransacaoService {
             }
 
             if (revertResult.isFailure) return Result.fail<ITransacaoDTO>(String(revertResult.error));
-
-            // STEP 2: Build updated transaction with new values
-            const descricao = updateDTO.descricao ? Descricao.create(updateDTO.descricao).getValue() : existing.descricao;
-            const valor = updateDTO.valor ? Dinheiro.create(updateDTO.valor.valor, updateDTO.valor.moeda).getValue() : existing.valor;
-            const data = updateDTO.data ? Data.createFromParts(updateDTO.data.dia, updateDTO.data.mes, updateDTO.data.ano).getValue() : existing.data;
-            const status = updateDTO.status ? Status.create(updateDTO.status).getValue() : existing.status;
-            const tipoVO = updateDTO.tipo ? Tipo.create(updateDTO.tipo).getValue() : existing.tipo;
-
-            let categoria = existing.categoria;
-            if (updateDTO.categoriaId) {
-                const cat = await this.categoriaRepo.findById(updateDTO.categoriaId);
-                if (!cat) return Result.fail<ITransacaoDTO>('Category not found');
-                categoria = cat;
-            }
-
-            const updatedOrError = Transacao.create({
-                descricao,
-                data,
-                valor,
-                tipo: tipoVO,
-                categoria,
-                status,
-                conta: existing.conta,
-                cartaoCredito: existing.cartaoCredito,
-                contaDestino: existing.contaDestino,
-                contaPoupanca: existing.contaPoupanca,
-                isPagamentoCartao: existing.isPagamentoCartao
-            }, existing.id);
-
-            if (updatedOrError.isFailure) return Result.fail<ITransacaoDTO>(String(updatedOrError.error));
-            const updatedTransacao = updatedOrError.getValue();
-
-            (updatedTransacao as unknown as Record<string, unknown>)['userDomainId'] =
-                (existing as unknown as Record<string, unknown>)['userDomainId'];
 
             // STEP 3: Apply the impact of the NEW transaction
             const newTipo = updatedTransacao.tipo.value;
