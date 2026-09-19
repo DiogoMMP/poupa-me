@@ -56,12 +56,12 @@
           <app-select formControlName="cartaoCreditoId"
             [options]="(vm.cartoes$ | async | toSelectOptions:true:'Nenhum / Selecionar cartão')"></app-select>
         </div>
-      </ng-container>
 
-      <div class="form-field">
-        <label class="form-label">Estado</label>
-        <app-select formControlName="status" [options]="statusOptions"></app-select>
-      </div>
+        <div class="form-field" *ngIf="transacao && (transacao.tipo === 'Crédito' || transacao.tipo === 'Reembolso')">
+          <label class="form-label">Estado</label>
+          <app-select formControlName="status" [options]="statusOptions"></app-select>
+        </div>
+      </ng-container>
 
       <div class="form-actions">
         <button type="submit" [disabled]="form.invalid || (vm.isLoading$ | async)">
