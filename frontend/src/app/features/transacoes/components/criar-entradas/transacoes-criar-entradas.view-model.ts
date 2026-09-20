@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { TransacoesService } from '../../services/transacoes.service';
 import { TransacoesInputDTO } from '../../dto/transacoes.dto';
 import { NotificationService } from '../../../../services/notification.service';
@@ -9,6 +10,7 @@ import { ContasService } from '../../../contas/services/contas.service';
 import { ContasMapper } from '../../../contas/mappers/contas.mapper';
 import { CategoriasService } from '../../../categorias/services/categorias.service';
 import { CategoriasModel } from '../../../categorias/models/categorias.model';
+import { mapTransacaoErrorMessage } from '../../utils/transacao-error.util';
 
 /**
  * ViewModel for the Criar Entradas component.
@@ -80,8 +82,8 @@ export class TransacoesCriarEntradasViewModel {
         this.isLoading$.next(false);
         this.router.navigate(['/transacoes']);
       },
-      error: () => {
-        this.notification.error('Falha ao criar entrada');
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(mapTransacaoErrorMessage(err, 'Falha ao criar entrada'));
         this.isLoading$.next(false);
       }
     });

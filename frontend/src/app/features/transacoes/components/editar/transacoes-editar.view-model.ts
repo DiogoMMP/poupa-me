@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { TransacoesService } from '../../services/transacoes.service';
 import { TransacoesUpdateDTO, TransacoesDTO } from '../../dto/transacoes.dto';
 import { NotificationService } from '../../../../services/notification.service';
@@ -11,6 +12,7 @@ import { CategoriasService } from '../../../categorias/services/categorias.servi
 import { CategoriasModel } from '../../../categorias/models/categorias.model';
 import { CartoesCreditoService } from '../../../cartoes-credito/services/cartoes-credito.service';
 import { CartoesCreditoMapper } from '../../../cartoes-credito/mappers/cartoes-credito.mapper';
+import { mapTransacaoErrorMessage } from '../../utils/transacao-error.util';
 
 /**
  * ViewModel for the Edit Transacao component.
@@ -117,9 +119,9 @@ export class TransacoesEditarViewModel {
         this.isLoading$.next(false);
         this.router.navigate(['/transacoes']);
       },
-      error: (err) => {
+      error: (err: HttpErrorResponse) => {
         console.error('[TransacoesEditarViewModel] update error', err);
-        this.notification.error('Falha ao atualizar transação');
+        this.notification.error(mapTransacaoErrorMessage(err, 'Falha ao atualizar transação'));
         this.isLoading$.next(false);
       }
     });

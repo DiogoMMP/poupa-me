@@ -12,7 +12,7 @@
       <!-- Data -->
       <div class="form-field">
         <label for="data" class="form-label">Data</label>
-        <app-date-picker formControlName="data" placeholder="Selecionar data"></app-date-picker>
+        <app-date-picker formControlName="data" placeholder="Selecionar data" [maxDate]="todayIso"></app-date-picker>
         <div class="field-error" *ngIf="form.get('data')?.touched && form.get('data')?.invalid">Data é obrigatória.</div>
       </div>
 

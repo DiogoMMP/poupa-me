@@ -20,3 +20,12 @@ export function formatData(dia: number, mes: number): string {
 export function formatValor(valor: number): string {
   return valor.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' });
 }
+
+/**
+ * Today's date as an ISO string (yyyy-MM-dd), the same format `app-date-picker` uses.
+ * Useful for binding `[maxDate]`/`[minDate]` to "today" from a consuming component.
+ */
+export function getTodayIso(): string {
+  const now = new Date();
+  return `${String(now.getFullYear()).padStart(4, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}

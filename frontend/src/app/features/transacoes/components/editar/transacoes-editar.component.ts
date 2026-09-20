@@ -9,6 +9,7 @@ import { SelectComponent, AppSelectOption } from '../../../../shared/components/
 import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
 import { DatePickerComponent } from '../../../../shared/components/date-picker/date-picker.component';
 import { MoneyInputComponent } from '../../../../shared/components/money-input/money-input.component';
+import { getTodayIso } from '../../../../shared/utils/date-formatter.util';
 @Component({
   selector: 'app-transacoes-editar',
   standalone: true,
@@ -28,6 +29,7 @@ export class TransacoesEditarComponent implements OnInit {
     { value: 'Pendente', label: 'Pendente' },
     { value: 'Concluído', label: 'Concluído' },
   ];
+  readonly todayIso = getTodayIso();
 
   constructor() {
     this.form = this.fb.group({

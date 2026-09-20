@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { TransacoesService } from '../../services/transacoes.service';
 import { TransacoesInputDTO } from '../../dto/transacoes.dto';
 import { NotificationService } from '../../../../services/notification.service';
@@ -8,6 +9,7 @@ import { SelectedBancoService } from '../../../../services/selected-banco.servic
 import { CategoriasService } from '../../../categorias/services/categorias.service';
 import { CategoriasModel } from '../../../categorias/models/categorias.model';
 import { CartoesCreditoService } from '../../../cartoes-credito/services/cartoes-credito.service';
+import { mapTransacaoErrorMessage } from '../../utils/transacao-error.util';
 
 /**
  * ViewModel for the Criar Crédito component.
@@ -81,8 +83,8 @@ export class TransacoesCriarCreditoViewModel {
         this.isLoading$.next(false);
         this.router.navigate(['/transacoes']);
       },
-      error: () => {
-        this.notification.error('Falha ao criar crédito');
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(mapTransacaoErrorMessage(err, 'Falha ao criar crédito'));
         this.isLoading$.next(false);
       }
     });
