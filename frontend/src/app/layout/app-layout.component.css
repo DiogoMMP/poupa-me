@@ -42,6 +42,24 @@
   padding: 2rem;
 }
 
+/* Mensagem única mostrada em vez do conteúdo da rota enquanto não há banco selecionado */
+.banco-required-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 60vh;
+  text-align: center;
+  color: rgba(226, 232, 240, 0.8);
+  font-size: 1.05rem;
+}
+
+.banco-required-icon {
+  color: var(--brand-accent, #61edd6);
+  opacity: 0.85;
+}
+
 /* === MOBILE HAMBURGER === */
 .hamburger {
   display: none;

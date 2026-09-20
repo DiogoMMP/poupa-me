@@ -105,6 +105,12 @@ export class DespesasRecorrentesListViewModel {
     const f = this.pendenteFilters;
     const bancoId = this.bancoId ?? undefined;
 
+    if (!bancoId) {
+      this.pendentes$.next([]);
+      this.isLoading$.next(false);
+      return;
+    }
+
     // Categoria filter
     if (f.categoriaId) {
       this.transacoesService.getDespesaRecorrenteByCategoria(f.categoriaId, bancoId).subscribe({
@@ -139,6 +145,12 @@ export class DespesasRecorrentesListViewModel {
   loadConcluidas(): void {
     const f = this.concluidaFilters;
     const bancoId = this.bancoId ?? undefined;
+
+    if (!bancoId) {
+      this.concluidas$.next([]);
+      this.isLoading$.next(false);
+      return;
+    }
 
     // Period filter
     if (f.period && !f.categoriaId) {

@@ -56,6 +56,16 @@ export class TransacoesListViewModel {
     this.isLoading$.next(true);
     const bancoId = this.bancoId ?? undefined;
 
+    if (!bancoId) {
+      this.categorias$.next([]);
+      this.cartoes$.next([]);
+      this.contas$.next([]);
+      this.contaTransacoes$.next([]);
+      this.cartaoTransacoes$.next([]);
+      this.isLoading$.next(false);
+      return;
+    }
+
     forkJoin({
       categorias: this.categoriasService.getAll(),
       cartoes: this.cartoesService.getAll(bancoId),
@@ -84,6 +94,12 @@ export class TransacoesListViewModel {
   loadContaTransacoes(): void {
     const f = this.contaFilters;
     const bancoId = this.bancoId ?? undefined;
+
+    if (!bancoId) {
+      this.contaTransacoes$.next([]);
+      this.isLoading$.next(false);
+      return;
+    }
 
     // Filter by contaId — use the specific conta endpoint
     if (f.contaId) {
@@ -166,6 +182,12 @@ export class TransacoesListViewModel {
   loadCartaoTransacoes(): void {
     const f = this.cartaoFilters;
     const bancoId = this.bancoId ?? undefined;
+
+    if (!bancoId) {
+      this.cartaoTransacoes$.next([]);
+      this.isLoading$.next(false);
+      return;
+    }
 
     // Filter by cartaoId — use the specific cartao endpoint
     if (f.cartaoId) {

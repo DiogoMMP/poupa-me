@@ -69,6 +69,13 @@ export class DespesasRecorrentesListarRegrasViewModel {
   loadData(): void {
     this.isLoading$.next(true);
     const bancoId = this.bancoId ?? undefined;
+
+    if (!bancoId) {
+      this.regras$.next([]);
+      this.isLoading$.next(false);
+      return;
+    }
+
     this.service.getAll(bancoId).subscribe({
       next: (dtos) => {
         this.regras$.next(DespesasRecorrentesMapper.toModelArray(dtos));
