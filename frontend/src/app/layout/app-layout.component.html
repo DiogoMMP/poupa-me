@@ -29,16 +29,20 @@
     <main class="content">
       <div class="banco-required-message" *ngIf="blocked()">
         <app-icon name="Bank" [size]="48" class="banco-required-icon"></app-icon>
-        <ng-container *ngIf="bancosLoaded(); else loadingMsg">
-          <ng-container *ngIf="hasBancos(); else noBancosMsg">
-            <p>Selecione um banco no menu lateral para continuar.</p>
-          </ng-container>
-          <ng-template #noBancosMsg>
-            <p>Ainda não tem nenhum banco. Crie um para começar a usar a aplicação.</p>
-            <button type="button" routerLink="/bancos/criar">Criar banco</button>
-          </ng-template>
+        <ng-container *ngIf="showLoadingBancos()">
+          <p>A carregar...</p>
         </ng-container>
-        <ng-template #loadingMsg><p>A carregar...</p></ng-template>
+        <ng-container *ngIf="showBancosLoadError()">
+          <p>Não foi possível carregar os bancos.</p>
+          <button type="button" (click)="retryLoadBancos()">Tentar novamente</button>
+        </ng-container>
+        <ng-container *ngIf="showSelectBancoPrompt()">
+          <p>Selecione um banco no menu lateral para continuar.</p>
+        </ng-container>
+        <ng-container *ngIf="showCreateBancoPrompt()">
+          <p>Ainda não tem nenhum banco. Crie um para começar a usar a aplicação.</p>
+          <button type="button" routerLink="/bancos/criar">Criar banco</button>
+        </ng-container>
       </div>
       <router-outlet *ngIf="!blocked()"></router-outlet>
     </main>

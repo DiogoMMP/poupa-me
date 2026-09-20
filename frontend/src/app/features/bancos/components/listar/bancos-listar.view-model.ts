@@ -8,6 +8,7 @@ import { BancosMapper } from '../../mappers/bancos.mapper';
 import { DashboardModel } from '../../models/dashboard.model';
 import { DashboardMapper } from '../../mappers/dashboard.mapper';
 import { AuthService } from '../../../auth/services/auth.service';
+import { BancosStateService } from '../../../../services/bancos-state.service';
 import { formatEntityReference as formatEntityReferenceUtil } from '../../../../shared/utils/entity-reference.util';
 
 /**
@@ -19,6 +20,7 @@ export class BancosListViewModel {
   private service = inject(BancosService);
   private notification = inject(NotificationService);
   private confirmDialog = inject(ConfirmDialogService);
+  private bancosState = inject(BancosStateService);
   public auth = inject(AuthService);
   public formatEntityReference = formatEntityReferenceUtil;
 
@@ -69,6 +71,7 @@ export class BancosListViewModel {
     this.service.delete(id).subscribe({
       next: () => {
         this.notification.success('Banco eliminado');
+        this.bancosState.notifyChanged();
         this.loadData();
       },
       error: (err) => {

@@ -1,10 +1,12 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, inject, OnInit, signal, computed } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../services/notification.service';
 import { BancosService } from '../../features/bancos/services/bancos.service';
 import { SelectedBancoService } from '../../services/selected-banco.service';
+import { BancosStateService } from '../../services/bancos-state.service';
 import { BancosDTO } from '../../features/bancos/dto/bancos.dto';
 import { IconComponent } from '../../shared/components/icon/icon.component';
 import { SelectComponent, AppSelectOption } from '../../shared/components/select/select.component';
@@ -28,7 +30,9 @@ import { SelectComponent, AppSelectOption } from '../../shared/components/select
 export class HeaderComponent implements OnInit {
   private bancosService = inject(BancosService);
   private selectedBancoService = inject(SelectedBancoService);
+  private bancosStateService = inject(BancosStateService);
   private notificationService = inject(NotificationService);
+  private destroyRef = inject(DestroyRef);
 
   bancos = signal<BancosDTO[]>([]);
   selectedBancoId = signal<string | null>(null);
@@ -58,6 +62,12 @@ export class HeaderComponent implements OnInit {
     this.selectedBancoService.selectedBancoId$.subscribe(id => {
       this.selectedBancoId.set(id);
     });
+
+    // Reload the list whenever a banco is created/edited/deleted elsewhere in the app — this
+    // component lives across navigations and only fetched the list once on init otherwise.
+    this.bancosStateService.changed$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadBancos());
   }
 
   private loadBancos(): void {

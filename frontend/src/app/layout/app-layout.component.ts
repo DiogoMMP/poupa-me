@@ -12,6 +12,7 @@ import { IconComponent } from '../shared/components/icon/icon.component';
 import { BancosService } from '../features/bancos/services/bancos.service';
 import { BancosDTO } from '../features/bancos/dto/bancos.dto';
 import { SelectedBancoService } from '../services/selected-banco.service';
+import { BancosStateService } from '../services/bancos-state.service';
 
 /**
  * URL prefixes that do not depend on a selected banco — always reachable, even while the rest of
@@ -44,20 +45,28 @@ export class AppLayoutComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private bancosService = inject(BancosService);
   private selectedBancoService = inject(SelectedBancoService);
+  private bancosStateService = inject(BancosStateService);
 
   sidebarOpen = signal(false);
 
   private readonly bancos = signal<BancosDTO[]>([]);
-  readonly bancosLoaded = signal(false);
+  private readonly bancosLoaded = signal(false);
+  private readonly bancosLoadError = signal(false);
   private readonly selectedBancoId = signal<string | null>(null);
   private readonly currentUrl = signal(this.router.url);
 
-  readonly hasBancos = computed(() => this.bancos().length > 0);
+  private readonly hasBancos = computed(() => this.bancos().length > 0);
   private readonly routeRequiresBanco = computed(() => {
     const path = this.currentUrl().split('?')[0].split('#')[0];
     return !BANCO_INDEPENDENT_PREFIXES.some(p => path === p || path.startsWith(p + '/'));
   });
   readonly blocked = computed(() => this.routeRequiresBanco() && !this.selectedBancoId());
+
+  // Mutually exclusive states rendered inside the blocked overlay
+  readonly showLoadingBancos = computed(() => !this.bancosLoaded());
+  readonly showBancosLoadError = computed(() => this.bancosLoaded() && this.bancosLoadError());
+  readonly showSelectBancoPrompt = computed(() => this.bancosLoaded() && !this.bancosLoadError() && this.hasBancos());
+  readonly showCreateBancoPrompt = computed(() => this.bancosLoaded() && !this.bancosLoadError() && !this.hasBancos());
 
   ngOnInit(): void {
     this.selectedBancoId.set(this.selectedBancoService.currentBancoId);
@@ -69,16 +78,35 @@ export class AppLayoutComponent implements OnInit {
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef))
       .subscribe(e => this.currentUrl.set(e.urlAfterRedirects));
 
+    // Reload the cached bancos list whenever a banco is created/edited/deleted elsewhere in the
+    // app, so this persistent (never-destroyed) component doesn't go stale until a page reload.
+    this.bancosStateService.changed$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadBancos());
+
+    this.loadBancos();
+  }
+
+  private loadBancos(): void {
+    this.bancosLoadError.set(false);
     this.bancosService.getAll().subscribe({
       next: (bancos) => {
         this.bancos.set(bancos);
         this.bancosLoaded.set(true);
       },
       error: (err: { status?: number }) => {
-        // If not authenticated, keep the empty/loading state quiet (public pages)
-        if (err?.status !== 401) this.bancosLoaded.set(true);
+        // A 401 is handled globally (auth interceptor clears the session and redirects to
+        // /entrar) — no need to surface a local error state for it.
+        if (err?.status === 401) return;
+        this.bancosLoaded.set(true);
+        this.bancosLoadError.set(true);
       }
     });
+  }
+
+  retryLoadBancos(): void {
+    this.bancosLoaded.set(false);
+    this.loadBancos();
   }
 
   toggleSidebar() { this.sidebarOpen.update(v => !v); }
