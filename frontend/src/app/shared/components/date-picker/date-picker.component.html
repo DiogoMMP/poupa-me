@@ -33,6 +33,8 @@
         [class.muted]="!cell.inMonth"
         [class.today]="cell.iso === todayIso"
         [class.selected]="cell.iso === value()"
+        [class.disabled]="cell.disabled"
+        [disabled]="cell.disabled"
         tabindex="-1"
         (click)="selectDay($event, cell)">
         {{ cell.day }}

@@ -148,3 +148,13 @@
   color: var(--brand-accent, #61edd6);
   font-weight: 600;
 }
+
+.app-date-picker-day.disabled {
+  color: rgba(226, 232, 240, 0.2);
+  cursor: not-allowed;
+}
+
+.app-date-picker-day.disabled:hover,
+.app-date-picker-day.disabled:focus {
+  background: transparent;
+}

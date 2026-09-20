@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { Router } from '@angular/router';
 import { BancosService } from '../../services/bancos.service';
 import { NotificationService } from '../../../../services/notification.service';
+import { BancosStateService } from '../../../../services/bancos-state.service';
 import {BancosInputDTO} from '../../dto/bancos.dto';
 
 /**
@@ -14,6 +15,7 @@ export class BancosCriarViewModel {
   private service = inject(BancosService);
   private notification = inject(NotificationService);
   private router = inject(Router);
+  private bancosState = inject(BancosStateService);
 
   // State
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
@@ -29,6 +31,7 @@ export class BancosCriarViewModel {
       next: () => {
         this.notification.success('Banco criado com sucesso');
         this.isLoading$.next(false);
+        this.bancosState.notifyChanged();
         this.router.navigate(['/bancos']);
       },
       error: (_err) => {

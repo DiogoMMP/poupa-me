@@ -11,6 +11,7 @@ interface DayCell {
   iso: string;
   day: number;
   inMonth: boolean;
+  disabled: boolean;
 }
 
 const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -56,6 +57,8 @@ export class DatePickerComponent implements ControlValueAccessor {
   private readonly registry = inject(SelectRegistryService);
 
   @Input() placeholder = 'Selecionar data';
+  /** ISO string (yyyy-MM-dd). Quando definida, datas depois desta ficam desativadas no calendário. */
+  @Input() maxDate: string | null = null;
 
   @ViewChild('trigger') private triggerRef?: ElementRef<HTMLButtonElement>;
   @ViewChildren('dayEl') private dayEls?: QueryList<ElementRef<HTMLButtonElement>>;
@@ -86,19 +89,23 @@ export class DatePickerComponent implements ControlValueAccessor {
     const daysInPrevMonth = new Date(year, month, 0).getDate();
 
     const cells: DayCell[] = [];
+    const isDisabled = (iso: string) => this.maxDate != null && iso > this.maxDate;
 
     for (let i = isoWeekday - 1; i >= 0; i--) {
       const day = daysInPrevMonth - i;
       const d = new Date(year, month - 1, day);
-      cells.push({ iso: toIso(d.getFullYear(), d.getMonth(), day), day, inMonth: false });
+      const iso = toIso(d.getFullYear(), d.getMonth(), day);
+      cells.push({ iso, day, inMonth: false, disabled: isDisabled(iso) });
     }
     for (let day = 1; day <= daysInMonth; day++) {
-      cells.push({ iso: toIso(year, month, day), day, inMonth: true });
+      const iso = toIso(year, month, day);
+      cells.push({ iso, day, inMonth: true, disabled: isDisabled(iso) });
     }
     while (cells.length < 42) {
       const day = cells.length - (isoWeekday + daysInMonth) + 1;
       const d = new Date(year, month + 1, day);
-      cells.push({ iso: toIso(d.getFullYear(), d.getMonth(), day), day, inMonth: false });
+      const iso = toIso(d.getFullYear(), d.getMonth(), day);
+      cells.push({ iso, day, inMonth: false, disabled: isDisabled(iso) });
     }
 
     return cells;
@@ -173,6 +180,7 @@ export class DatePickerComponent implements ControlValueAccessor {
 
   selectDay(event: MouseEvent, cell: DayCell): void {
     event.stopPropagation();
+    if (cell.disabled) return;
     this.value.set(cell.iso);
     this.onChange(cell.iso);
     if (!cell.inMonth) {
@@ -228,6 +236,7 @@ export class DatePickerComponent implements ControlValueAccessor {
       case 'Enter':
       case ' ':
         event.preventDefault();
+        if (this.maxDate != null && active > this.maxDate) return;
         this.value.set(active);
         this.onChange(active);
         this.close();

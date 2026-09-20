@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { Router } from '@angular/router';
 import { BancosService } from '../../services/bancos.service';
 import { NotificationService } from '../../../../services/notification.service';
+import { BancosStateService } from '../../../../services/bancos-state.service';
 import { BancosModel } from '../../models/bancos.model';
 import { BancosMapper } from '../../mappers/bancos.mapper';
 import {BancosUpdateDTO} from '../../dto/bancos.dto';
@@ -23,6 +24,7 @@ export class BancosEditarViewModel {
   private router = inject(Router);
   private contasService = inject(ContasService);
   private cartoesService = inject(CartoesCreditoService);
+  private bancosState = inject(BancosStateService);
 
   // State
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
@@ -90,6 +92,7 @@ export class BancosEditarViewModel {
       next: () => {
         this.notification.success('Banco atualizado com sucesso');
         this.isLoading$.next(false);
+        this.bancosState.notifyChanged();
         this.router.navigate(['/bancos']);
       },
       error: (_err) => {
