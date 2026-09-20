@@ -7,7 +7,7 @@
 | **Estado** | Implementado |
 | **Build** | `cd frontend && npm run build` — sem erros |
 | **Testes** | `cd frontend && npm test` — 13/13 sucesso (sem baseline de falhas; nenhum teste novo, ver §4) |
-| **Commits** | Ainda não commitado nesta sessão (ver próximo passo) |
+| **Commits** | `52897c8` (correção original) + 1 commit adicional pós-feedback visual (ver §7) |
 
 ## 1. O que foi fechado
 
@@ -15,9 +15,9 @@
   depende de banco (`/bancos`, `/categorias`, `/utilizadores`, `/perfil`, `/not-authorized`) ou já há
   um banco selecionado; caso contrário mostra uma mensagem única (`.banco-required-message`, com
   `<app-icon name="Bank">` por cima), reativa a `SelectedBancoService.selectedBancoId$` e a mudanças
-  de rota (`NavigationEnd`), com duas variantes: "ainda não tens nenhum banco" (link para
-  `/bancos/criar`) vs. "Selecione um banco no menu lateral para continuar." (wording ajustado a
-  pedido do utilizador).
+  de rota (`NavigationEnd`), com duas variantes: "Ainda não tem nenhum banco. Crie um para começar a
+  usar a aplicação." (botão primário para `/bancos/criar`) vs. "Selecione um banco no menu lateral
+  para continuar." — wording ajustado a pedido do utilizador (ver §7).
 - **B.** `transacoes-listar.view-model.ts` — corrigido. `loadAll()`, `loadContaTransacoes()` e
   `loadCartaoTransacoes()` passaram a repor as listas a `[]` e a não chamar nenhum serviço quando
   não há `bancoId`.
@@ -70,4 +70,20 @@ de URL fixo em vez de `data: { requiresBanco }`.
 | `frontend/src/app/features/despesas-recorrentes/components/listar/despesas-recorrentes-listar.view-model.ts` | alterado |
 | `frontend/src/app/features/despesas-recorrentes/components/listar-regras/despesas-recorrentes-listar-regras.view-model.ts` | alterado |
 | `docs/changes/bugfixes/B0013-bloqueio-app-sem-banco-selecionado/README.md` | novo |
-| `docs/changes/bugfixes/B0013-bloqueio-app-sem-banco-selecionado/RESULT.md` | novo |
+| `docs/changes/bugfixes/B0013-bloqueio-app-sem-banco-selecionado/RESULT.md` | novo, atualizado no §7 |
+
+## 7. Correção adicional (feedback visual pós-PR #86)
+
+O utilizador assinalou, ao ver o ecrã de bloqueio em uso, dois problemas no template
+(`app-layout.component.html`):
+
+- O botão "Criar banco" tinha a classe `.btn-secondary` (contorno transparente, sem destaque), a
+  mesma usada nos botões "Cancelar" em toda a app. Como é a única ação possível deste ecrã, devia
+  seguir o mesmo padrão dos CTAs principais (ex. "Guardar"): um `<button>` simples, sem classe
+  extra, que herda o estilo global com gradiente `--brand-accent` já definido em `_components.css`.
+  Trocado `<a routerLink="/bancos/criar" class="btn-secondary">` por
+  `<button type="button" routerLink="/bancos/criar">`.
+- O texto "Ainda não tens nenhum banco. Cria um para começares..." estava na 2ª pessoa informal
+  ("tu"), inconsistente com o resto da app, que usa a forma "você" (`"Não tem conta?"`, `"O seu
+  nome"`, `"Não tem Autorização..."`, confirmado por grep aos templates). Corrigido para "Ainda não
+  tem nenhum banco. Crie um para começar a usar a aplicação."
