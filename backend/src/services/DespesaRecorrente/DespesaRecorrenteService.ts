@@ -64,13 +64,14 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
         map: Map<string, { nome?: string; icon?: string; bancoId?: string }>,
         bancoMap: Map<string, { nome: string; icon: string }>
     ): Promise<IDespesaRecorrenteDTO[]> {
-        const userNameCache = new Map<string, string | undefined>();
+        const userNameCache = new Map<string, Promise<string | undefined>>();
         return await Promise.all(despesas.map(async (d) => {
             const uid = d.userId.toString();
             if (!userNameCache.has(uid)) {
-                userNameCache.set(uid, await this.getUserNome(uid));
+                userNameCache.set(uid, this.getUserNome(uid));
             }
-            return DespesaRecorrenteMap.toDTO(d, map, userNameCache.get(uid), this.resolveBanco(d, map, bancoMap));
+            const userNome = await userNameCache.get(uid);
+            return DespesaRecorrenteMap.toDTO(d, map, userNome, this.resolveBanco(d, map, bancoMap));
         }));
     }
 
