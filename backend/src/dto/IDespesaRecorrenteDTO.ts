@@ -9,6 +9,7 @@ import { IEntityReferenceDTO } from './shared/IEntityReferenceDTO.js';
 export interface IDespesaRecorrenteDTO {
     id: string;
     user?: IEntityReferenceDTO;
+    banco?: IEntityReferenceDTO;
     nome: string;
     icon: string;
     valor?: IDinheiroDTO;

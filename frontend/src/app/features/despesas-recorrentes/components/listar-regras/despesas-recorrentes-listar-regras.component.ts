@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { DespesasRecorrentesListarRegrasViewModel } from './despesas-recorrentes-listar-regras.view-model';
+import { formatEntityReference as formatEntityReferenceUtil } from '../../../../shared/utils/entity-reference.util';
 
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
 @Component({
@@ -14,6 +15,8 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 })
 export class DespesasRecorrentesListarRegrasComponent implements OnInit {
   public vm = inject(DespesasRecorrentesListarRegrasViewModel);
+  public auth = this.vm.auth;
+  public formatEntityReference = formatEntityReferenceUtil;
 
   ngOnInit(): void {
     // loadData is triggered by selectedBancoId$ subscription in the ViewModel constructor

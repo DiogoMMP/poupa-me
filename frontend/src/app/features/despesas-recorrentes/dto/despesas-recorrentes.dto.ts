@@ -18,6 +18,7 @@ export type TipoDespesaRecorrente = 'Despesa Mensal' | 'Poupança' | 'Despesa Se
 export interface DespesaRecorrenteDTO {
   id: string;
   user?: EntityReference;
+  banco?: EntityReference;
   nome: string;
   icon: string;
   valor?: DinheiroProps;

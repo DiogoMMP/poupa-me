@@ -6,6 +6,7 @@ import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog
 import { DespesasRecorrentesMapper } from '../../mappers/despesas-recorrentes.mapper';
 import { DespesaRecorrenteModel, TipoDespesaRecorrente } from '../../models/despesas-recorrentes.model';
 import { SelectedBancoService } from '../../../../services/selected-banco.service';
+import { AuthService } from '../../../auth/services/auth.service';
 
 /**
  * ViewModel for the despesas recorrentes list component.
@@ -16,6 +17,7 @@ export class DespesasRecorrentesListarRegrasViewModel {
   private notification = inject(NotificationService);
   private confirmDialog = inject(ConfirmDialogService);
   private selectedBanco = inject(SelectedBancoService);
+  public auth = inject(AuthService);
 
   // State
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
@@ -68,15 +70,17 @@ export class DespesasRecorrentesListarRegrasViewModel {
    */
   loadData(): void {
     this.isLoading$.next(true);
+    const isAdmin = this.auth.user()?.role === 'Admin';
     const bancoId = this.bancoId ?? undefined;
 
-    if (!bancoId) {
+    // Admin sees every rule from every user/banco, regardless of the banco selected in the sidebar
+    if (!isAdmin && !bancoId) {
       this.regras$.next([]);
       this.isLoading$.next(false);
       return;
     }
 
-    this.service.getAll(bancoId).subscribe({
+    this.service.getAll(isAdmin ? undefined : bancoId).subscribe({
       next: (dtos) => {
         this.regras$.next(DespesasRecorrentesMapper.toModelArray(dtos));
         this.isLoading$.next(false);
