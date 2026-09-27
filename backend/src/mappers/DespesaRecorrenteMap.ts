@@ -150,7 +150,8 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
     public static toDTO(
         despesa: DespesaRecorrente,
         infoMap?: Map<string, { nome?: string; icon?: string }>,
-        userNome?: string
+        userNome?: string,
+        banco?: { id: string; nome?: string; icon?: string }
     ): IDespesaRecorrenteDTO {
         const catInfo = infoMap?.get(despesa.categoriaId.toString());
         const origInfo = infoMap?.get(despesa.contaOrigemId.toString());
@@ -160,6 +161,7 @@ export class DespesaRecorrenteMap extends Mapper<DespesaRecorrente> {
         return {
             id: despesa.id.toString(),
             user: despesa.userId ? { id: despesa.userId.toString(), nome: userNome } : undefined,
+            banco,
             nome: despesa.nome.value,
             icon: despesa.icon,
             valor: despesa.valor

@@ -38,6 +38,8 @@ export default (app: Router) => {
    *             nome:
    *               type: string
    *               example: "Diogo Silva"
+   *         banco:
+   *           $ref: '#/components/schemas/EntityReference'
    *         nome:
    *           type: string
    *           example: "Netflix"

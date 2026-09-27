@@ -9,7 +9,8 @@ export class DespesasRecorrentesMapper {
     const temValor = dto.valor != null;
     return {
       id: dto.id,
-      userId: dto.user?.id,
+      user: dto.user,
+      banco: dto.banco,
       nome: dto.nome,
       icon: dto.icon,
       valor: dto.valor?.valor,

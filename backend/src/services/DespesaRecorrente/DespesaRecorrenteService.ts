@@ -4,6 +4,7 @@ import type IDespesaRecorrenteService from './IServices/IDespesaRecorrenteServic
 import type IDespesaRecorrenteRepo from '../../repos/DespesaRecorrente/IRepos/IDespesaRecorrenteRepo.js';
 import type IDespesaRecorrenteQueryRepo from '../../repos/DespesaRecorrente/IRepos/IDespesaRecorrenteQueryRepo.js';
 import type IUserRepo from '../../repos/User/IUserRepo.js';
+import type IBancoRepo from '../../repos/Banco/IBancoRepo.js';
 import type { IDespesaRecorrenteDTO, ICreateDespesaRecorrenteDTO, IUpdateDespesaRecorrenteDTO } from '../../dto/IDespesaRecorrenteDTO.js';
 import { DespesaRecorrenteMap } from '../../mappers/DespesaRecorrenteMap.js';
 import { DespesaRecorrente } from '../../domain/DespesaRecorrente/Entities/DespesaRecorrente.js';
@@ -23,6 +24,7 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
         @Inject('CategoriaRepo') private categoriaRepo: any,
         @Inject('ContaRepo') private contaRepo: any,
         @Inject('UserRepo') private userRepo: IUserRepo,
+        @Inject('BancoRepo') private bancoRepo: IBancoRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {}
 
@@ -36,34 +38,63 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
         }
     }
 
-    private async enrichDespesaDTO(despesa: DespesaRecorrente, map: Map<string, { nome?: string; icon?: string }>): Promise<IDespesaRecorrenteDTO> {
-        const uid = despesa.userId.toString();
-        const userNome = await this.getUserNome(uid);
-        return DespesaRecorrenteMap.toDTO(despesa, map, userNome);
+    private resolveBanco(
+        despesa: DespesaRecorrente,
+        map: Map<string, { nome?: string; icon?: string; bancoId?: string }>,
+        bancoMap: Map<string, { nome: string; icon: string }>
+    ): { id: string; nome?: string; icon?: string } | undefined {
+        const bancoId = map.get(despesa.contaOrigemId.toString())?.bancoId;
+        if (!bancoId) return undefined;
+        const bancoInfo = bancoMap.get(bancoId);
+        return { id: bancoId, nome: bancoInfo?.nome, icon: bancoInfo?.icon };
     }
 
-    private async enrichDespesaDTOList(despesas: DespesaRecorrente[], map: Map<string, { nome?: string; icon?: string }>): Promise<IDespesaRecorrenteDTO[]> {
-        const userNameCache = new Map<string, string | undefined>();
+    private async enrichDespesaDTO(
+        despesa: DespesaRecorrente,
+        map: Map<string, { nome?: string; icon?: string; bancoId?: string }>,
+        bancoMap: Map<string, { nome: string; icon: string }>
+    ): Promise<IDespesaRecorrenteDTO> {
+        const uid = despesa.userId.toString();
+        const userNome = await this.getUserNome(uid);
+        return DespesaRecorrenteMap.toDTO(despesa, map, userNome, this.resolveBanco(despesa, map, bancoMap));
+    }
+
+    private async enrichDespesaDTOList(
+        despesas: DespesaRecorrente[],
+        map: Map<string, { nome?: string; icon?: string; bancoId?: string }>,
+        bancoMap: Map<string, { nome: string; icon: string }>
+    ): Promise<IDespesaRecorrenteDTO[]> {
+        const userNameCache = new Map<string, Promise<string | undefined>>();
         return await Promise.all(despesas.map(async (d) => {
             const uid = d.userId.toString();
             if (!userNameCache.has(uid)) {
-                userNameCache.set(uid, await this.getUserNome(uid));
+                userNameCache.set(uid, this.getUserNome(uid));
             }
-            return DespesaRecorrenteMap.toDTO(d, map, userNameCache.get(uid));
+            const userNome = await userNameCache.get(uid);
+            return DespesaRecorrenteMap.toDTO(d, map, userNome, this.resolveBanco(d, map, bancoMap));
         }));
     }
 
-    private async getInfoMap(userId?: string): Promise<Map<string, { nome?: string; icon?: string }>> {
+    private async getInfoMap(userId?: string): Promise<Map<string, { nome?: string; icon?: string; bancoId?: string }>> {
         const [categorias, contas] = await Promise.all([
             this.categoriaRepo.findAll(userId),
             this.contaRepo.findAll(userId)
         ]);
-        const map = new Map<string, { nome?: string; icon?: string }>();
+        const map = new Map<string, { nome?: string; icon?: string; bancoId?: string }>();
         for (const c of categorias) {
             map.set(c.id.toString(), { nome: c.nome.value, icon: c.icon.value });
         }
         for (const c of contas) {
-            map.set(c.id.toString(), { nome: c.nome.value, icon: c.icon.value });
+            map.set(c.id.toString(), { nome: c.nome.value, icon: c.icon.value, bancoId: c.bancoId });
+        }
+        return map;
+    }
+
+    private async getBancoMap(userId?: string): Promise<Map<string, { nome: string; icon: string }>> {
+        const bancos = await this.bancoRepo.findAll(userId);
+        const map = new Map<string, { nome: string; icon: string }>();
+        for (const b of bancos) {
+            map.set(b.id.toString(), { nome: b.nome.value, icon: b.icon.value });
         }
         return map;
     }
@@ -119,8 +150,8 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
             if (despesaOrError.isFailure) return Result.fail<IDespesaRecorrenteDTO>(String(despesaOrError.error));
 
             const saved = await this.despesaRepo.save(despesaOrError.getValue());
-            const map = await this.getInfoMap(userId);
-            return Result.ok<IDespesaRecorrenteDTO>(await this.enrichDespesaDTO(saved, map));
+            const [map, bancoMap] = await Promise.all([this.getInfoMap(userId), this.getBancoMap(userId)]);
+            return Result.ok<IDespesaRecorrenteDTO>(await this.enrichDespesaDTO(saved, map, bancoMap));
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.createDespesa error: %o', err);
             return Result.fail<IDespesaRecorrenteDTO>('Error creating DespesaRecorrente');
@@ -186,8 +217,11 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
             if (updatedOrError.isFailure) return Result.fail<IDespesaRecorrenteDTO>(String(updatedOrError.error));
 
             const saved = await this.despesaRepo.update(updatedOrError.getValue());
-            const map = await this.getInfoMap(existing.userId.toString());
-            return Result.ok<IDespesaRecorrenteDTO>(await this.enrichDespesaDTO(saved, map));
+            const [map, bancoMap] = await Promise.all([
+                this.getInfoMap(existing.userId.toString()),
+                this.getBancoMap(existing.userId.toString())
+            ]);
+            return Result.ok<IDespesaRecorrenteDTO>(await this.enrichDespesaDTO(saved, map, bancoMap));
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.updateDespesa error: %o', err);
             return Result.fail<IDespesaRecorrenteDTO>('Error updating DespesaRecorrente');
@@ -224,8 +258,11 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
             // Authorization
             if (userRole !== 'Admin' && despesa.userId.toString() !== userId) return Result.fail<IDespesaRecorrenteDTO>('Unauthorized');
 
-            const map = await this.getInfoMap(despesa.userId.toString());
-            return Result.ok<IDespesaRecorrenteDTO>(await this.enrichDespesaDTO(despesa, map));
+            const [map, bancoMap] = await Promise.all([
+                this.getInfoMap(despesa.userId.toString()),
+                this.getBancoMap(despesa.userId.toString())
+            ]);
+            return Result.ok<IDespesaRecorrenteDTO>(await this.enrichDespesaDTO(despesa, map, bancoMap));
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.getDespesa error: %o', err);
             return Result.fail<IDespesaRecorrenteDTO>('Error fetching DespesaRecorrente');
@@ -236,8 +273,8 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
         try {
             const filterUserId = userRole === 'Admin' ? undefined : userId;
             const despesas = await this.despesaQueryRepo.findAll(filterUserId, bancoId);
-            const map = await this.getInfoMap(filterUserId);
-            const dtos = await this.enrichDespesaDTOList(despesas, map);
+            const [map, bancoMap] = await Promise.all([this.getInfoMap(filterUserId), this.getBancoMap(filterUserId)]);
+            const dtos = await this.enrichDespesaDTOList(despesas, map, bancoMap);
             return Result.ok<IDespesaRecorrenteDTO[]>(dtos);
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.getAllDespesas error: %o', err);
@@ -249,8 +286,8 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
         try {
             const filterUserId = userRole === 'Admin' ? undefined : userId;
             const despesas = await this.despesaQueryRepo.findWithValor(filterUserId, bancoId);
-            const map = await this.getInfoMap(filterUserId);
-            const dtos = await this.enrichDespesaDTOList(despesas, map);
+            const [map, bancoMap] = await Promise.all([this.getInfoMap(filterUserId), this.getBancoMap(filterUserId)]);
+            const dtos = await this.enrichDespesaDTOList(despesas, map, bancoMap);
             return Result.ok<IDespesaRecorrenteDTO[]>(dtos);
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.getDespesasComValor error: %o', err);
@@ -271,8 +308,8 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
 
             const filterUserId = userRole === 'Admin' ? undefined : userId;
             const despesas = await this.despesaQueryRepo.findWithoutValor(filterUserId, bancoId, validTipo);
-            const map = await this.getInfoMap(filterUserId);
-            const dtos = await this.enrichDespesaDTOList(despesas, map);
+            const [map, bancoMap] = await Promise.all([this.getInfoMap(filterUserId), this.getBancoMap(filterUserId)]);
+            const dtos = await this.enrichDespesaDTOList(despesas, map, bancoMap);
             return Result.ok<IDespesaRecorrenteDTO[]>(dtos);
         } catch (err) {
             this.logger.error('DespesaRecorrenteService.getDespesasSemValor error: %o', err);

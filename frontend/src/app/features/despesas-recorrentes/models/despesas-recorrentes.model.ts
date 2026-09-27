@@ -1,3 +1,4 @@
+import { EntityReference } from '../../../shared/models/entity-reference.model';
 
 export type TipoDespesaRecorrente = 'Despesa Mensal' | 'Poupança' | 'Despesa Semanal' | 'Despesa Anual';
 
@@ -6,7 +7,8 @@ export type TipoDespesaRecorrente = 'Despesa Mensal' | 'Poupança' | 'Despesa Se
  */
 export interface DespesaRecorrenteModel {
   id: string;
-  userId?: string;
+  user?: EntityReference;
+  banco?: EntityReference;
   nome: string;
   icon: string;
   valor?: number;

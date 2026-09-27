@@ -44,6 +44,13 @@
               <app-icon name="Pencil" [size]="24" class="svg-icon"></app-icon>
               <span>Editar</span>
             </button>
+
+            <!-- Admin-only info placed under the edit button -->
+            <div class="card-details admin-section" *ngIf="auth.user()?.role === 'Admin'">
+              <small><b>Utilizador:</b> {{ formatEntityReference(regra.user) }}</small>
+              <small><b>Banco:</b> {{ formatEntityReference(regra.banco) }}</small>
+            </div>
+
             <button (click)="deleteRegra(regra.id)" class="btn-delete">
               <app-icon name="Trash" [size]="24" class="svg-icon"></app-icon>
               <span>Eliminar</span>
