@@ -32,7 +32,10 @@ export class BancosService {
     return this.http.patch<BancosDTO>(`${this.apiUrl}/${id}`, dto, {withCredentials: true});
   }
 
-  delete(id: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`, {withCredentials: true});
+  /**
+   * Soft-deletes a banco. Without `cascade`, the backend answers 409 when it still has active contas, cartões or rules.
+   */
+  delete(id: string, cascade = false): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${id}`, {withCredentials: true, params: cascade ? {cascade: 'true'} : {}});
   }
 }
