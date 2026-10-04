@@ -32,6 +32,7 @@ export default interface ICartaoCreditoRepo {
      * @returns The found CartaoCredito, or null if not found
      */
     findById(cartaoId: string): Promise<CartaoCredito | null>;
+    findActiveById(cartaoId: string): Promise<CartaoCredito | null>;
 
     /**
      * Finds all CartaoCredito entities, optionally filtered by user ID and banco ID.
@@ -39,7 +40,11 @@ export default interface ICartaoCreditoRepo {
      * @param bancoId - Optional banco domain ID to filter CartaoCredito records
      * @returns An array of CartaoCredito entities
      */
-    findAll(userId?: string, bancoId?: string): Promise<CartaoCredito[]>;
+    findAll(userId?: string, bancoId?: string, includeInactive?: boolean): Promise<CartaoCredito[]>;
+    countActiveByContaPagamento(contaDomainId: string): Promise<number>;
+    countActiveByBanco(bancoId: string): Promise<number>;
+    deactivateByContaPagamento(contaDomainId: string): Promise<void>;
+    deactivateByBanco(bancoId: string): Promise<void>;
 
     /**
      * Gets the extrato (transaction history and current balance) for a specific CartaoCredito, optionally filtered by user ID for access control.

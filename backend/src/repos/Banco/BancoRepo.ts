@@ -86,11 +86,11 @@ export default class BancoRepo implements IBancoRepo {
     }
 
     /**
-     * Deletes a Banco by domain ID
+     * Soft-deletes a Banco by domain ID (is_active = false). The row is kept so FKs and history stay intact.
      */
     public async delete(bancoId: string): Promise<void> {
         try {
-            await this.repo.delete({ domainId: bancoId });
+            await this.repo.update({ domainId: bancoId }, { isActive: false });
         } catch (err) {
             this.logger.error('BancoRepo.delete error: %o', err);
             throw err;
@@ -113,14 +113,17 @@ export default class BancoRepo implements IBancoRepo {
     }
 
     /**
-     * Finds all Bancos, optionally filtered by user
+     * Finds all Bancos, optionally filtered by user. Soft-deleted Bancos are left out unless includeInactive is set.
      */
-    public async findAll(userId?: string): Promise<Banco[]> {
+    public async findAll(userId?: string, includeInactive = false): Promise<Banco[]> {
         try {
             const query = this.repo.createQueryBuilder('banco');
 
+            if (!includeInactive) {
+                query.where('banco.is_active = :isActive', { isActive: true });
+            }
             if (userId) {
-                query.where('banco.user_domain_id = :userId', { userId });
+                query.andWhere('banco.user_domain_id = :userId', { userId });
             }
 
             const entities = await query.orderBy('banco.id', 'DESC').getMany();

@@ -206,6 +206,7 @@ describe('TransacaoService — updateTransacao aplica novas associações (issue
   };
   const contaRepo: jest.Mocked<IContaRepo> = {
     findById: jest.fn(),
+    findActiveById: jest.fn(),
     update: jest.fn(),
     save: jest.fn(),
     delete: jest.fn(),
@@ -213,6 +214,7 @@ describe('TransacaoService — updateTransacao aplica novas associações (issue
   } as unknown as jest.Mocked<IContaRepo>;
   const cartaoCreditoRepo: jest.Mocked<ICartaoCreditoRepo> = {
     findById: jest.fn(),
+    findActiveById: jest.fn(),
     update: jest.fn(),
     save: jest.fn(),
     delete: jest.fn(),
@@ -246,12 +248,14 @@ describe('TransacaoService — updateTransacao aplica novas associações (issue
       if (id === contaB.id.toString()) return contaB;
       return null;
     });
+    // O novo alvo é validado com findActiveById (conta apagada não recebe movimentos)
+    contaRepo.findActiveById.mockImplementation(async (id: string) => (id === contaB.id.toString() ? contaB : null));
     contaRepo.update.mockResolvedValue(undefined as unknown as Awaited<ReturnType<IContaRepo['update']>>);
 
     const result = await service.updateTransacao(existing.id.toString(), { contaId: contaB.id.toString() });
 
     expect(result.isSuccess).toBe(true);
-    expect(contaRepo.findById).toHaveBeenCalledWith(contaB.id.toString());
+    expect(contaRepo.findActiveById).toHaveBeenCalledWith(contaB.id.toString());
     const savedTransacao = transacaoRepo.update.mock.calls[0][0] as Transacao;
     expect(savedTransacao.conta?.id.toString()).toBe(contaB.id.toString());
   });
@@ -267,6 +271,7 @@ describe('TransacaoService — updateTransacao aplica novas associações (issue
       if (queriedId === contaA.id.toString()) return contaA;
       return null;
     });
+    contaRepo.findActiveById.mockResolvedValue(null);
 
     const result = await service.updateTransacao(existing.id.toString(), { contaId: 'CNT00000000099' });
 
@@ -288,6 +293,7 @@ describe('TransacaoService — updateTransacao aplica novas associações (issue
       if (id === cartaoB.id.toString()) return cartaoB;
       return null;
     });
+    cartaoCreditoRepo.findActiveById.mockImplementation(async (id: string) => (id === cartaoB.id.toString() ? cartaoB : null));
     cartaoCreditoRepo.update.mockResolvedValue(undefined as unknown as Awaited<ReturnType<ICartaoCreditoRepo['update']>>);
     contaRepo.findById.mockResolvedValue(contaPagamento);
     contaRepo.update.mockResolvedValue(undefined as unknown as Awaited<ReturnType<IContaRepo['update']>>);
@@ -295,7 +301,7 @@ describe('TransacaoService — updateTransacao aplica novas associações (issue
     const result = await service.updateTransacao(existing.id.toString(), { cartaoCreditoId: cartaoB.id.toString() });
 
     expect(result.isSuccess).toBe(true);
-    expect(cartaoCreditoRepo.findById).toHaveBeenCalledWith(cartaoB.id.toString());
+    expect(cartaoCreditoRepo.findActiveById).toHaveBeenCalledWith(cartaoB.id.toString());
     const savedTransacao = transacaoRepo.update.mock.calls[0][0] as Transacao;
     expect(savedTransacao.cartaoCredito?.id.toString()).toBe(cartaoB.id.toString());
   });

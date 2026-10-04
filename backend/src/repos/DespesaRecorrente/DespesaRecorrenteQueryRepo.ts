@@ -42,6 +42,8 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
                 }
             }
 
+            // Soft-deleted rules are hidden; paused rules (ativo = false) are still listed.
+            qb.andWhere('d.isActive = :isActive', { isActive: true });
             const rows = await qb.getMany();
 
             const res: DespesaRecorrente[] = [];
@@ -77,6 +79,8 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
                 qb.where('d.ativo = :ativo', { ativo: true });
             }
 
+            // Soft-deleted rules are hidden; paused rules (ativo = false) are still listed.
+            qb.andWhere('d.isActive = :isActive', { isActive: true });
             const rows = await qb.getMany();
 
             const res: DespesaRecorrente[] = [];
@@ -122,6 +126,8 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
                 qb.andWhere('contaOrigem.banco_id = :bancoId', { bancoId });
             }
 
+            // Soft-deleted rules are hidden; paused rules (ativo = false) are still listed.
+            qb.andWhere('d.isActive = :isActive', { isActive: true });
             const rows = await qb.getMany();
             const res: DespesaRecorrente[] = [];
             for (const r of rows) {
@@ -179,6 +185,8 @@ export default class DespesaRecorrenteQueryRepo implements IDespesaRecorrenteQue
                 qb.andWhere('contaOrigem.banco_id = :bancoId', { bancoId });
             }
 
+            // Soft-deleted rules are hidden; paused rules (ativo = false) are still listed.
+            qb.andWhere('d.isActive = :isActive', { isActive: true });
             const rows = await qb.getMany();
             const res: DespesaRecorrente[] = [];
             for (const r of rows) {

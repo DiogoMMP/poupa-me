@@ -97,7 +97,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
       if (combine.isFailure)
         return Result.fail<ITransacaoDTO>(String(combine.error));
 
-      const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
+      const categoria = await this.categoriaRepo.findActiveById(inputDTO.categoriaId);
       if (!categoria)
         return Result.fail<ITransacaoDTO>("Target Category not found");
 
@@ -114,12 +114,12 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
           "Despesa Mensal cannot be applied to credit cards",
         );
 
-      const conta = await this.contaRepo.findById(inputDTO.contaId);
+      const conta = await this.contaRepo.findActiveById(inputDTO.contaId);
       if (!conta) return Result.fail<ITransacaoDTO>("Origin Account not found");
 
       let contaDestino = null;
       if (!imediata) {
-        contaDestino = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+        contaDestino = await this.contaRepo.findActiveById(inputDTO.contaDestinoId!);
         if (!contaDestino)
           return Result.fail<ITransacaoDTO>("Destination Account not found");
       }
@@ -210,7 +210,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
       if (combine.isFailure)
         return Result.fail<ITransacaoDTO>(String(combine.error));
 
-      const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
+      const categoria = await this.categoriaRepo.findActiveById(inputDTO.categoriaId);
       if (!categoria)
         return Result.fail<ITransacaoDTO>("Target Category not found");
 
@@ -227,12 +227,12 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
           "Despesa Semanal cannot be applied to credit cards",
         );
 
-      const conta = await this.contaRepo.findById(inputDTO.contaId);
+      const conta = await this.contaRepo.findActiveById(inputDTO.contaId);
       if (!conta) return Result.fail<ITransacaoDTO>("Origin Account not found");
 
       let contaDestino = null;
       if (!imediata) {
-        contaDestino = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+        contaDestino = await this.contaRepo.findActiveById(inputDTO.contaDestinoId!);
         if (!contaDestino)
           return Result.fail<ITransacaoDTO>("Destination Account not found");
       }
@@ -323,7 +323,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
       if (combine.isFailure)
         return Result.fail<ITransacaoDTO>(String(combine.error));
 
-      const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
+      const categoria = await this.categoriaRepo.findActiveById(inputDTO.categoriaId);
       if (!categoria)
         return Result.fail<ITransacaoDTO>("Target Category not found");
 
@@ -340,12 +340,12 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
           "Despesa Anual cannot be applied to credit cards",
         );
 
-      const conta = await this.contaRepo.findById(inputDTO.contaId);
+      const conta = await this.contaRepo.findActiveById(inputDTO.contaId);
       if (!conta) return Result.fail<ITransacaoDTO>("Origin Account not found");
 
       let contaDestino = null;
       if (!imediata) {
-        contaDestino = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+        contaDestino = await this.contaRepo.findActiveById(inputDTO.contaDestinoId!);
         if (!contaDestino)
           return Result.fail<ITransacaoDTO>("Destination Account not found");
       }
@@ -537,7 +537,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
       if (combine.isFailure)
         return Result.fail<ITransacaoDTO>(String(combine.error));
 
-      const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
+      const categoria = await this.categoriaRepo.findActiveById(inputDTO.categoriaId);
       if (!categoria)
         return Result.fail<ITransacaoDTO>("Target Category not found");
 
@@ -558,19 +558,19 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
           "Poupança cannot be applied to credit cards",
         );
 
-      const conta = await this.contaRepo.findById(inputDTO.contaId);
+      const conta = await this.contaRepo.findActiveById(inputDTO.contaId);
       if (!conta) return Result.fail<ITransacaoDTO>("Origin Account not found");
 
       let contaDestino = null;
       if (!imediata) {
-        contaDestino = await this.contaRepo.findById(inputDTO.contaDestinoId!);
+        contaDestino = await this.contaRepo.findActiveById(inputDTO.contaDestinoId!);
         if (!contaDestino)
           return Result.fail<ITransacaoDTO>(
             "Destination Account (Despesas Mensais) not found",
           );
       }
 
-      const contaPoupanca = await this.contaRepo.findById(
+      const contaPoupanca = await this.contaRepo.findActiveById(
         inputDTO.contaPoupancaId,
       );
       if (!contaPoupanca)

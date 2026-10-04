@@ -60,6 +60,7 @@ function buildPaymentTransacao(cartao: CartaoCredito): Transacao {
 describe('CartaoCreditoService.pagarCartao — atomic payment orchestration', () => {
   const cartaoRepo: jest.Mocked<ICartaoCreditoRepo> = {
     findById: jest.fn(),
+    findActiveById: jest.fn(),
     update: jest.fn(),
     save: jest.fn(),
     delete: jest.fn(),
@@ -73,11 +74,14 @@ describe('CartaoCreditoService.pagarCartao — atomic payment orchestration', ()
     findByDomainId: jest.fn()
   };
 
+  // pagarCartao valida que a conta de pagamento está ativa (findActiveById); o mock é definido em cada teste
+  const contaRepo = { findActiveById: jest.fn() };
+
   const service = new CartaoCreditoService(
     cartaoRepo,
     transacaoRepo,
     {} as unknown as ICategoriaRepo,
-    {},
+    contaRepo,
     {} as unknown as IBancoRepo,
     userRepo as unknown as IUserRepo,
     { error: jest.fn() }
@@ -92,7 +96,9 @@ describe('CartaoCreditoService.pagarCartao — atomic payment orchestration', ()
     const paymentTransacao = buildPaymentTransacao(cartao);
 
     cartaoRepo.getExtrato.mockResolvedValue({ transacoes: [], saldoAtual: Dinheiro.create(100, 'EUR').getValue() });
-    cartaoRepo.findById.mockResolvedValue(cartao);
+    cartaoRepo.findById.mockResolvedValue(cartao); // usado pelo getExtrato
+    cartaoRepo.findActiveById.mockResolvedValue(cartao);
+    contaRepo.findActiveById.mockResolvedValue({} as never);
     userRepo.findByDomainId.mockResolvedValue(undefined as unknown as Awaited<ReturnType<IUserRepo['findByDomainId']>>);
     transacaoRepo.pagarCartao.mockResolvedValue(paymentTransacao);
 

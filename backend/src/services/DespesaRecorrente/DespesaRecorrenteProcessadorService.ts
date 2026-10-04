@@ -91,7 +91,8 @@ export default class DespesaRecorrenteProcessadorService implements IDespesaReco
         userRole?: string
     ): Promise<Result<ITransacaoDTO>> {
         try {
-            const regra = await this.despesaRepo.findById(despesaId);
+            // findActiveById: a soft-deleted rule must not generate movimentos, even manually
+            const regra = await this.despesaRepo.findActiveById(despesaId);
             if (!regra) return Result.fail<ITransacaoDTO>('Despesa not found');
             if (userRole !== 'Admin' && regra.userId.toString() !== userId) return Result.fail<ITransacaoDTO>('Unauthorized');
 

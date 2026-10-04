@@ -4,6 +4,7 @@ import { Service, Inject } from 'typedi';
 import type IContaController from './IContaController.js';
 import type IContaService from '../../services/Conta/IContaService.js';
 import type { IContaInputDTO } from '../../dto/IContaDTO.js';
+import { isFilhosAtivos } from '../../dto/IFilhosAtivosDTO.js';
 
 /**
  * Controller for handling HTTP requests related to Conta entities. Delegates business logic to ContaService.
@@ -68,8 +69,12 @@ export default class ContaController implements IContaController {
             const id = (req.params.id || req.query.id) as string;
             if (!id) return res.status(400).json({ error: 'ID is required to delete conta' });
 
-            const result = await this.contaService.deleteConta(id);
-            if (result.isFailure) return res.status(400).json({ error: result.error });
+            const cascade = req.query.cascade === 'true';
+            const result = await this.contaService.deleteConta(id, cascade);
+            if (result.isFailure) {
+                if (isFilhosAtivos(result.error)) return res.status(409).json(result.error);
+                return res.status(400).json({ error: result.error });
+            }
             return res.status(200).json({ success: result.getValue() });
         } catch (e) {
             next(e);

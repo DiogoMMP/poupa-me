@@ -75,9 +75,22 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
         }));
     }
 
+    /**
+     * Returns an error message if a referenced categoria or conta is missing or soft-deleted. A rule must not be linked
+     * to a deleted record: the automatic processing would otherwise keep producing movimentos on it.
+     */
+    private async validarReferenciasAtivas(categoriaId: string | undefined, contaIds: (string | undefined)[]): Promise<string | null> {
+        if (categoriaId && !(await this.categoriaRepo.findActiveById(categoriaId))) return 'Target Category not found';
+        for (const contaId of contaIds) {
+            if (contaId && !(await this.contaRepo.findActiveById(contaId))) return 'Target Account not found';
+        }
+        return null;
+    }
+
     private async getInfoMap(userId?: string): Promise<Map<string, { nome?: string; icon?: string; bancoId?: string }>> {
         const [categorias, contas] = await Promise.all([
-            this.categoriaRepo.findAll(userId),
+            // includeInactive: uma regra pode continuar a apontar para uma categoria apagada e precisa do nome
+            this.categoriaRepo.findAll(true),
             this.contaRepo.findAll(userId)
         ]);
         const map = new Map<string, { nome?: string; icon?: string; bancoId?: string }>();
@@ -104,6 +117,9 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
      */
     public async createDespesa(dto: ICreateDespesaRecorrenteDTO, userId: string): Promise<Result<IDespesaRecorrenteDTO>> {
         try {
+            const erroRefs = await this.validarReferenciasAtivas(dto.categoriaId, [dto.contaOrigemId, dto.contaDestinoId, dto.contaPoupancaId]);
+            if (erroRefs) return Result.fail<IDespesaRecorrenteDTO>(erroRefs);
+
             const nomeOrError = Nome.create(dto.nome);
             if (nomeOrError.isFailure) return Result.fail<IDespesaRecorrenteDTO>(String(nomeOrError.error));
 
@@ -167,6 +183,9 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
             if (!existing) return Result.fail<IDespesaRecorrenteDTO>('Despesa not found');
 
             if (userRole !== 'Admin' && existing.userId.toString() !== userId) return Result.fail<IDespesaRecorrenteDTO>('Unauthorized');
+
+            const erroRefs = await this.validarReferenciasAtivas(dto.categoriaId, [dto.contaOrigemId, dto.contaDestinoId, dto.contaPoupancaId]);
+            if (erroRefs) return Result.fail<IDespesaRecorrenteDTO>(erroRefs);
 
             const nomeOrError = dto.nome ? Nome.create(dto.nome) : Result.ok<Nome>(existing.nome);
             if (nomeOrError.isFailure) return Result.fail<IDespesaRecorrenteDTO>(String(nomeOrError.error));

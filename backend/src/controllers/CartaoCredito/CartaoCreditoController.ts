@@ -75,8 +75,14 @@ export default class CartaoCreditoController implements ICartaoCreditoController
             const id = (req.params.id || req.query.id) as string;
             if (!id) return res.status(400).json({error: 'ID is required to delete cartao'});
 
-            const result = await this.cartaoService.deleteCartao(id);
-            if (result.isFailure) return res.status(400).json({error: result.error});
+            const currentUser = (req as AuthenticatedRequest).currentUser;
+            if (!currentUser?.id) return res.status(401).json({error: 'User not authenticated'});
+
+            const result = await this.cartaoService.deleteCartao(id, currentUser.id, currentUser.role);
+            if (result.isFailure) {
+                if (result.error === 'Unauthorized') return res.status(401).json({error: result.error});
+                return res.status(400).json({error: result.error});
+            }
             return res.status(200).json({success: result.getValue()});
         } catch (e) {
             next(e);
