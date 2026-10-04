@@ -70,17 +70,15 @@ export class DespesasRecorrentesListarRegrasViewModel {
    */
   loadData(): void {
     this.isLoading$.next(true);
-    const isAdmin = this.auth.user()?.role === 'Admin';
     const bancoId = this.bancoId ?? undefined;
 
-    // Admin sees every rule from every user/banco, regardless of the banco selected in the sidebar
-    if (!isAdmin && !bancoId) {
+    if (!bancoId) {
       this.regras$.next([]);
       this.isLoading$.next(false);
       return;
     }
 
-    this.service.getAll(isAdmin ? undefined : bancoId).subscribe({
+    this.service.getAll(bancoId).subscribe({
       next: (dtos) => {
         this.regras$.next(DespesasRecorrentesMapper.toModelArray(dtos));
         this.isLoading$.next(false);
