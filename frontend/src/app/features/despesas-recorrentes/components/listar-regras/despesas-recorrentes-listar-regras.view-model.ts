@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { DespesasRecorrentesService } from '../../services/despesas-recorrentes.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
@@ -22,6 +22,8 @@ export class DespesasRecorrentesListarRegrasViewModel {
   // State
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
   readonly regras$ = new BehaviorSubject<DespesaRecorrenteModel[]>([]);
+
+  private loadSub?: Subscription;
 
   constructor() {
     // Reload when selected bank changes
@@ -69,18 +71,17 @@ export class DespesasRecorrentesListarRegrasViewModel {
    * called again to refresh the data.
    */
   loadData(): void {
+    this.loadSub?.unsubscribe();
     this.isLoading$.next(true);
-    const isAdmin = this.auth.user()?.role === 'Admin';
     const bancoId = this.bancoId ?? undefined;
 
-    // Admin sees every rule from every user/banco, regardless of the banco selected in the sidebar
-    if (!isAdmin && !bancoId) {
+    if (!bancoId) {
       this.regras$.next([]);
       this.isLoading$.next(false);
       return;
     }
 
-    this.service.getAll(isAdmin ? undefined : bancoId).subscribe({
+    this.loadSub = this.service.getAll(bancoId).subscribe({
       next: (dtos) => {
         this.regras$.next(DespesasRecorrentesMapper.toModelArray(dtos));
         this.isLoading$.next(false);

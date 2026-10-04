@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TransacoesService } from '../../services/transacoes.service';
@@ -89,9 +89,12 @@ export class TransacoesCriarSaidasViewModel {
     });
   }
 
+  private contasSub?: Subscription;
+
   private loadContas(bancoId: string | null): void {
+    this.contasSub?.unsubscribe();
     if (!bancoId) { this.contas$.next([]); return; }
-    this.contasService.getAll(bancoId).subscribe({
+    this.contasSub = this.contasService.getAll(bancoId).subscribe({
       next: (dtos) => {
         try { this.contas$.next(ContasMapper.toModelArray(dtos)); }
         catch { this.contas$.next(dtos as any[]); }

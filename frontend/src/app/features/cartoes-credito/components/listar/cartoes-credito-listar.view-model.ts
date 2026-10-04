@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, forkJoin } from 'rxjs';
+import { BehaviorSubject, Subscription, forkJoin } from 'rxjs';
 import { CartoesCreditoService } from '../../services/cartoes-credito.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
@@ -32,6 +32,9 @@ export class CartoesCreditoListViewModel {
   // Map to cache percentage used per cartão (computed from extrato endpoint)
   private percentMap = new Map<string, number>();
 
+  private loadSub?: Subscription;
+  private detalhesSub?: Subscription;
+
   /**
    * Expose whether a banco is selected for template checks (e.g., show create button)
    */
@@ -51,6 +54,8 @@ export class CartoesCreditoListViewModel {
    * clear the list (or optionally load all cartões if that is desired).
    */
   loadCartoes(bancoId?: string | null): void {
+    this.loadSub?.unsubscribe();
+    this.detalhesSub?.unsubscribe();
     this.isLoading$.next(true);
 
     // If no banco selected, clear list and stop
@@ -62,7 +67,7 @@ export class CartoesCreditoListViewModel {
     }
 
     // Load cartões filtered by bancoId
-    this.service.getAll(bancoId).subscribe({
+    this.loadSub = this.service.getAll(bancoId).subscribe({
       next: (dtos) => {
         const models = CartoesCreditoMapper.toModelArray(dtos);
         this.cartoes$.next(models);
@@ -95,7 +100,7 @@ export class CartoesCreditoListViewModel {
       this.service.getExtrato(cartao.id)
     );
 
-    forkJoin(extratoRequests).subscribe({
+    this.detalhesSub = forkJoin(extratoRequests).subscribe({
       next: (extratos) => {
         extratos.forEach((extrato, index) => {
           const cartao = cartoes[index];

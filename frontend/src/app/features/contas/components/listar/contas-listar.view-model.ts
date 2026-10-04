@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { ContasService } from '../../services/contas.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
@@ -24,6 +24,8 @@ export class ContasListViewModel {
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
   readonly contas$ = new BehaviorSubject<ContasModel[]>([]);
 
+  private loadSub?: Subscription;
+
   /**
    * Expose whether a banco is selected for template checks (e.g., show create button)
    */
@@ -43,6 +45,7 @@ export class ContasListViewModel {
    * clear the list (or optionally load all contas if that is desired).
    */
   loadData(bancoId?: string | null): void {
+    this.loadSub?.unsubscribe();
     this.isLoading$.next(true);
 
     // If no banco selected, clear list and stop
@@ -53,7 +56,7 @@ export class ContasListViewModel {
     }
 
     // Load contas filtered by bancoId
-    this.service.getAll(bancoId).subscribe({
+    this.loadSub = this.service.getAll(bancoId).subscribe({
       next: (dtos) => {
         const models = ContasMapper.toModelArray(dtos);
         this.contas$.next(models);

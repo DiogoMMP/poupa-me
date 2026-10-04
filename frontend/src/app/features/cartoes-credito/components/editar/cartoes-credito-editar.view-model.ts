@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { CartoesCreditoService } from '../../services/cartoes-credito.service';
 import { NotificationService } from '../../../../services/notification.service';
@@ -33,12 +33,15 @@ export class CartoesCreditoEditarViewModel {
     });
   }
 
+  private contasSub?: Subscription;
+
   private loadContas(bancoId: string | null): void {
+    this.contasSub?.unsubscribe();
     if (!bancoId) {
       this.contas$.next([]);
       return;
     }
-    this.contasService.getAll(bancoId).subscribe({
+    this.contasSub = this.contasService.getAll(bancoId).subscribe({
       next: (dtos) => {
         try {
           const models = ContasMapper.toModelArray(dtos);

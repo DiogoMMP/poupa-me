@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, forkJoin } from 'rxjs';
+import { BehaviorSubject, Subscription, forkJoin } from 'rxjs';
 import { TransacoesService } from '../../services/transacoes.service';
 import { CategoriasService } from '../../../categorias/services/categorias.service';
 import { CartoesCreditoService } from '../../../cartoes-credito/services/cartoes-credito.service';
@@ -41,6 +41,10 @@ export class TransacoesListViewModel {
   readonly PERIODS = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'] as const;
   readonly STATUSES = ['Pendente', 'Concluído'];
 
+  private allSub?: Subscription;
+  private contaSub?: Subscription;
+  private cartaoSub?: Subscription;
+
   constructor() {
     this.selectedBanco.selectedBancoId$.subscribe(() => this.loadAll());
   }
@@ -53,6 +57,9 @@ export class TransacoesListViewModel {
    * Load all supporting data (categories, cards, accounts) and refresh lists
    */
   loadAll(): void {
+    this.allSub?.unsubscribe();
+    this.contaSub?.unsubscribe();
+    this.cartaoSub?.unsubscribe();
     this.isLoading$.next(true);
     const bancoId = this.bancoId ?? undefined;
 
@@ -66,7 +73,7 @@ export class TransacoesListViewModel {
       return;
     }
 
-    forkJoin({
+    this.allSub = forkJoin({
       categorias: this.categoriasService.getAll(),
       cartoes: this.cartoesService.getAll(bancoId),
       contas: this.contasService.getAll(bancoId)
@@ -92,6 +99,7 @@ export class TransacoesListViewModel {
    * Load transactions for the account column based on current filters
    */
   loadContaTransacoes(): void {
+    this.contaSub?.unsubscribe();
     const f = this.contaFilters;
     const bancoId = this.bancoId ?? undefined;
 
@@ -103,7 +111,7 @@ export class TransacoesListViewModel {
 
     // Filter by contaId — use the specific conta endpoint
     if (f.contaId) {
-      this.transacoesService.getContaTransactions(f.contaId).subscribe({
+      this.contaSub = this.transacoesService.getContaTransactions(f.contaId).subscribe({
         next: dtos => {
           let all = TransacoesMapper.toModelArray(dtos);
           if (f.categoriaId) all = all.filter(t => t.categoria.id === f.categoriaId);
@@ -121,7 +129,7 @@ export class TransacoesListViewModel {
 
     // Period filter (server-side)
     if (f.period && !f.categoriaId) {
-      this.transacoesService.getContaTransactionsByPeriod(f.period, bancoId).subscribe({
+      this.contaSub = this.transacoesService.getContaTransactionsByPeriod(f.period, bancoId).subscribe({
         next: dtos => {
           this.contaTransacoes$.next(TransacoesMapper.toModelArray(dtos));
           this.isLoading$.next(false);
@@ -136,7 +144,7 @@ export class TransacoesListViewModel {
 
     // Categoria filter (server-side)
     if (f.categoriaId) {
-      this.transacoesService.getContaTransactionsByCategoria(f.categoriaId, bancoId).subscribe({
+      this.contaSub = this.transacoesService.getContaTransactionsByCategoria(f.categoriaId, bancoId).subscribe({
         next: dtos => {
           let all = TransacoesMapper.toModelArray(dtos);
           if (f.period) all = filterByPeriod(all, f.period);
@@ -152,7 +160,7 @@ export class TransacoesListViewModel {
     }
 
     // No filter
-    this.transacoesService.getAllContaTransactions(bancoId).subscribe({
+    this.contaSub = this.transacoesService.getAllContaTransactions(bancoId).subscribe({
       next: dtos => {
         this.contaTransacoes$.next(TransacoesMapper.toModelArray(dtos));
         this.isLoading$.next(false);
@@ -180,6 +188,7 @@ export class TransacoesListViewModel {
    * Load transactions for the credit-card column based on current filters
    */
   loadCartaoTransacoes(): void {
+    this.cartaoSub?.unsubscribe();
     const f = this.cartaoFilters;
     const bancoId = this.bancoId ?? undefined;
 
@@ -191,7 +200,7 @@ export class TransacoesListViewModel {
 
     // Filter by cartaoId — use the specific cartao endpoint
     if (f.cartaoId) {
-      this.transacoesService.getCartaoTransactions(f.cartaoId).subscribe({
+      this.cartaoSub = this.transacoesService.getCartaoTransactions(f.cartaoId).subscribe({
         next: dtos => {
           let all = TransacoesMapper.toModelArray(dtos);
           if (f.categoriaId) all = all.filter(t => t.categoria.id === f.categoriaId);
@@ -210,7 +219,7 @@ export class TransacoesListViewModel {
 
     // Period filter (server-side)
     if (f.period && !f.categoriaId && !f.status) {
-      this.transacoesService.getCartaoTransactionsByPeriod(f.period, bancoId).subscribe({
+      this.cartaoSub = this.transacoesService.getCartaoTransactionsByPeriod(f.period, bancoId).subscribe({
         next: dtos => {
           this.cartaoTransacoes$.next(TransacoesMapper.toModelArray(dtos));
           this.isLoading$.next(false);
@@ -225,7 +234,7 @@ export class TransacoesListViewModel {
 
     // Status filter (server-side)
     if (f.status && !f.categoriaId) {
-      this.transacoesService.getCartaoTransactionsByStatus(f.status, bancoId).subscribe({
+      this.cartaoSub = this.transacoesService.getCartaoTransactionsByStatus(f.status, bancoId).subscribe({
         next: dtos => {
           let all = TransacoesMapper.toModelArray(dtos);
           if (f.period) all = filterByPeriod(all, f.period);
@@ -242,7 +251,7 @@ export class TransacoesListViewModel {
 
     // Categoria filter (server-side)
     if (f.categoriaId) {
-      this.transacoesService.getCartaoTransactionsByCategoria(f.categoriaId, bancoId).subscribe({
+      this.cartaoSub = this.transacoesService.getCartaoTransactionsByCategoria(f.categoriaId, bancoId).subscribe({
         next: dtos => {
           let all = TransacoesMapper.toModelArray(dtos);
           if (f.status) all = all.filter(t => t.status === f.status);
@@ -259,7 +268,7 @@ export class TransacoesListViewModel {
     }
 
     // No filter
-    this.transacoesService.getAllCartaoTransactions(bancoId).subscribe({
+    this.cartaoSub = this.transacoesService.getAllCartaoTransactions(bancoId).subscribe({
       next: dtos => {
         this.cartaoTransacoes$.next(TransacoesMapper.toModelArray(dtos));
         this.isLoading$.next(false);
