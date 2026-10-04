@@ -1,7 +1,8 @@
-import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Unique} from 'typeorm';
+import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index} from 'typeorm';
 
 @Entity({name: 'categoria'})
-@Unique(['nome'])
+// Unicidade só entre categorias ativas: uma categoria apagada (soft delete) liberta o nome.
+@Index('UQ_categoria_nome_ativo', ['nome'], { unique: true, where: '"is_active" = true' })
 export class CategoriaEntity {
     @PrimaryGeneratedColumn()
     id!: number;

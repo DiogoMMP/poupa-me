@@ -4,7 +4,7 @@ import {
     Column,
     CreateDateColumn,
     UpdateDateColumn,
-    Unique,
+    Index,
     OneToMany,
     ManyToOne,
     JoinColumn
@@ -14,7 +14,8 @@ import { ContaEntity } from './ContaEntity.js';
 import { BancoEntity } from './BancoEntity.js';
 
 @Entity({ name: 'cartao_credito' })
-@Unique(['nome', 'bancoId'])
+// Unicidade só entre cartões ativos: um cartão apagado (soft delete) liberta o nome.
+@Index('UQ_cartao_nome_banco_ativo', ['nome', 'bancoId'], { unique: true, where: '"is_active" = true' })
 export class CartaoCreditoEntity {
     @PrimaryGeneratedColumn()
     id!: number;

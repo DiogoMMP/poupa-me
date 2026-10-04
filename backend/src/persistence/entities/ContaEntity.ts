@@ -1,9 +1,10 @@
-import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Unique, OneToMany, ManyToOne, JoinColumn} from 'typeorm';
+import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, OneToMany, ManyToOne, JoinColumn} from 'typeorm';
 import {TransacaoEntity} from "./TransacaoEntity.js";
 import {BancoEntity} from "./BancoEntity.js";
 
 @Entity({name: 'conta'})
-@Unique(['nome', 'bancoId'])
+// Unicidade só entre contas ativas: uma conta apagada (soft delete) liberta o nome.
+@Index('UQ_conta_nome_banco_ativo', ['nome', 'bancoId'], { unique: true, where: '"is_active" = true' })
 export class ContaEntity {
     @PrimaryGeneratedColumn()
     id!: number;
