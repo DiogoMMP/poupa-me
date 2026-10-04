@@ -117,7 +117,7 @@ export default class UserRepo implements IUserRepo {
      * database. If there is an error during the database query, it logs the error and rethrows it.
      */
     public async findAll(): Promise<User[]> {
-        const rows = await this.repo.find({ order: { domainId: 'ASC' } });
+        const rows = await this.repo.find({ where: { isActive: true }, order: { domainId: 'ASC' } });
         const res: User[] = [];
 
         for (const r of rows) {
@@ -127,11 +127,40 @@ export default class UserRepo implements IUserRepo {
         return res;
     }
 
+    /**
+     * Finds an active User by email. Soft-deleted users (is_active = false) are not returned, so they cannot log in.
+     */
+    public async findActiveByEmail(email: string): Promise<User | null> {
+        try {
+            const row = await this.repo.createQueryBuilder('user')
+                .where('LOWER(user.email) = LOWER(:email)', { email })
+                .andWhere('user.is_active = :isActive', { isActive: true })
+                .getOne();
+            if (!row) return null;
+            return await UserMap.toDomain(row);
+        } catch (err) {
+            this.logger.error('UserRepo.findActiveByEmail error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Finds an active User by domain ID. Used by the auth middleware to reject tokens of deleted users.
+     */
+    public async findActiveByDomainId(domainId: string): Promise<User | null> {
+        const row = await this.repo.findOne({ where: { domainId, isActive: true } });
+        if (!row) return null;
+        return await UserMap.toDomain(row);
+    }
+
+    /**
+     * Soft-deletes a User by email (is_active = false). The row is kept so the user's data keeps its owner reference.
+     */
     public async deleteByEmail(email: string): Promise<void> {
         try {
             await this.repo.createQueryBuilder()
-                .delete()
-                .from(UserEntity)
+                .update(UserEntity)
+                .set({ isActive: false })
                 .where('LOWER(email) = LOWER(:email)', { email })
                 .execute();
         } catch (err) {

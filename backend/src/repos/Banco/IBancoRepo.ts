@@ -36,6 +36,6 @@ export default interface IBancoRepo {
      * @param userId - Optional user domain ID to filter Banco records
      * @returns An array of Banco entities
      */
-    findAll(userId?: string): Promise<Banco[]>;
+    findAll(userId?: string, includeInactive?: boolean): Promise<Banco[]>;
 }
 

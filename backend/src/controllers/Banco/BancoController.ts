@@ -4,6 +4,7 @@ import type IBancoController from './IBancoController.js';
 import type IBancoService from '../../services/Banco/IBancoService.js';
 import type IDespesaRecorrenteProcessadorService from '../../services/DespesaRecorrente/IServices/IDespesaRecorrenteProcessadorService.js';
 import type { AuthenticatedRequest } from '../../api/middlewares/isAuth.js';
+import { isFilhosAtivos } from '../../dto/IFilhosAtivosDTO.js';
 
 /**
  * Controller handling HTTP requests for Banco endpoints
@@ -92,10 +93,14 @@ export default class BancoController implements IBancoController {
                 return res.status(400).json({ error: 'Banco ID is required' });
             }
 
-            const result = await this.bancoService.deleteBanco(bancoId, userId, userRole);
+            const cascade = req.query.cascade === 'true';
+            const result = await this.bancoService.deleteBanco(bancoId, userId, userRole, cascade);
 
             if (result.isFailure) {
                 const error = result.error;
+                if (isFilhosAtivos(error)) {
+                    return res.status(409).json(error);
+                }
                 if (error === 'Banco not found') {
                     return res.status(404).json({ error });
                 }

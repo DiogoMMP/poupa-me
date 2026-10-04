@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Container } from 'typedi';
-import { isAuth } from '../middlewares/index.js';
+import { isAuth, authorize, Role } from '../middlewares/index.js';
 import type { AuthenticatedRequest } from '../middlewares/index.js';
 import ContaController from '../../controllers/Conta/ContaController.js';
 
@@ -158,7 +158,9 @@ export default (app: Router) => {
    *     tags:
    *       - Conta
    *     summary: Delete a conta by domain id
-   *     description: Deletes a conta identified by its domain id. Requires authentication.
+   *     description: >
+   *       Soft-deletes a conta (is_active = false). Admin only. If it still has cartões paid from it or active recurring
+   *       rules, the request is refused with 409 and the counts; repeat it with cascade=true to soft-delete those too.
    *     security:
    *       - bearerAuth: []
    *     parameters:
@@ -167,14 +169,23 @@ export default (app: Router) => {
    *         required: true
    *         schema:
    *           type: string
+   *       - in: query
+   *         name: cascade
+   *         required: false
+   *         schema:
+   *           type: boolean
+   *         description: Also soft-delete the cartões paid from this conta and the recurring rules that reference it
    *     responses:
    *       200:
    *         description: Deletion result
    *       400:
    *         description: Validation failed
+   *       409:
+   *         description: Conta has active children and cascade was not requested. Body has cartoesAtivos and regrasAtivas
    */
   // Delete conta by domain id
-  route.delete('/:id', isAuth, (req, res, next) => ctrl.deleteContaByDomainId(req as AuthenticatedRequest, res, next));
+  // Apagar contas é exclusivo de Admin (a conta é partilhada entre os bancos do utilizador)
+  route.delete('/:id', isAuth, authorize([Role.Admin]), (req, res, next) => ctrl.deleteContaByDomainId(req as AuthenticatedRequest, res, next));
 
   /**
    * @openapi

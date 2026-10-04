@@ -77,7 +77,8 @@ export default class AuthService implements IUserService {
         try {
             if (!loginDTO) return Result.fail<{ token: string; user: IUserDTO }>('No login data provided');
 
-            const user = await this.userRepo.findByEmail(loginDTO.email);
+            // Soft-deleted users are not found here, so they get the same generic error as an unknown email
+            const user = await this.userRepo.findActiveByEmail(loginDTO.email);
             if (!user) return Result.fail<{ token: string; user: IUserDTO }>('Invalid credentials');
 
             const passwordMatches = await user.password.comparePassword(loginDTO.password);

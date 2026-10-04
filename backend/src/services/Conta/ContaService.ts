@@ -4,7 +4,10 @@ import type IContaService from './IContaService.js';
 import type IContaRepo from '../../repos/Conta/IContaRepo.js';
 import type IBancoRepo from '../../repos/Banco/IBancoRepo.js';
 import type IUserRepo from '../../repos/User/IUserRepo.js';
+import type ICartaoCreditoRepo from '../../repos/CartaoCredito/ICartaoCreditoRepo.js';
+import type IDespesaRecorrenteRepo from '../../repos/DespesaRecorrente/IRepos/IDespesaRecorrenteRepo.js';
 import type { IContaDTO, IContaInputDTO, IContaUpdateDTO } from '../../dto/IContaDTO.js';
+import type { IFilhosAtivosDTO } from '../../dto/IFilhosAtivosDTO.js';
 import { ContaMap } from '../../mappers/ContaMap.js';
 import { Nome } from '../../domain/Shared/ValueObjects/Nome.js';
 import { Icon } from '../../domain/Shared/ValueObjects/Icon.js';
@@ -21,6 +24,8 @@ export default class ContaService implements IContaService {
         @Inject('ContaRepo') private contaRepo: IContaRepo,
         @Inject('BancoRepo') private bancoRepo: IBancoRepo,
         @Inject('UserRepo') private userRepo: IUserRepo,
+        @Inject('CartaoCreditoRepo') private cartaoRepo: ICartaoCreditoRepo,
+        @Inject('DespesaRecorrenteRepo') private despesaRepo: IDespesaRecorrenteRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {}
 
@@ -123,12 +128,24 @@ export default class ContaService implements IContaService {
     }
 
     /**
-     * Deletes a Conta by its domain ID. If the Conta does not exist, it will still return success to avoid leaking information about existing IDs.
+     * Soft-deletes a Conta by its domain ID. If it still has CartaoCredito paid from it or active recurring rules that
+     * reference it, the delete is refused with an ACTIVE_CHILDREN error carrying the counts, unless `cascade` is true:
+     * then those are soft-deleted too. If the Conta does not exist, it still returns success to avoid leaking information about existing IDs.
      * @param id - The domain ID of the Conta to delete.
-     * @returns A Result object containing true on successful deletion, or an error message on failure.
+     * @param cascade - Whether to soft-delete the dependent CartaoCredito and recurring rules as well.
+     * @returns A Result object containing true on successful deletion, or an error on failure.
      */
-    public async deleteConta(id: string): Promise<Result<boolean>> {
+    public async deleteConta(id: string, cascade = false): Promise<Result<boolean>> {
         try {
+            const cartoesAtivos = await this.cartaoRepo.countActiveByContaPagamento(id);
+            const regrasAtivas = await this.despesaRepo.countActiveByConta(id);
+            if (!cascade && cartoesAtivos + regrasAtivas > 0) {
+                const filhos: IFilhosAtivosDTO = { code: 'ACTIVE_CHILDREN', contasAtivas: 0, cartoesAtivos, regrasAtivas };
+                return Result.fail<boolean>(filhos);
+            }
+
+            await this.cartaoRepo.deactivateByContaPagamento(id);
+            await this.despesaRepo.deactivateByConta(id);
             await this.contaRepo.delete(id);
             return Result.ok<boolean>(true);
         } catch (err) {

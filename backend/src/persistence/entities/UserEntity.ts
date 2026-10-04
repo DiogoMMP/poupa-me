@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity({ name: 'user' })
-@Unique(['email'])
+// Unicidade só entre utilizadores ativos: um utilizador apagado (soft delete) liberta o email.
+@Index('UQ_user_email_ativo', ['email'], { unique: true, where: '"is_active" = true' })
 export class UserEntity {
   @PrimaryGeneratedColumn()
   id!: number;

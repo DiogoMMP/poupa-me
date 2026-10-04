@@ -67,13 +67,13 @@ export default class TransacaoService implements ITransacaoService {
             const combine = Result.combine([descricaoResult, dataResult, dinheiroResult]);
             if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
 
-            const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
+            const categoria = await this.categoriaRepo.findActiveById(inputDTO.categoriaId);
             if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
 
             if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Target Account is required for Entrada');
             if (inputDTO.cartaoCreditoId) return Result.fail<ITransacaoDTO>('Entrada cannot be applied to credit cards');
 
-            const conta = await this.contaRepo.findById(inputDTO.contaId);
+            const conta = await this.contaRepo.findActiveById(inputDTO.contaId);
             if (!conta) return Result.fail<ITransacaoDTO>('Target Account not found');
 
             const transacaoOrError = Transacao.createEntrada({
@@ -114,13 +114,13 @@ export default class TransacaoService implements ITransacaoService {
             const combine = Result.combine([descricaoResult, dataResult, dinheiroResult]);
             if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
 
-            const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
+            const categoria = await this.categoriaRepo.findActiveById(inputDTO.categoriaId);
             if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
 
             if (!inputDTO.contaId) return Result.fail<ITransacaoDTO>('Target Account is required for Saida');
             if (inputDTO.cartaoCreditoId) return Result.fail<ITransacaoDTO>('Saida cannot be applied to credit cards');
 
-            const conta = await this.contaRepo.findById(inputDTO.contaId);
+            const conta = await this.contaRepo.findActiveById(inputDTO.contaId);
             if (!conta) return Result.fail<ITransacaoDTO>('Target Account not found');
 
             const transacaoOrError = Transacao.createSaida({
@@ -161,21 +161,21 @@ export default class TransacaoService implements ITransacaoService {
             const combine = Result.combine([descricaoResult, dataResult, dinheiroResult]);
             if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
 
-            const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
+            const categoria = await this.categoriaRepo.findActiveById(inputDTO.categoriaId);
             if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
 
             if (!inputDTO.cartaoCreditoId) {
                 return Result.fail<ITransacaoDTO>('cartaoCreditoId is required for Credito');
             }
 
-            const cartaoCredito = await this.cartaoCreditoRepo.findById(inputDTO.cartaoCreditoId);
+            const cartaoCredito = await this.cartaoCreditoRepo.findActiveById(inputDTO.cartaoCreditoId);
             if (!cartaoCredito) return Result.fail<ITransacaoDTO>('Target Credit Card not found');
 
             const contaPagamentoId = cartaoCredito.contaPagamentoId;
             if (!contaPagamentoId) {
                 return Result.fail<ITransacaoDTO>('Credit card does not have an associated payment account');
             }
-            const conta = await this.contaRepo.findById(contaPagamentoId.toString());
+            const conta = await this.contaRepo.findActiveById(contaPagamentoId.toString());
             if (!conta) return Result.fail<ITransacaoDTO>('Payment account associated with credit card not found');
 
             const userId = inputDTO.userId ?? cartaoCredito.userId.toString();
@@ -223,21 +223,21 @@ export default class TransacaoService implements ITransacaoService {
             const combine = Result.combine([descricaoResult, dataResult, dinheiroResult]);
             if (combine.isFailure) return Result.fail<ITransacaoDTO>(String(combine.error));
 
-            const categoria = await this.categoriaRepo.findById(inputDTO.categoriaId);
+            const categoria = await this.categoriaRepo.findActiveById(inputDTO.categoriaId);
             if (!categoria) return Result.fail<ITransacaoDTO>('Target Category not found');
 
             if (!inputDTO.cartaoCreditoId) {
                 return Result.fail<ITransacaoDTO>('cartaoCreditoId is required for Reembolso');
             }
 
-            const cartaoCredito = await this.cartaoCreditoRepo.findById(inputDTO.cartaoCreditoId);
+            const cartaoCredito = await this.cartaoCreditoRepo.findActiveById(inputDTO.cartaoCreditoId);
             if (!cartaoCredito) return Result.fail<ITransacaoDTO>('Target Credit Card not found');
 
             const contaPagamentoId = cartaoCredito.contaPagamentoId;
             if (!contaPagamentoId) {
                 return Result.fail<ITransacaoDTO>('Credit card does not have an associated payment account');
             }
-            const conta = await this.contaRepo.findById(contaPagamentoId.toString());
+            const conta = await this.contaRepo.findActiveById(contaPagamentoId.toString());
             if (!conta) return Result.fail<ITransacaoDTO>('Payment account associated with credit card not found');
 
             const userId = inputDTO.userId ?? cartaoCredito.userId.toString();
@@ -450,35 +450,35 @@ export default class TransacaoService implements ITransacaoService {
 
             let categoria = existing.categoria;
             if (updateDTO.categoriaId) {
-                const cat = await this.categoriaRepo.findById(updateDTO.categoriaId);
+                const cat = await this.categoriaRepo.findActiveById(updateDTO.categoriaId);
                 if (!cat) return Result.fail<ITransacaoDTO>('Category not found');
                 categoria = cat;
             }
 
             let conta = existing.conta;
             if (updateDTO.contaId) {
-                const c = await this.contaRepo.findById(updateDTO.contaId);
+                const c = await this.contaRepo.findActiveById(updateDTO.contaId);
                 if (!c) return Result.fail<ITransacaoDTO>('Target Account not found');
                 conta = c;
             }
 
             let cartaoCredito = existing.cartaoCredito;
             if (updateDTO.cartaoCreditoId) {
-                const cc = await this.cartaoCreditoRepo.findById(updateDTO.cartaoCreditoId);
+                const cc = await this.cartaoCreditoRepo.findActiveById(updateDTO.cartaoCreditoId);
                 if (!cc) return Result.fail<ITransacaoDTO>('Target Credit Card not found');
                 cartaoCredito = cc;
             }
 
             let contaDestino = existing.contaDestino;
             if (updateDTO.contaDestinoId) {
-                const cd = await this.contaRepo.findById(updateDTO.contaDestinoId);
+                const cd = await this.contaRepo.findActiveById(updateDTO.contaDestinoId);
                 if (!cd) return Result.fail<ITransacaoDTO>('Destination Account not found');
                 contaDestino = cd;
             }
 
             let contaPoupanca = existing.contaPoupanca;
             if (updateDTO.contaPoupancaId) {
-                const cp = await this.contaRepo.findById(updateDTO.contaPoupancaId);
+                const cp = await this.contaRepo.findActiveById(updateDTO.contaPoupancaId);
                 if (!cp) return Result.fail<ITransacaoDTO>('Savings Account not found');
                 contaPoupanca = cp;
             }

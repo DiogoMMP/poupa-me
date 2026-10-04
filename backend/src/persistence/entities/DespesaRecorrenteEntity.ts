@@ -70,6 +70,10 @@ export class DespesaRecorrenteEntity {
     @Column({ name: 'ativo', type: 'boolean', default: true })
     ativo!: boolean;
 
+    /** Soft delete: false = apagada (distinto de `ativo`, que é a pausa da regra). */
+    @Column({ name: 'is_active', type: 'boolean', default: true })
+    isActive!: boolean;
+
     @Column({ name: 'imediata', type: 'boolean', default: false })
     imediata!: boolean;
 

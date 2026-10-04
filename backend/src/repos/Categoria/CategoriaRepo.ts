@@ -93,12 +93,12 @@ export default class CategoriaRepo implements ICategoriaRepo {
     }
 
     /**
-     * Deletes a Categoria entity from the database by its domain ID.
+     * Soft-deletes a Categoria by its domain ID (is_active = false). Transações and regras keep pointing at it.
      * @param id - The domain ID of the Categoria to delete.
      */
     public async deleteById(id: string): Promise<void> {
         try {
-            await this.repo.delete({ domainId: id });
+            await this.repo.update({ domainId: id }, { isActive: false });
         } catch (err) {
             this.logger.error('CategoriaRepo.deleteById error: %o', err);
             throw err;
@@ -115,8 +115,11 @@ export default class CategoriaRepo implements ICategoriaRepo {
       * @returns A Promise that resolves to an array of all Categoria domain entities found in the database. If there
      * is an error during the find operation, it logs the error and rethrows it.
      */
-    public async findAll(): Promise<Categoria[]> {
-        const rows = await this.repo.find({ order: { id: 'ASC' } });
+    public async findAll(includeInactive = false): Promise<Categoria[]> {
+        const rows = await this.repo.find({
+            where: includeInactive ? {} : { isActive: true },
+            order: { id: 'ASC' }
+        });
         const res: Categoria[] = [];
 
         for (const r of rows) {
@@ -138,5 +141,14 @@ export default class CategoriaRepo implements ICategoriaRepo {
         const row = await this.repo.findOne({ where: { domainId: id } });
         if (!row) return null;
         return await CategoriaMap.toDomain(row);
+    }
+
+    /**
+     * Finds a Categoria by domain ID only if it is active. Used to validate new movimentos and rules; a soft-deleted
+     * Categoria returns null. Existing transações keep their category through findById-based reads.
+     */
+    public async findActiveById(id: string): Promise<Categoria | null> {
+        const ativa = await this.repo.count({ where: { domainId: id, isActive: true } });
+        return ativa > 0 ? this.findById(id) : null;
     }
 }

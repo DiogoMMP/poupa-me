@@ -81,16 +81,34 @@ export class ContasListViewModel {
     const confirmed = await this.confirmDialog.confirm('Tem a certeza que pretende eliminar esta Conta?', { variant: 'danger' });
     if (!confirmed) return;
 
-    this.service.delete(id).subscribe({
+    this.executarDeleteConta(id, false);
+  }
+
+  private executarDeleteConta(id: string, cascade: boolean): void {
+    this.service.delete(id, cascade).subscribe({
       next: () => {
         this.notification.success('Conta eliminada');
         // reload current banco selection
         this.loadData(this.selectedBanco.currentBancoId);
       },
-      error: (err) => {
+      error: async (err) => {
+        // 409: a conta ainda tem cartões/regras ativos — avisar com as contagens e só então eliminar em cascata
+        if (!cascade && err?.status === 409) {
+          await this.confirmarCascadeConta(id, err.error);
+          return;
+        }
         console.error('[FRONTEND] ContasListViewModel.deleteConta - Error:', err);
         this.notification.error('Falha ao eliminar conta');
       }
     });
+  }
+
+  private async confirmarCascadeConta(id: string, filhos: { cartoesAtivos: number; regrasAtivas: number }): Promise<void> {
+    const mensagem = `Esta conta tem ${filhos.cartoesAtivos} cartão(ões) de crédito pago(s) a partir desta conta e ${filhos.regrasAtivas} regra(s) recorrente(s) ativa(s). ` +
+      'Pretende eliminar também todos estes registos?';
+    const confirmed = await this.confirmDialog.confirm(mensagem, { variant: 'danger', confirmText: 'Eliminar tudo' });
+    if (!confirmed) return;
+
+    this.executarDeleteConta(id, true);
   }
 }
