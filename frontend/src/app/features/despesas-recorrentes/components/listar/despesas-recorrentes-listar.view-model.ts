@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { CategoriasService } from '../../../categorias/services/categorias.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { SelectedBancoService } from '../../../../services/selected-banco.service';
@@ -36,6 +36,14 @@ export class DespesasRecorrentesListViewModel {
 
   readonly categorias$ = new BehaviorSubject<CategoriasDTO[]>([]);
 
+  private allSub?: Subscription;
+  private pendentesSub?: Subscription;
+  private concluidasSub?: Subscription;
+  private semValorSemanalSub?: Subscription;
+  private semValorMensalSub?: Subscription;
+  private semValorAnualSub?: Subscription;
+  private semValorPoupancaSub?: Subscription;
+
   pendenteFilters: DespesaFilters = { categoriaId: '', period: '' };
   concluidaFilters: DespesaFilters = { categoriaId: '', period: 'Este Mês' };
 
@@ -54,8 +62,9 @@ export class DespesasRecorrentesListViewModel {
 
   /** Load categories then refresh both columns and sem-valor list */
   loadAll(): void {
+    this.allSub?.unsubscribe();
     this.isLoading$.next(true);
-    this.categoriasService.getAll().subscribe({
+    this.allSub = this.categoriasService.getAll().subscribe({
       next: cats => {
         this.categorias$.next(cats);
         this.loadPendentes();
@@ -73,6 +82,10 @@ export class DespesasRecorrentesListViewModel {
   // ── Sem Valor ─────────────────────────────────────────────
 
   loadDespesasSemValor(): void {
+    this.semValorSemanalSub?.unsubscribe();
+    this.semValorMensalSub?.unsubscribe();
+    this.semValorAnualSub?.unsubscribe();
+    this.semValorPoupancaSub?.unsubscribe();
     const bancoId = this.bancoId;
     if (!bancoId) {
       this.despesasSemValorSemanal$.next([]);
@@ -81,19 +94,19 @@ export class DespesasRecorrentesListViewModel {
       this.despesasSemValorPoupanca$.next([]);
       return;
     }
-    this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Semanal').subscribe({
+    this.semValorSemanalSub = this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Semanal').subscribe({
       next: dtos => this.despesasSemValorSemanal$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
       error: err => { console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err); }
     });
-    this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Mensal').subscribe({
+    this.semValorMensalSub = this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Mensal').subscribe({
       next: dtos => this.despesasSemValorMensal$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
       error: err => { console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err); }
     });
-    this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Anual').subscribe({
+    this.semValorAnualSub = this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Despesa Anual').subscribe({
       next: dtos => this.despesasSemValorAnual$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
       error: err => { console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err); }
     });
-    this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Poupança').subscribe({
+    this.semValorPoupancaSub = this.despesasRecorrentesService.getSemValorPorTipo(bancoId, 'Poupança').subscribe({
       next: dtos => this.despesasSemValorPoupanca$.next(DespesasRecorrentesMapper.toModelArray(dtos)),
       error: err => { console.error('[DespesasRecorrentesListViewModel] loadDespesasSemValor error', err); }
     });
@@ -102,6 +115,7 @@ export class DespesasRecorrentesListViewModel {
   // ── Pendentes column ──────────────────────────────────────
 
   loadPendentes(): void {
+    this.pendentesSub?.unsubscribe();
     const f = this.pendenteFilters;
     const bancoId = this.bancoId ?? undefined;
 
@@ -113,7 +127,7 @@ export class DespesasRecorrentesListViewModel {
 
     // Categoria filter
     if (f.categoriaId) {
-      this.transacoesService.getDespesaRecorrenteByCategoria(f.categoriaId, bancoId).subscribe({
+      this.pendentesSub = this.transacoesService.getDespesaRecorrenteByCategoria(f.categoriaId, bancoId).subscribe({
         next: dtos => {
           this.pendentes$.next(TransacoesMapper.toModelArray(dtos).filter(t => t.status === 'Pendente'));
           this.isLoading$.next(false);
@@ -124,7 +138,7 @@ export class DespesasRecorrentesListViewModel {
     }
 
     // No filter — load by status directly
-    this.transacoesService.getDespesaRecorrenteByStatus('Pendente', bancoId).subscribe({
+    this.pendentesSub = this.transacoesService.getDespesaRecorrenteByStatus('Pendente', bancoId).subscribe({
       next: dtos => { this.pendentes$.next(TransacoesMapper.toModelArray(dtos)); this.isLoading$.next(false); },
       error: () => { this.notification.error('Falha ao carregar despesas pendentes'); this.isLoading$.next(false); }
     });
@@ -143,6 +157,7 @@ export class DespesasRecorrentesListViewModel {
   // ── Concluídas column ─────────────────────────────────────
 
   loadConcluidas(): void {
+    this.concluidasSub?.unsubscribe();
     const f = this.concluidaFilters;
     const bancoId = this.bancoId ?? undefined;
 
@@ -154,7 +169,7 @@ export class DespesasRecorrentesListViewModel {
 
     // Period filter
     if (f.period && !f.categoriaId) {
-      this.transacoesService.getDespesaRecorrenteByPeriod(f.period, bancoId).subscribe({
+      this.concluidasSub = this.transacoesService.getDespesaRecorrenteByPeriod(f.period, bancoId).subscribe({
         next: dtos => {
           this.concluidas$.next(TransacoesMapper.toModelArray(dtos).filter(t => t.status === 'Concluído'));
           this.isLoading$.next(false);
@@ -166,7 +181,7 @@ export class DespesasRecorrentesListViewModel {
 
     // Categoria filter (or both)
     if (f.categoriaId) {
-      this.transacoesService.getDespesaRecorrenteByCategoria(f.categoriaId, bancoId).subscribe({
+      this.concluidasSub = this.transacoesService.getDespesaRecorrenteByCategoria(f.categoriaId, bancoId).subscribe({
         next: dtos => {
           let all = TransacoesMapper.toModelArray(dtos).filter(t => t.status === 'Concluído');
           if (f.period) all = filterByPeriod(all, f.period);
@@ -179,7 +194,7 @@ export class DespesasRecorrentesListViewModel {
     }
 
     // No filter — load by status directly
-    this.transacoesService.getDespesaRecorrenteByStatus('Concluído', bancoId).subscribe({
+    this.concluidasSub = this.transacoesService.getDespesaRecorrenteByStatus('Concluído', bancoId).subscribe({
       next: dtos => { this.concluidas$.next(TransacoesMapper.toModelArray(dtos)); this.isLoading$.next(false); },
       error: () => { this.notification.error('Falha ao carregar despesas concluídas'); this.isLoading$.next(false); }
     });

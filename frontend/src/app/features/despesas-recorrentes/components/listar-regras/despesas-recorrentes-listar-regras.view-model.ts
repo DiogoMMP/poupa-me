@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { DespesasRecorrentesService } from '../../services/despesas-recorrentes.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
@@ -22,6 +22,8 @@ export class DespesasRecorrentesListarRegrasViewModel {
   // State
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
   readonly regras$ = new BehaviorSubject<DespesaRecorrenteModel[]>([]);
+
+  private loadSub?: Subscription;
 
   constructor() {
     // Reload when selected bank changes
@@ -69,6 +71,7 @@ export class DespesasRecorrentesListarRegrasViewModel {
    * called again to refresh the data.
    */
   loadData(): void {
+    this.loadSub?.unsubscribe();
     this.isLoading$.next(true);
     const bancoId = this.bancoId ?? undefined;
 
@@ -78,7 +81,7 @@ export class DespesasRecorrentesListarRegrasViewModel {
       return;
     }
 
-    this.service.getAll(bancoId).subscribe({
+    this.loadSub = this.service.getAll(bancoId).subscribe({
       next: (dtos) => {
         this.regras$.next(DespesasRecorrentesMapper.toModelArray(dtos));
         this.isLoading$.next(false);

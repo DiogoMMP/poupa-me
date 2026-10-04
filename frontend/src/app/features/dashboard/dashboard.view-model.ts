@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, map, forkJoin } from 'rxjs';
+import { BehaviorSubject, Subscription, map, forkJoin } from 'rxjs';
 import { BancosService } from '../bancos/services/bancos.service';
 import { BancosMapper } from '../bancos/mappers/bancos.mapper';
 import { BancosModel } from '../bancos/models/bancos.model';
@@ -41,6 +41,12 @@ export class DashboardViewModel {
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
 
   private selectedBancoId: string | null = null;
+
+  private dashboardSub?: Subscription;
+  private contasSub?: Subscription;
+  private cartoesSub?: Subscription;
+  private extratosSub?: Subscription;
+  private transacoesSub?: Subscription;
 
   /**
    * Observable that emits true when a banco is selected for conditional rendering
@@ -86,6 +92,11 @@ export class DashboardViewModel {
 
   selectBanco(id: string | null): void {
     this.selectedBancoId = id;
+    this.dashboardSub?.unsubscribe();
+    this.contasSub?.unsubscribe();
+    this.cartoesSub?.unsubscribe();
+    this.extratosSub?.unsubscribe();
+    this.transacoesSub?.unsubscribe();
     if (!id) {
       this.dashboard$.next(null);
       this.contas$.next([]);
@@ -97,7 +108,7 @@ export class DashboardViewModel {
     this.isLoading$.next(true);
 
     // Load dashboard data
-    this.bancosService.getDashboardData(id).subscribe({
+    this.dashboardSub = this.bancosService.getDashboardData(id).subscribe({
       next: (dto) => {
         this.dashboard$.next(dto);
         this.isLoading$.next(false);
@@ -120,7 +131,7 @@ export class DashboardViewModel {
   }
 
   private loadContas(bancoId: string): void {
-    this.contasService.getAll(bancoId).subscribe({
+    this.contasSub = this.contasService.getAll(bancoId).subscribe({
       next: (dtos) => {
         const models = ContasMapper.toModelArray(dtos);
         this.contas$.next(models);
@@ -133,7 +144,7 @@ export class DashboardViewModel {
   }
 
   private loadCartoes(bancoId: string): void {
-    this.cartoesService.getAll(bancoId).subscribe({
+    this.cartoesSub = this.cartoesService.getAll(bancoId).subscribe({
       next: (dtos) => {
         const models = CartoesCreditoMapper.toModelArray(dtos);
         // Emit initial card list
@@ -142,7 +153,7 @@ export class DashboardViewModel {
         // Load extrato for each card to get saldoAtual (used for percent calculation)
         try {
           const extratoRequests = models.map(c => this.cartoesService.getExtrato(c.id));
-          forkJoin(extratoRequests).subscribe({
+          this.extratosSub = forkJoin(extratoRequests).subscribe({
             next: (extratos) => {
               extratos.forEach((extrato, index) => {
                 const cartao = models[index];
@@ -173,7 +184,7 @@ export class DashboardViewModel {
   }
 
   private loadTransacoes(bancoId: string): void {
-    this.transacoesService.getAllByBanco(bancoId).subscribe({
+    this.transacoesSub = this.transacoesService.getAllByBanco(bancoId).subscribe({
       next: (dtos) => {
         const models = TransacoesMapper.toModelArray(dtos);
         this.transacoes$.next(models);

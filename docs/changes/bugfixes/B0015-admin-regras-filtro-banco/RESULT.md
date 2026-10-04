@@ -24,7 +24,14 @@ comportamento de Contas/Cartões e da guarda do B0013.
 
 ## 3. Desvios do plano aprovado
 
-Nenhum. Não foram tocados ficheiros do backend — a query já aceitava `bancoId` para o Admin.
+- **Follow-up no mesmo PR (CodeRabbit, PR #90):** os view-models que carregam dados quando o banco
+  muda passaram a guardar a subscrição e a cancelar a anterior antes de cada carregamento. Evita que
+  uma resposta de um banco anterior sobrescreva a lista depois de a seleção mudar ou ser limpa. Foram
+  alterados 15 view-models: listagens (regras, contas, cartões, transações, despesas recorrentes,
+  dashboard) e formulários de criar/editar que carregam contas ou cartões. Fora do âmbito: `header`
+  (só atualiza um sinal, sem pedidos) e os view-models que não dependem do banco.
+
+Não foram tocados ficheiros do backend — a query já aceitava `bancoId` para o Admin.
 
 ## 4. Não verificado
 

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TransacoesService } from '../../services/transacoes.service';
@@ -90,9 +90,12 @@ export class TransacoesCriarCreditoViewModel {
     });
   }
 
+  private cartoesSub?: Subscription;
+
   private loadCartoes(bancoId: string | null): void {
+    this.cartoesSub?.unsubscribe();
     if (!bancoId) { this.cartoes$.next([]); return; }
-    this.cartoesService.getAll(bancoId).subscribe({
+    this.cartoesSub = this.cartoesService.getAll(bancoId).subscribe({
       next: (dtos) => this.cartoes$.next(dtos as any[]),
       error: () => this.cartoes$.next([])
     });

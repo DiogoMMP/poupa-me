@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TransacoesService } from '../../services/transacoes.service';
@@ -127,9 +127,13 @@ export class TransacoesEditarViewModel {
     });
   }
 
+  private contasSub?: Subscription;
+  private cartoesSub?: Subscription;
+
   private loadContas(bancoId: string | null): void {
+    this.contasSub?.unsubscribe();
     if (!bancoId) { this.contas$.next([]); return; }
-    this.contasService.getAll(bancoId).subscribe({
+    this.contasSub = this.contasService.getAll(bancoId).subscribe({
       next: (dtos) => {
         try { this.contas$.next(ContasMapper.toModelArray(dtos)); }
         catch { this.contas$.next(dtos as any[]); }
@@ -139,8 +143,9 @@ export class TransacoesEditarViewModel {
   }
 
   private loadCartoes(bancoId: string | null): void {
+    this.cartoesSub?.unsubscribe();
     if (!bancoId) { this.cartoes$.next([]); return; }
-    this.cartoesService.getAll(bancoId).subscribe({
+    this.cartoesSub = this.cartoesService.getAll(bancoId).subscribe({
       next: (dtos) => this.cartoes$.next(CartoesCreditoMapper.toModelArray(dtos)),
       error: () => this.cartoes$.next([])
     });

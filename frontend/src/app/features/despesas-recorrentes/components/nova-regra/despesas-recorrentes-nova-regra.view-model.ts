@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { DespesasRecorrentesService } from '../../services/despesas-recorrentes.service';
 import { NotificationService } from '../../../../services/notification.service';
@@ -34,8 +34,11 @@ export class DespesasRecorrentesNovaRegraViewModel {
     this.loadCategorias();
   }
 
+  private contasSub?: Subscription;
+
   private loadContas(bancoId: string | null): void {
-    this.contasService.getAll(bancoId ?? undefined).subscribe({
+    this.contasSub?.unsubscribe();
+    this.contasSub = this.contasService.getAll(bancoId ?? undefined).subscribe({
       next: contas => this.contas$.next(contas),
       error: () => this.notification.error('Falha ao carregar contas')
     });
