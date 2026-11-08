@@ -110,3 +110,18 @@ Uma fase de código e uma de testes. Não há hooks de commit no repo (sem `.hus
 - **Poupança imediata não credita a conta poupança ao ser criada** (`createPoupanca` com `imediata = true` só subtrai da origem), mas `revertPoupancaImpact`/`applyPoupancaImpact` tratam-na como se tivesse creditado (é Concluída). Editar ou apagar uma poupança imediata mexe na conta poupança de forma errada. É outro defeito, com outra decisão (a criação imediata deve ou não creditar a poupança?): fica para uma issue própria.
 - **Correção dos saldos já afetados** por edições/deletes anteriores — precisa de dados reais; ver §5.
 - **Verificação manual na app** — fica em `RESULT.md` §4 se não puder ser feita.
+
+## 8. Adenda — segunda ronda: revisão do PR #94
+
+Âmbito pedido: corrigir os findings do CodeRabbit, incluindo a atomicidade da edição neste mesmo PR. Os problemas que são só de dados históricos ficam de fora, por decisão do utilizador.
+
+| # | Finding | Correção |
+| :--- | :--- | :--- |
+| R1 | Major — editar/apagar não é atómico: a reversão grava saldos antes de a aplicação (ou a gravação da transação) poder falhar | Nova unidade de trabalho (`repos/Shared/UnidadeDeTrabalho.ts`, `IUnidadeDeTrabalho`): uma `dataSource.transaction` partilhada por `AsyncLocalStorage`. `ContaRepo`, `TransacaoRepo` e `CartaoCreditoRepo` resolvem os repositórios TypeORM através de `repositorio(...)`, que usa o `EntityManager` da transação aberta. `TransacaoService.updateTransacao` e `deleteTransacao` correm dentro dela: um `Result` falhado ou uma exceção faz rollback. Registada na DI (`config/index.ts`, `loaders/index.ts`). |
+| R2 | Major — despesas passadas a Concluída por edição na API, antes desta correção, ficaram com o valor na conta destino | **Não corrigido** (decisão: é um problema de dados, não de código). Os dados não distinguem estes casos das conclusões normais. |
+| R3 | Minor — o RESULT §2 descreve mal os saldos afetados quando a conta destino também mudou | Texto corrigido no RESULT. |
+| R4 | Nitpick — os testes verificam o saldo em memória, não o saldo gravado | O mock de `contaRepo.update` guarda o saldo no momento da gravação e os testes verificam esse valor. |
+| R5 | Nitpick — sem testes de transição de estado por edição | Testes Pendente → Concluído e Concluído → Pendente. |
+| R6 | Nitpick — sem teste de edição de uma Poupança Pendente | Teste novo. |
+
+**Fora:** tornar atómicas as outras operações que mexem em saldos (criar transações, concluir pendentes, pagar cartão já é atómico). A unidade de trabalho fica disponível para elas, mas este PR só a usa em `updateTransacao`/`deleteTransacao`, que é o que o finding pede.
