@@ -187,6 +187,11 @@ export default async ({expressApp}: { expressApp: Application }) => {
         path: config.repos.despesaRecorrenteQuery.path
     };
 
+    const unidadeDeTrabalho = {
+        name: config.repos.unidadeDeTrabalho.name,
+        path: config.repos.unidadeDeTrabalho.path
+    };
+
 
 
 
@@ -244,7 +249,8 @@ export default async ({expressApp}: { expressApp: Application }) => {
             cartaoRepo,
             bancoRepo,
             despesaRecorrenteRepo,
-            despesaRecorrenteQueryRepo
+            despesaRecorrenteQueryRepo,
+            unidadeDeTrabalho
         ],
         services: [
             authService,
