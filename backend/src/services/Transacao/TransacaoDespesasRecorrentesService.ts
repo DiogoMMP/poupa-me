@@ -713,7 +713,8 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
   }
   /**
    * Reverts the impact of a Despesa Recorrente transaction.
-   * Immediate transactions only touch the origin account; non-immediate ones also touch the destination account.
+   * The origin account is always reverted. The destination account only holds the amount while the transaction is
+   * Pendente (concluding takes it back out), so it is only reverted for a Pendente.
    */
   public async revertDespesaRecorrenteImpact(
     transacao: Transacao,
@@ -726,12 +727,12 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
     );
     if (!contaOrigem) return Result.fail<void>("Origin account not found");
 
-    // Immediate recurring expense: only revert the origin account
     const revertOrigemResult = contaOrigem.adicionarSaldo(transacao.valor);
     if (revertOrigemResult.isFailure)
       return Result.fail<void>(String(revertOrigemResult.error));
 
-    if (!transacao.contaDestino) {
+    // Immediate or Concluída: only the origin account carries an impact
+    if (!transacao.contaDestino || transacao.status.value !== "Pendente") {
       await this.contaRepo.update(contaOrigem);
       return Result.ok<void>();
     }
@@ -742,7 +743,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
     if (!contaDestino)
       return Result.fail<void>("Destination account not found");
 
-    // Non-immediate recurring expense: revert both origin and destination accounts
+    // Pendente: revert both origin and destination accounts
     const revertDestinoResult = contaDestino.subtrairSaldo(transacao.valor);
     if (revertDestinoResult.isFailure)
       return Result.fail<void>(String(revertDestinoResult.error));
@@ -753,7 +754,8 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
   }
   /**
    * Applies the impact of a Despesa Recorrente transaction.
-   * Immediate transactions only touch the origin account; non-immediate ones also touch the destination account.
+   * The origin account is always debited. The destination account is only credited while the transaction is
+   * Pendente — a Concluída already took the amount back out of it.
    */
   public async applyDespesaRecorrenteImpact(
     transacao: Transacao,
@@ -769,7 +771,8 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
     if (applyOrigemResult.isFailure)
       return Result.fail<void>(String(applyOrigemResult.error));
 
-    if (!transacao.contaDestino) {
+    // Immediate or Concluída: only the origin account carries an impact
+    if (!transacao.contaDestino || transacao.status.value !== "Pendente") {
       await this.contaRepo.update(contaOrigem);
       return Result.ok<void>();
     }
@@ -791,7 +794,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
   /**
    * Reverts the impact of a Poupança transaction
    * Pendente: origem foi subtraída + contaDestino foi adicionada
-   * Concluído: acima + contaPoupanca foi adicionada
+   * Concluído: origem foi subtraída + contaPoupanca foi adicionada (a contaDestino foi esvaziada ao concluir)
    */
   public async revertPoupancaImpact(
     transacao: Transacao,
@@ -810,8 +813,8 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
       return Result.fail<void>(String(revertOrigemResult.error));
     await this.contaRepo.update(contaOrigem);
 
-    // Sempre: subtrair da contaDestino (Despesas Mensais) — foi adicionada ao criar
-    if (transacao.contaDestino) {
+    // Se Pendente: subtrair da contaDestino (Despesas Mensais) — foi adicionada ao criar e só sai ao concluir
+    if (transacao.status.value === "Pendente" && transacao.contaDestino) {
       const contaDestino = await this.contaRepo.findById(
         transacao.contaDestino.id.toString(),
       );
@@ -841,7 +844,7 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
   /**
    * Applies the impact of a Poupança transaction
    * Pendente: subtrair da origem + adicionar à contaDestino
-   * Concluído: acima + adicionar à contaPoupanca
+   * Concluído: subtrair da origem + adicionar à contaPoupanca (a contaDestino já não tem o valor)
    */
   public async applyPoupancaImpact(
     transacao: Transacao,
@@ -859,8 +862,8 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
       return Result.fail<void>(String(applyOrigemResult.error));
     await this.contaRepo.update(contaOrigem);
 
-    // Sempre: adicionar à contaDestino (Despesas Mensais)
-    if (transacao.contaDestino) {
+    // Se Pendente: adicionar à contaDestino (Despesas Mensais)
+    if (transacao.status.value === "Pendente" && transacao.contaDestino) {
       const contaDestino = await this.contaRepo.findById(
         transacao.contaDestino.id.toString(),
       );
