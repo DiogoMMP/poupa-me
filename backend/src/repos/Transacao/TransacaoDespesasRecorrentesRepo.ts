@@ -45,7 +45,7 @@ export default class TransacaoDespesasRecorrentesRepo implements ITransacaoDespe
                         startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
                         break;
                     case 'Últimos 3 Meses':
-                        startDate = new Date(now.getFullYear(), now.getMonth() - 4, now.getDate());
+                        startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
                         break;
                     case 'Último Ano':
                         startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
