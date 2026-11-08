@@ -31,7 +31,7 @@ export default interface IBancoService {
      * @param userRole - User role (Admin bypasses ownership check)
      * @returns Result indicating success or error
      */
-    deleteBanco(bancoId: string, userId: string, userRole?: string): Promise<Result<void>>;
+    deleteBanco(bancoId: string, userId: string, userRole?: string, cascade?: boolean): Promise<Result<void>>;
 
     /**
      * Gets a Banco by ID

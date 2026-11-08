@@ -237,15 +237,22 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
     }
 
     /**
-     * Delete a recurring expense by domain ID
+     * Finds a recurring expense by domainId only if it is not soft-deleted. A paused rule (ativo = false) is still found.
+     * Used by the manual generation of transações, so a deleted rule cannot produce new movimentos.
+     * @param despesaId - The domainId of the DespesaRecorrente.
+     */
+    public async findActiveById(despesaId: string): Promise<DespesaRecorrente | null> {
+        const ativa = await this.repo.count({ where: { domainId: despesaId, isActive: true } });
+        return ativa > 0 ? this.findById(despesaId) : null;
+    }
+
+    /**
+     * Delete a recurring expense by domain ID (soft: is_active = false). `ativo` is left untouched, so a deleted
+     * rule is never confused with a paused one.
      */
     public async delete(despesaId: string): Promise<void> {
         try {
-            await this.repo.createQueryBuilder()
-                .delete()
-                .from(DespesaRecorrenteEntity)
-                .where('domain_id = :domainId', { domainId: despesaId })
-                .execute();
+            await this.repo.update({ domainId: despesaId }, { isActive: false });
         } catch (err) {
             this.logger.error('DespesaRecorrenteRepo.delete error: %o', err);
             throw err;

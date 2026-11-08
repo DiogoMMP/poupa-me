@@ -1,4 +1,5 @@
 import type { Banco } from '../../domain/Banco/Entities/Banco.js';
+import type { IContagemFilhos } from '../Shared/CascataSoftDelete.js';
 
 /**
  * Repository interface for Banco. Defines CRUD operations.
@@ -32,10 +33,25 @@ export default interface IBancoRepo {
     findById(bancoId: string): Promise<Banco | null>;
 
     /**
+     * Finds a Banco by its domain ID only if it is active (soft-deleted Bancos return null)
+     */
+    findActiveById(bancoId: string): Promise<Banco | null>;
+
+    /**
+     * Counts the active Contas, Cartões and regras a cascade delete of the Banco would deactivate
+     */
+    contarFilhosAtivos(bancoId: string): Promise<IContagemFilhos>;
+
+    /**
+     * Soft-deletes the Banco together with its active Contas, Cartões and regras, atomically
+     */
+    deleteComFilhos(bancoId: string): Promise<void>;
+
+    /**
      * Finds all Banco entities, optionally filtered by user ID
      * @param userId - Optional user domain ID to filter Banco records
      * @returns An array of Banco entities
      */
-    findAll(userId?: string): Promise<Banco[]>;
+    findAll(userId?: string, includeInactive?: boolean): Promise<Banco[]>;
 }
 

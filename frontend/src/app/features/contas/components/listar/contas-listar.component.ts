@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -15,7 +15,7 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
   styleUrls: ['./contas-listar.component.css'],
   providers: [ContasListViewModel]
 })
-export class ContasListComponent implements OnInit {
+export class ContasListComponent {
   public vm: ContasListViewModel = inject(ContasListViewModel);
 
   // expose common observables and helpers for template consumption
@@ -29,11 +29,9 @@ export class ContasListComponent implements OnInit {
     return this.vm.hasBancoSelected;
   }
 
-  ngOnInit() {
-    // ViewModel subscribes to SelectedBancoService and will load when banco changes
-    // Call loadData once to ensure initial load if needed (BehaviorSubject emits current value)
-    this.vm.loadData();
-  }
+  // The ViewModel loads the contas itself: its constructor subscribes to SelectedBancoService, whose
+  // BehaviorSubject emits the current banco right away. Calling loadData() here without a banco would cancel
+  // that in-flight request (see 664e17d) and clear the list.
 
   deleteConta(id: string) {
     this.vm.deleteConta(id);

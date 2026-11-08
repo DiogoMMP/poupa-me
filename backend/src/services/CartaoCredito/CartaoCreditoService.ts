@@ -44,13 +44,17 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
         }
     }
 
+    /**
+     * Lookup maps of bancos and contas by id. Soft-deleted ones are included, so a cartão whose banco or conta de
+     * pagamento was deleted (e.g. by a cascade) keeps showing their names and icons.
+     */
     private async getLookupMaps(userId?: string): Promise<{
         bancos: Map<string, { nome: string; icon: string }>;
         contas: Map<string, { nome: string; icon: string }>;
     }> {
         const [bancosList, contasList] = await Promise.all([
-            this.bancoRepo.findAll(userId),
-            this.contaRepo.findAll(userId)
+            this.bancoRepo.findAll(userId, true),
+            this.contaRepo.findAll(userId, undefined, true)
         ]);
         const bancos = new Map<string, { nome: string; icon: string }>();
         const contas = new Map<string, { nome: string; icon: string }>();
@@ -78,7 +82,7 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
 
             // validate contaPagamentoId existence
             if (!inputDTO.contaPagamentoId) return Result.fail<ICartaoCreditoDTO>('contaPagamentoId is required');
-            const contaRow = await this.contaRepo.findById(inputDTO.contaPagamentoId);
+            const contaRow = await this.contaRepo.findActiveById(inputDTO.contaPagamentoId);
             if (!contaRow) return Result.fail<ICartaoCreditoDTO>('Conta pagamento not found');
 
             // Build Data VOs for periodo
@@ -95,6 +99,11 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
             if (combine.isFailure) return Result.fail<ICartaoCreditoDTO>(combine.errorValue() as string);
 
             if (!inputDTO.userId) return Result.fail<ICartaoCreditoDTO>('User id is required');
+
+            // A new cartão cannot be linked to a soft-deleted banco
+            if (inputDTO.bancoId && !(await this.bancoRepo.findActiveById(inputDTO.bancoId))) {
+                return Result.fail<ICartaoCreditoDTO>('Banco not found');
+            }
 
             const props = {
                 userId: new UniqueEntityID(String(inputDTO.userId)),
@@ -161,6 +170,16 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
             const combine = Result.combine([nomeOrError, iconOrError, limiteOrError, saldoOrError, periodoOrError]);
             if (combine.isFailure) return Result.fail<ICartaoCreditoDTO>(combine.errorValue() as string);
 
+            // Retargeting: a new conta de pagamento or banco must be active. Otherwise every later crédito,
+            // reembolso and pagamento of this cartão would fail on the deleted conta.
+            if (inputDTO.contaPagamentoId && inputDTO.contaPagamentoId !== existing.contaPagamentoId?.toString()
+                && !(await this.contaRepo.findActiveById(String(inputDTO.contaPagamentoId)))) {
+                return Result.fail<ICartaoCreditoDTO>('Conta pagamento not found');
+            }
+            if (inputDTO.bancoId && inputDTO.bancoId !== existing.bancoId && !(await this.bancoRepo.findActiveById(inputDTO.bancoId))) {
+                return Result.fail<ICartaoCreditoDTO>('Banco not found');
+            }
+
             const props = {
                 userId: existing.userId,
                 nome: nomeOrError.getValue(),
@@ -196,8 +215,15 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
      * @param id - The domain ID of the CartaoCredito to delete.
      * @returns A Result object containing true on successful deletion, or an error message on failure.
      */
-    public async deleteCartao(id: string): Promise<Result<boolean>> {
+    public async deleteCartao(id: string, userId: string, userRole?: string): Promise<Result<boolean>> {
         try {
+            const cartao = await this.cartaoRepo.findById(id);
+            // Missing card: still success, to avoid revealing which ids exist
+            if (!cartao) return Result.ok<boolean>(true);
+
+            // Authorization: the owner or an Admin
+            if (userRole !== 'Admin' && cartao.userId.toString() !== userId) return Result.fail<boolean>('Unauthorized');
+
             await this.cartaoRepo.delete(id);
             return Result.ok<boolean>(true);
         } catch (err) {
@@ -324,8 +350,12 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
             if (valorPagar.value === 0) return Result.fail<ITransacaoDTO>("No amount to pay on the card statement");
 
             // 2. Load the Card Entity
-            const cartao = await this.cartaoRepo.findById(cartaoId);
+            // Only active cards and active payment accounts can receive a payment movimento
+            const cartao = await this.cartaoRepo.findActiveById(cartaoId);
             if (!cartao) return Result.fail<ITransacaoDTO>("Cartão não encontrado");
+            if (cartao.contaPagamentoId && !(await this.contaRepo.findActiveById(cartao.contaPagamentoId.toString()))) {
+                return Result.fail<ITransacaoDTO>("Conta de pagamento não encontrada");
+            }
 
             // 3. Prepare new period dates
             const novoPeriodoInicioOrError = Data.createFromParts(novoPeriodo.inicio.dia, novoPeriodo.inicio.mes, novoPeriodo.inicio.ano, true);

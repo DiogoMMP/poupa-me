@@ -8,4 +8,5 @@ export default interface IDespesaRecorrenteRepo {
     update(despesa: DespesaRecorrente): Promise<DespesaRecorrente>;
     delete(despesaId: string): Promise<void>;
     findById(despesaId: string): Promise<DespesaRecorrente | null>;
+    findActiveById(despesaId: string): Promise<DespesaRecorrente | null>;
 }

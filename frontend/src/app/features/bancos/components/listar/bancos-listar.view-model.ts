@@ -68,17 +68,35 @@ export class BancosListViewModel {
     const confirmed = await this.confirmDialog.confirm('Tem a certeza que pretende eliminar este banco?', { variant: 'danger' });
     if (!confirmed) return;
 
-    this.service.delete(id).subscribe({
+    this.executarDeleteBanco(id, false);
+  }
+
+  private executarDeleteBanco(id: string, cascade: boolean): void {
+    this.service.delete(id, cascade).subscribe({
       next: () => {
         this.notification.success('Banco eliminado');
         this.bancosState.notifyChanged();
         this.loadData();
       },
-      error: (err) => {
+      error: async (err) => {
+        // 409: o banco ainda tem contas/cartões/regras ativos — avisar com as contagens e só então eliminar em cascata
+        if (!cascade && err?.status === 409) {
+          await this.confirmarCascadeBanco(id, err.error);
+          return;
+        }
         console.error('[FRONTEND] BancosListViewModel.deleteBanco - Error:', err);
         this.notification.error('Falha ao eliminar banco');
       }
     });
+  }
+
+  private async confirmarCascadeBanco(id: string, filhos: { contasAtivas: number; cartoesAtivos: number; regrasAtivas: number }): Promise<void> {
+    const mensagem = `Este banco tem ${filhos.contasAtivas} conta(s), ${filhos.cartoesAtivos} cartão(ões) e ${filhos.regrasAtivas} regra(s) recorrente(s) ativa(s). ` +
+      'Pretende eliminar também todos estes registos?';
+    const confirmed = await this.confirmDialog.confirm(mensagem, { variant: 'danger', confirmText: 'Eliminar tudo' });
+    if (!confirmed) return;
+
+    this.executarDeleteBanco(id, true);
   }
 
   /**

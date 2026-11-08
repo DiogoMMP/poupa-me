@@ -1,5 +1,22 @@
 import type { Request, Response, NextFunction } from 'express';
+import { Container } from 'typedi';
 import Logger from '../../loaders/logger.js';
+import type IUserRepo from '../../repos/User/IUserRepo.js';
+
+/**
+ * Returns true only while the user still exists and is active. A soft-deleted user's token or session stops working
+ * immediately, not when it expires.
+ */
+const isUserActive = async (userId: string): Promise<boolean> => {
+    const user = await Container.get<IUserRepo>('UserRepo').findActiveByDomainId(userId);
+    return user !== null;
+};
+
+const INACTIVE_USER_RESPONSE = {
+    status: 401,
+    error: 'Unauthorized',
+    message: 'Conta inativa ou inexistente.'
+};
 
 /**
  * User information extracted from the authentication service.
@@ -50,6 +67,10 @@ const isAuth = async (req: AuthenticatedRequest, res: Response, next: NextFuncti
                     const secret = process.env.JWT_SECRET || 'changeme';
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const payload: any = verifyFn(token, secret);
+                    if (!(await isUserActive(payload.sub as string))) {
+                        res.status(401).json(INACTIVE_USER_RESPONSE);
+                        return;
+                    }
                     req.currentUser = {
                         id: payload.sub as string,
                         email: payload.email,
@@ -77,6 +98,10 @@ const isAuth = async (req: AuthenticatedRequest, res: Response, next: NextFuncti
 
         // Populate currentUser from session
         const sessionUser = req.session.user;
+        if (!(await isUserActive(sessionUser.id))) {
+            res.status(401).json(INACTIVE_USER_RESPONSE);
+            return;
+        }
         req.currentUser = {
             id: sessionUser.id,
             name: sessionUser.name,

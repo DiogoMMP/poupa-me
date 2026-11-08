@@ -5,6 +5,7 @@ import type IContaRepo from '../../repos/Conta/IContaRepo.js';
 import type ICartaoCreditoRepo from '../../repos/CartaoCredito/ICartaoCreditoRepo.js';
 import type IUserRepo from '../../repos/User/IUserRepo.js';
 import { Result } from '../../core/logic/Result.js';
+import type { IFilhosAtivosDTO } from '../../dto/IFilhosAtivosDTO.js';
 import type { IBancoDTO, IBancoSummaryDTO, ICreateBancoDTO, IUpdateBancoDTO } from '../../dto/IBancoDTO.js';
 import type { IDashboardDTO, IBancoResumoDTO } from '../../dto/IDashboardDTO.js';
 import { Nome } from '../../domain/Shared/ValueObjects/Nome.js';
@@ -156,9 +157,10 @@ export default class BancoService implements IBancoService {
     }
 
     /**
-     * Deletes a Banco
+     * Soft-deletes a Banco. If it still has active Contas, Cartões or recurring rules, the delete is refused with an
+     * ACTIVE_CHILDREN error carrying the counts, unless `cascade` is true: then the children are soft-deleted too.
      */
-    public async deleteBanco(bancoId: string, userId: string, userRole?: string): Promise<Result<void>> {
+    public async deleteBanco(bancoId: string, userId: string, userRole?: string, cascade = false): Promise<Result<void>> {
         try {
             // Load banco for authorization
             const banco = await this.bancoRepo.findById(bancoId);
@@ -171,7 +173,21 @@ export default class BancoService implements IBancoService {
                 return Result.fail<void>('Unauthorized');
             }
 
-            await this.bancoRepo.delete(bancoId);
+            // The counts cover exactly what the cascade deactivates: the banco's active contas, the cartões linked to
+            // it or paid from those contas (a cartão of another banco paid from here included), and the regras that
+            // reference those contas — each counted once.
+            const contagem = await this.bancoRepo.contarFilhosAtivos(bancoId);
+            const filhos: IFilhosAtivosDTO = { code: 'ACTIVE_CHILDREN', ...contagem };
+            if (!cascade && (contagem.contasAtivas + contagem.cartoesAtivos + contagem.regrasAtivas) > 0) {
+                return Result.fail<void>(filhos);
+            }
+
+            // One transaction: a failure half-way leaves everything as it was.
+            if (cascade) {
+                await this.bancoRepo.deleteComFilhos(bancoId);
+            } else {
+                await this.bancoRepo.delete(bancoId);
+            }
             return Result.ok<void>();
         } catch (err) {
             this.logger.error('BancoService.deleteBanco error: %o', err);

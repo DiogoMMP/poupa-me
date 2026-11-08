@@ -103,11 +103,13 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                 bancoId: raw.banco_id ?? null
             };
 
-            // Unique name check scoped to the same bank
+            // Unique name check scoped to the same bank, among active cartões only: recreating a deleted cartão
+            // inserts a new row instead of overwriting the deleted one.
             if (nome) {
                 const bancoId = entityObj.bancoId as string | null ?? null;
                 const qb = this.repo.createQueryBuilder('c')
-                    .where('LOWER(c.nome) = LOWER(:nome)', {nome});
+                    .where('LOWER(c.nome) = LOWER(:nome)', {nome})
+                    .andWhere('c.is_active = :isActive', { isActive: true });
                 if (bancoId) {
                     qb.andWhere('c.bancoId = :bancoId', {bancoId});
                 } else {
@@ -266,14 +268,24 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
     }
 
     /**
-     * Deletes a CartaoCredito record from the database based on its domainId.
+     * Finds a CartaoCredito by domainId only if it is active. Used to validate new movimentos (pagamento, crédito,
+     * reembolso); a soft-deleted cartão returns null.
+     * @param cartaoId - The domainId of the CartaoCredito.
+     */
+    public async findActiveById(cartaoId: string): Promise<CartaoCredito | null> {
+        const ativo = await this.repo.count({ where: { domainId: cartaoId, isActive: true } });
+        return ativo > 0 ? this.findById(cartaoId) : null;
+    }
+
+    /**
+     * Soft-deletes a CartaoCredito record (is_active = false) based on its domainId. The row is kept so transações keep their FK.
      * @param cartaoId - The domainId of the CartaoCredito to delete.
      */
     public async delete(cartaoId: string): Promise<void> {
         try {
             await this.repo.createQueryBuilder()
-                .delete()
-                .from(CartaoCreditoEntity)
+                .update(CartaoCreditoEntity)
+                .set({ isActive: false })
                 .where('domain_id = :domainId', {domainId: cartaoId})
                 .execute();
         } catch (err) {
@@ -316,13 +328,16 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
      * @param bancoId - Optional bancoId to filter CartaoCredito records by banco association.
      * @returns An array of CartaoCredito domain entities matching the filter criteria.
      */
-    public async findAll(userId?: string, bancoId?: string): Promise<CartaoCredito[]> {
+    public async findAll(userId?: string, bancoId?: string, includeInactive = false): Promise<CartaoCredito[]> {
         try {
             let rows: CartaoCreditoEntity[];
             const qb = this.repo.createQueryBuilder('c')
                 .leftJoinAndSelect('c.contaPagamento', 'contaPagamento')
                 .orderBy('c.id', 'ASC');
 
+            if (!includeInactive) {
+                qb.andWhere('c.is_active = :isActive', { isActive: true });
+            }
             if (userId) {
                 qb.andWhere('c.user_domain_id = :userId', { userId });
             }

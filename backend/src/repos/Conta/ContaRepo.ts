@@ -5,6 +5,7 @@ import { ContaMap } from '../../mappers/ContaMap.js';
 import { ContaEntity } from '../../persistence/entities/ContaEntity.js';
 import { Conta } from '../../domain/Conta/Entities/Conta.js';
 import { ContaIdHelper, extractSequenceNumber } from '../../utils/IDGenerator.js';
+import { apagarContaComFilhos, contarFilhosDaConta, type IContagemFilhos } from '../Shared/CascataSoftDelete.js';
 
 /**
  * Repository implementation for Conta using TypeORM. Handles all database interactions for Conta entities.
@@ -67,11 +68,13 @@ export default class ContaRepo implements IContaRepo {
                 bancoId: raw.banco_id ?? null
             };
 
-            // Check for existing account with same name within the same bank
+            // Check for an existing active account with the same name within the same bank. Soft-deleted rows are
+            // ignored: recreating a deleted account inserts a new row instead of overwriting the deleted one.
             if (nome) {
                 const bancoId = entityObj.bancoId as string | null ?? null;
                 const qb = this.repo.createQueryBuilder('c')
-                    .where('LOWER(c.nome) = LOWER(:nome)', { nome });
+                    .where('LOWER(c.nome) = LOWER(:nome)', { nome })
+                    .andWhere('c.is_active = :isActive', { isActive: true });
                 if (bancoId) {
                     qb.andWhere('c.bancoId = :bancoId', { bancoId });
                 } else {
@@ -186,14 +189,51 @@ export default class ContaRepo implements IContaRepo {
     }
 
     /**
-     * Deletes a Conta from the database using its domainId. Executes a delete query and removes the record permanently.
+     * Finds a Conta by domainId only if it is active. Used to validate new movimentos and new links: a soft-deleted
+     * Conta returns null. Reversals and balance updates keep using findById, which also returns inactive rows.
+     * @param contaId The domainId of the Conta.
+     */
+    public async findActiveById(contaId: string): Promise<Conta | null> {
+        const ativa = await this.repo.count({ where: { domainId: contaId, isActive: true } });
+        return ativa > 0 ? this.findById(contaId) : null;
+    }
+
+    /**
+     * Counts the active Cartões paid from the Conta and the active regras that reference it — what a cascade delete
+     * would deactivate.
+     * @param contaId The domainId of the Conta.
+     */
+    public async contarFilhosAtivos(contaId: string): Promise<IContagemFilhos> {
+        try {
+            return await contarFilhosDaConta(this.dataSource, contaId);
+        } catch (err) {
+            this.logger.error('ContaRepo.contarFilhosAtivos error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Soft-deletes the Conta, the Cartões paid from it and the regras that reference it, in one transaction.
+     * @param contaId The domainId of the Conta.
+     */
+    public async deleteComFilhos(contaId: string): Promise<void> {
+        try {
+            await this.dataSource.transaction(manager => apagarContaComFilhos(manager, contaId));
+        } catch (err) {
+            this.logger.error('ContaRepo.deleteComFilhos error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Soft-deletes a Conta by its domainId (is_active = false). The row is kept so transações and cartões keep their FK.
      * @param contaId The domainId of the Conta to delete.
      */
     public async delete(contaId: string): Promise<void> {
         try {
             await this.repo.createQueryBuilder()
-                .delete()
-                .from(ContaEntity)
+                .update(ContaEntity)
+                .set({ isActive: false })
                 .where('domain_id = :domainId', { domainId: contaId })
                 .execute();
         } catch (err) {
@@ -226,12 +266,15 @@ export default class ContaRepo implements IContaRepo {
      * @param bancoId Optional banco domain ID to filter the Conta records. If provided, only Conta records associated with this banco will be returned.
      * @returns An array of Conta domain objects matching the criteria.
      */
-    public async findAll(userId?: string, bancoId?: string): Promise<Conta[]> {
+    public async findAll(userId?: string, bancoId?: string, includeInactive = false): Promise<Conta[]> {
         try {
             let rows: ContaEntity[];
             const qb = this.repo.createQueryBuilder('c')
                 .orderBy('c.id', 'ASC');
 
+            if (!includeInactive) {
+                qb.andWhere('c.is_active = :isActive', { isActive: true });
+            }
             if (userId) {
                 qb.andWhere('c.user_domain_id = :userId', { userId });
             }

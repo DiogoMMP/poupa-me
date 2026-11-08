@@ -229,8 +229,10 @@ export default (app: Router) => {
    *   delete:
    *     tags:
    *       - Banco
-   *     summary: Delete a banco
-   *     description: Deletes a banco by its domain ID
+   *     summary: Delete a banco (soft delete)
+   *     description: >
+   *       Soft-deletes a banco (is_active = false). If it still has active contas, cartões or recurring rules, the
+   *       request is refused with 409 and the counts; repeat it with cascade=true to soft-delete those too.
    *     security:
    *       - bearerAuth: []
    *     parameters:
@@ -241,6 +243,12 @@ export default (app: Router) => {
    *           type: string
    *         description: Banco domain ID
    *         example: "BNC00000000001"
+   *       - in: query
+   *         name: cascade
+   *         required: false
+   *         schema:
+   *           type: boolean
+   *         description: Also soft-delete the active contas, cartões and recurring rules of this banco
    *     responses:
    *       200:
    *         description: Banco deleted successfully
@@ -248,6 +256,8 @@ export default (app: Router) => {
    *         description: Banco not found
    *       401:
    *         description: Unauthorized
+   *       409:
+   *         description: Banco has active children and cascade was not requested. Body has contasAtivas, cartoesAtivos and regrasAtivas
    */
   route.delete('/:id', isAuth, (req, res, next) => ctrl.deleteBanco(req, res, next));
 };

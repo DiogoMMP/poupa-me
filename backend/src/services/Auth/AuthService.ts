@@ -29,8 +29,9 @@ export default class AuthService implements IUserService {
         try {
             if (!registrationDTO) return Result.fail<IUserDTO>('No registration data provided');
 
-            // Check if already exists
-            const existing = await this.userRepo.findByEmail(registrationDTO.email);
+            // Only an active user blocks the email: a soft-deleted user frees it (B0016). The new registration is a new
+            // user with no data; the deleted user's rows keep their own owner.
+            const existing = await this.userRepo.findActiveByEmail(registrationDTO.email);
             if (existing) return Result.fail<IUserDTO>('Email already in use');
 
             // Build value objects
@@ -77,7 +78,8 @@ export default class AuthService implements IUserService {
         try {
             if (!loginDTO) return Result.fail<{ token: string; user: IUserDTO }>('No login data provided');
 
-            const user = await this.userRepo.findByEmail(loginDTO.email);
+            // Soft-deleted users are not found here, so they get the same generic error as an unknown email
+            const user = await this.userRepo.findActiveByEmail(loginDTO.email);
             if (!user) return Result.fail<{ token: string; user: IUserDTO }>('Invalid credentials');
 
             const passwordMatches = await user.password.comparePassword(loginDTO.password);
@@ -133,7 +135,7 @@ export default class AuthService implements IUserService {
     public async getUserByEmail(email: string): Promise<Result<IUserDTO[]>> {
         try {
             if (!email) return Result.fail<IUserDTO[]>('Email is required');
-            const user = await this.userRepo.findByEmail(email);
+            const user = await this.userRepo.findActiveByEmail(email);
             if (!user) return Result.ok<IUserDTO[]>([]);
             const dto = UserMap.toDTO(user) as IUserDTO;
             return Result.ok<IUserDTO[]>([dto]);
@@ -172,7 +174,7 @@ export default class AuthService implements IUserService {
             if (!updateDTO) return Result.fail<IUserDTO>('No update data provided');
             if (!emailKey) return Result.fail<IUserDTO>('Email is required to identify the user');
 
-            const existing = await this.userRepo.findByEmail(emailKey);
+            const existing = await this.userRepo.findActiveByEmail(emailKey);
             if (!existing) return Result.fail<IUserDTO>(`User not found with email=${emailKey}`);
 
             // Merge updates into domain object
@@ -224,7 +226,7 @@ export default class AuthService implements IUserService {
             if (!email) return Result.fail<IUserDTO>('Email is required');
             if (!dto?.role) return Result.fail<IUserDTO>('Role is required');
 
-            const existing = await this.userRepo.findByEmail(email);
+            const existing = await this.userRepo.findActiveByEmail(email);
             if (!existing) return Result.fail<IUserDTO>(`User not found with email=${email}`);
 
             const roleResult = UserRole.create(dto.role);
@@ -257,7 +259,7 @@ export default class AuthService implements IUserService {
     public async deleteUserByEmail(email: string): Promise<Result<boolean>> {
         try {
             if (!email) return Result.fail<boolean>('Email is required');
-            const exists = await this.userRepo.findByEmail(email);
+            const exists = await this.userRepo.findActiveByEmail(email);
             if (!exists) return Result.fail<boolean>(`User not found with email=${email}`);
             await this.userRepo.deleteByEmail(email);
             return Result.ok<boolean>(true);
