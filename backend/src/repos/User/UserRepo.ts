@@ -71,30 +71,6 @@ export default class UserRepo implements IUserRepo {
     }
 
     /**
-     * Finds a User entity in the database by its email. It queries the database for a record matching the provided
-     * email. If a record is found, it uses the UserMap to convert the persistence format back to the domain model and
-     * returns it. If no record is found, it returns null.
-     * @param email - The email address of the User to be found in the database. This is used as a search criterion to
-     * locate the corresponding User record.
-     * @returns A Promise that resolves to a User domain entity if a matching record is found, or null if no such record
-     * exists. If there is an error during the database query, it logs the error and rethrows it.
-     */
-    public async findByEmail(email: string): Promise<User | null> {
-        // Use case-insensitive match to be robust with email casing differences
-        try {
-            // Use case-insensitive search via LOWER comparison for portability
-            const row = await this.repo.createQueryBuilder('user')
-                .where('LOWER(user.email) = LOWER(:email)', { email })
-                .getOne();
-            if (!row) return null;
-            return await UserMap.toDomain(row);
-        } catch (err) {
-            this.logger.error('UserRepo.findByEmail error: %o', err);
-            throw err;
-        }
-    }
-
-    /**
      * Finds a User entity in the database by its domain ID. It queries the database for a record matching the provided
      * domain ID. If a record is found, it uses the UserMap to convert the persistence format back to the domain model and
      * returns it. If no record is found, it returns null.
@@ -146,15 +122,30 @@ export default class UserRepo implements IUserRepo {
 
     /**
      * Finds an active User by domain ID. Used by the auth middleware to reject tokens of deleted users.
+     *
+     * UserMap falls back to the numeric row id when domain_id is empty (legacy rows), and that id is what login puts
+     * in the token and the session. The same fallback is resolved here, so such a user is not rejected as inactive.
      */
     public async findActiveByDomainId(domainId: string): Promise<User | null> {
-        const row = await this.repo.findOne({ where: { domainId, isActive: true } });
-        if (!row) return null;
-        return await UserMap.toDomain(row);
+        try {
+            const row = await this.repo.createQueryBuilder('user')
+                .where('user.is_active = :isActive', { isActive: true })
+                .andWhere(
+                    "(user.domain_id = :domainId OR (COALESCE(user.domain_id, '') = '' AND CAST(user.id AS text) = :domainId))",
+                    { domainId }
+                )
+                .getOne();
+            if (!row) return null;
+            return await UserMap.toDomain(row);
+        } catch (err) {
+            this.logger.error('UserRepo.findActiveByDomainId error: %o', err);
+            throw err;
+        }
     }
 
     /**
-     * Soft-deletes a User by email (is_active = false). The row is kept so the user's data keeps its owner reference.
+     * Soft-deletes the active User with this email (is_active = false). The row is kept so the user's data keeps its
+     * owner reference. Only the active row is matched: a re-registered email may also have older, deleted rows.
      */
     public async deleteByEmail(email: string): Promise<void> {
         try {
@@ -162,6 +153,7 @@ export default class UserRepo implements IUserRepo {
                 .update(UserEntity)
                 .set({ isActive: false })
                 .where('LOWER(email) = LOWER(:email)', { email })
+                .andWhere('is_active = :isActive', { isActive: true })
                 .execute();
         } catch (err) {
             this.logger.error('UserRepo.deleteByEmail error: %o', err);
@@ -169,6 +161,9 @@ export default class UserRepo implements IUserRepo {
         }
     }
 
+    /**
+     * Updates the active User with this email. Older, soft-deleted rows with the same email are left untouched.
+     */
     public async updateByEmail(user: User, email: string): Promise<User> {
         try {
             const raw = UserMap.toPersistence(user);
@@ -183,11 +178,13 @@ export default class UserRepo implements IUserRepo {
                     role: raw.role
                 })
                 .where('LOWER(email) = LOWER(:email)', { email })
+                .andWhere('is_active = :isActive', { isActive: true })
                 .execute();
 
             // Reload the updated row
             const saved = await this.repo.createQueryBuilder('user')
                 .where('LOWER(user.email) = LOWER(:email)', { email })
+                .andWhere('user.is_active = :isActive', { isActive: true })
                 .getOne();
 
             if (!saved) throw new Error('Failed to find updated user by email');
