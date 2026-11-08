@@ -10,6 +10,7 @@ import { Dinheiro } from "../../domain/Shared/ValueObjects/Dinheiro.js";
 import { TransacaoMap } from '../../mappers/TransacaoMap.js';
 import { TransacaoEntity } from '../../persistence/entities/TransacaoEntity.js';
 import type {Transacao} from "../../domain/Transacao/Entities/Transacao.js";
+import { repositorio } from '../Shared/UnidadeDeTrabalho.js';
 
 /**
  * Repository for CartaoCredito entity, handling database operations using TypeORM.
@@ -19,14 +20,15 @@ import type {Transacao} from "../../domain/Transacao/Entities/Transacao.js";
  */
 @Service()
 export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
-    private repo: Repository<CartaoCreditoEntity>;
+    /** Bound to the open unit of work, when there is one (see UnidadeDeTrabalho). */
+    private get repo(): Repository<CartaoCreditoEntity> {
+        return repositorio(this.dataSource, CartaoCreditoEntity);
+    }
 
     constructor(
         @Inject('dataSource') private dataSource: DataSource,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
-    ) {
-        this.repo = this.dataSource.getRepository(CartaoCreditoEntity);
-    }
+    ) {}
 
     /**
      * Saves a CartaoCredito domain entity to the database. If a CartaoCredito with the same name exists for the same user, it updates that record instead.
@@ -78,7 +80,7 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                         contaPagamentoId = asNum;
                     } else {
                         // lookup ContaEntity by domainId
-                        const contaRepo = this.dataSource.getRepository(ContaEntity);
+                        const contaRepo = repositorio(this.dataSource, ContaEntity);
                         const contaRow = await contaRepo.findOne({ where: { domainId: rawStr } });
                         if (!contaRow) {
                             this.logger.error('CartaoCreditoRepo.save: contaPagamentoId lookup failed for domainId %s (userDomainId=%s)', rawStr, userDomainId);
@@ -217,7 +219,7 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                     if (!Number.isNaN(asNum2)) {
                         contaPagamentoId2 = asNum2;
                     } else {
-                        const contaRepo2 = this.dataSource.getRepository(ContaEntity);
+                        const contaRepo2 = repositorio(this.dataSource, ContaEntity);
                         const contaRow2 = await contaRepo2.findOne({where: {domainId: String(contaPagamentoIdRaw)}});
                         contaPagamentoId2 = contaRow2 ? contaRow2.id : null;
                     }
@@ -399,7 +401,7 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
             const fecho: Date | null = cartaoRow.periodoFecho ? new Date(cartaoRow.periodoFecho) : null;
 
             // Build query for crédito and reembolso pendentes linked to this card (we'll compute sums from both)
-            const transacaoRepo = this.dataSource.getRepository(TransacaoEntity);
+            const transacaoRepo = repositorio(this.dataSource, TransacaoEntity);
             const qbAll = transacaoRepo.createQueryBuilder('t')
                 .leftJoinAndSelect('t.categoria', 'c')
                 .leftJoinAndSelect('t.cartaoCredito', 'cc')

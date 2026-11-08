@@ -13,6 +13,7 @@ import type ICategoriaRepo from '../../repos/Categoria/ICategoriaRepo.js';
 import type IContaRepo from '../../repos/Conta/IContaRepo.js';
 import type ICartaoCreditoRepo from '../../repos/CartaoCredito/ICartaoCreditoRepo.js';
 import type IUserRepo from '../../repos/User/IUserRepo.js';
+import type IUnidadeDeTrabalho from '../../repos/Shared/IRepos/IUnidadeDeTrabalho.js';
 import { Transacao } from '../../domain/Transacao/Entities/Transacao.js';
 import { Descricao } from '../../domain/Transacao/ValueObjects/Descricao.js';
 import { Data } from '../../domain/Shared/ValueObjects/Data.js';
@@ -34,7 +35,8 @@ export default class TransacaoService implements ITransacaoService {
         @Inject('CartaoCreditoRepo') private cartaoCreditoRepo: ICartaoCreditoRepo,
         @Inject('TransacaoDespesasRecorrentesService') private transacaoDespesasRecorrentesService: ITransacaoDespesasRecorrentesService,
         @Inject('UserRepo') private userRepo: IUserRepo,
-        @Inject('logger') private logger: { error: (...args: unknown[]) => void }
+        @Inject('logger') private logger: { error: (...args: unknown[]) => void },
+        @Inject('UnidadeDeTrabalho') private unidadeDeTrabalho: IUnidadeDeTrabalho
     ) {}
 
     private async getUserNome(userId?: string): Promise<string | undefined> {
@@ -431,9 +433,19 @@ export default class TransacaoService implements ITransacaoService {
     }
 
     /**
-     * Updates an existing Transacao with new values.
+     * Updates an existing Transacao with new values. Reverting the old impact, applying the new one and saving the
+     * Transacao run in one unit of work: if any step fails, no balance or Transacao change is persisted.
      */
     public async updateTransacao(id: string, updateDTO: ITransacaoUpdateDTO): Promise<Result<ITransacaoDTO>> {
+        try {
+            return await this.unidadeDeTrabalho.executar(() => this.atualizarTransacao(id, updateDTO));
+        } catch (e) {
+            this.logger.error('TransacaoService.updateTransacao error: %o', e);
+            return Result.fail<ITransacaoDTO>('Error updating transaction');
+        }
+    }
+
+    private async atualizarTransacao(id: string, updateDTO: ITransacaoUpdateDTO): Promise<Result<ITransacaoDTO>> {
         try {
             const existing = await this.transacaoRepo.findById(id);
             if (!existing) return Result.fail<ITransacaoDTO>(`Transaction not found: ${id}`);
@@ -574,9 +586,19 @@ export default class TransacaoService implements ITransacaoService {
     }
 
     /**
-     * Deletes a Transacao by its unique identifier.
+     * Deletes a Transacao by its unique identifier. Reverting its impact and deleting it run in one unit of work:
+     * if either fails, nothing is persisted.
      */
     public async deleteTransacao(id: string): Promise<Result<boolean>> {
+        try {
+            return await this.unidadeDeTrabalho.executar(() => this.apagarTransacao(id));
+        } catch (e) {
+            this.logger.error('TransacaoService.deleteTransacao error: %o', e);
+            return Result.fail<boolean>('Error deleting transaction');
+        }
+    }
+
+    private async apagarTransacao(id: string): Promise<Result<boolean>> {
         try {
             const transacao = await this.transacaoRepo.findById(id);
             if (!transacao) return Result.fail<boolean>('Not found');

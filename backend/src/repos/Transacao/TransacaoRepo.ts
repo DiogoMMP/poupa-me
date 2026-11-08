@@ -8,6 +8,7 @@ import { CategoriaEntity } from '../../persistence/entities/CategoriaEntity.js';
 import { ContaEntity } from '../../persistence/entities/ContaEntity.js';
 import { CartaoCreditoEntity } from '../../persistence/entities/CartaoCreditoEntity.js';
 import { TransacaoIdHelper } from '../../utils/IDGenerator.js';
+import { repositorio } from '../Shared/UnidadeDeTrabalho.js';
 
 /**
  * Repository for managing Transacao entities in the database using TypeORM.
@@ -15,14 +16,15 @@ import { TransacaoIdHelper } from '../../utils/IDGenerator.js';
  */
 @Service()
 export default class TransacaoRepo implements ITransacaoRepo {
-    private repo: Repository<TransacaoEntity>;
+    /** Bound to the open unit of work, when there is one (see UnidadeDeTrabalho). */
+    private get repo(): Repository<TransacaoEntity> {
+        return repositorio(this.dataSource, TransacaoEntity);
+    }
 
     constructor(
         @Inject('dataSource') private dataSource: DataSource,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
-    ) {
-        this.repo = this.dataSource.getRepository(TransacaoEntity);
-    }
+    ) {}
 
     /**
      * Saves a new Transacao to the database. Handles mapping from domain to persistence format,
@@ -34,7 +36,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
             const raw = TransacaoMap.toPersistence(transacao);
 
             // Resolve categoria FK: accept both 'categoriaId' (camel) and 'categoria_id' (snake) from the mapped raw
-            const categoriaRepo = this.dataSource.getRepository(CategoriaEntity);
+            const categoriaRepo = repositorio(this.dataSource, CategoriaEntity);
             const categoriaDomainId = String(raw['categoriaId'] ?? raw['categoria_id'] ?? raw['categoria'] ?? '');
             if (!categoriaDomainId) throw new Error('Categoria id missing for transacao');
             const categoriaRow = await categoriaRepo.findOne({ where: { domainId: categoriaDomainId } });
@@ -87,13 +89,13 @@ export default class TransacaoRepo implements ITransacaoRepo {
             let contaRow: ContaEntity | null = null;
             if ((transacao as unknown as Record<string, unknown>).conta) {
                 const contaDomain = (transacao as unknown as Record<string, unknown>).conta as { id: { toString(): string } };
-                const contaRepo = this.dataSource.getRepository(ContaEntity);
+                const contaRepo = repositorio(this.dataSource, ContaEntity);
                 contaRow = await contaRepo.findOne({ where: { domainId: contaDomain.id.toString() } });
                 if (!contaRow) throw new Error('Conta (from domain) not found for transacao');
                 // Prefer explicit FK column to avoid relation-persistence inconsistencies
                 entityObj['contaId'] = contaRow.id;
             } else if (contaDomainIdStr) {
-                const contaRepo = this.dataSource.getRepository(ContaEntity);
+                const contaRepo = repositorio(this.dataSource, ContaEntity);
                 contaRow = await contaRepo.findOne({ where: { domainId: contaDomainIdStr } });
                 if (!contaRow) throw new Error('Conta not found for transacao');
                 entityObj['contaId'] = contaRow.id;
@@ -102,7 +104,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
             // If domain object contains contaDestino (for Despesa Mensal), resolve it
             if ((transacao as unknown as Record<string, unknown>).contaDestino) {
                 const contaDestinoDomain = (transacao as unknown as Record<string, unknown>).contaDestino as { id: { toString(): string } };
-                const contaRepo = this.dataSource.getRepository(ContaEntity);
+                const contaRepo = repositorio(this.dataSource, ContaEntity);
                 const contaDestinoRow = await contaRepo.findOne({ where: { domainId: contaDestinoDomain.id.toString() } });
                 if (!contaDestinoRow) throw new Error('ContaDestino (from domain) not found for transacao');
                 entityObj['contaDestinoId'] = contaDestinoRow.id;
@@ -111,7 +113,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
             // If domain object contains contaPoupanca (for Poupança), resolve it
             if ((transacao as unknown as Record<string, unknown>).contaPoupanca) {
                 const contaPoupancaDomain = (transacao as unknown as Record<string, unknown>).contaPoupanca as { id: { toString(): string } };
-                const contaRepo = this.dataSource.getRepository(ContaEntity);
+                const contaRepo = repositorio(this.dataSource, ContaEntity);
                 const contaPoupancaRow = await contaRepo.findOne({ where: { domainId: contaPoupancaDomain.id.toString() } });
                 if (!contaPoupancaRow) throw new Error('ContaPoupanca (from domain) not found for transacao');
                 entityObj['contaPoupancaId'] = contaPoupancaRow.id;
@@ -132,7 +134,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 const cartaoDomain = (transacao as unknown as Record<string, unknown>).cartaoCredito as { id: { toString(): string } };
                 // attempt to find CartaoCreditoEntity by domainId via repository manager
                 try {
-                    const cartao = await this.dataSource.getRepository(CartaoCreditoEntity).findOne({ where: { domainId: cartaoDomain.id.toString() } });
+                    const cartao = await repositorio(this.dataSource, CartaoCreditoEntity).findOne({ where: { domainId: cartaoDomain.id.toString() } });
                     if (cartao) {
                         entityObj['cartaoCredito'] = cartao;
                         entityObj['cartaoCreditoId'] = cartao.id;
@@ -204,7 +206,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
             const raw = TransacaoMap.toPersistence(transacao);
 
             // Resolve categoria FK
-            const categoriaRepo = this.dataSource.getRepository(CategoriaEntity);
+            const categoriaRepo = repositorio(this.dataSource, CategoriaEntity);
             const categoriaDomainId2 = String(raw['categoriaId'] ?? raw['categoria_id'] ?? raw['categoria'] ?? '');
             if (!categoriaDomainId2) throw new Error('Categoria id missing for transacao');
             const categoriaRow = await categoriaRepo.findOne({ where: { domainId: categoriaDomainId2 } });
@@ -218,7 +220,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 let contaRowForUpdate: ContaEntity | null = null;
                 const contaDomainIdForUpdate = raw['contaId'] ?? raw['conta_id'] ?? raw['conta'] ?? null;
                 if (contaDomainIdForUpdate) {
-                    const contaRepo = this.dataSource.getRepository(ContaEntity);
+                    const contaRepo = repositorio(this.dataSource, ContaEntity);
                     contaRowForUpdate = await contaRepo.findOne({ where: { domainId: String(contaDomainIdForUpdate) } });
                     if (!contaRowForUpdate) throw new Error('Conta not found for transacao');
                 }
@@ -227,7 +229,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 let contaDestinoRowForUpdate: ContaEntity | null = null;
                 const contaDestinoDomainIdForUpdate = raw['contaDestinoId'] ?? raw['conta_destino_id'] ?? raw['contaDestino'] ?? null;
                 if (contaDestinoDomainIdForUpdate) {
-                    const contaRepo = this.dataSource.getRepository(ContaEntity);
+                    const contaRepo = repositorio(this.dataSource, ContaEntity);
                     contaDestinoRowForUpdate = await contaRepo.findOne({ where: { domainId: String(contaDestinoDomainIdForUpdate) } });
                     if (!contaDestinoRowForUpdate) throw new Error('Conta destino not found for transacao');
                 }
@@ -236,7 +238,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 let contaPoupancaRowForUpdate: ContaEntity | null = null;
                 const contaPoupancaDomainIdForUpdate = raw['contaPoupancaId'] ?? raw['conta_poupanca_id'] ?? null;
                 if (contaPoupancaDomainIdForUpdate) {
-                    const contaRepo = this.dataSource.getRepository(ContaEntity);
+                    const contaRepo = repositorio(this.dataSource, ContaEntity);
                     contaPoupancaRowForUpdate = await contaRepo.findOne({ where: { domainId: String(contaPoupancaDomainIdForUpdate) } });
                     if (!contaPoupancaRowForUpdate) throw new Error('Conta poupanca not found for transacao');
                 }
@@ -245,7 +247,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
                 let cartaoRowForUpdate = null;
                 const cartaoDomainIdForUpdate = raw['cartaoCreditoId'] ?? raw['cartao_credito_id'] ?? raw['cartaoCredito'] ?? null;
                 if (cartaoDomainIdForUpdate) {
-                    const cartaoRepo = this.dataSource.getRepository(CartaoCreditoEntity);
+                    const cartaoRepo = repositorio(this.dataSource, CartaoCreditoEntity);
                     cartaoRowForUpdate = await cartaoRepo.findOne({ where: { domainId: String(cartaoDomainIdForUpdate) } });
                     if (!cartaoRowForUpdate) throw new Error('Cartao credito not found for transacao');
                 }
@@ -315,7 +317,7 @@ export default class TransacaoRepo implements ITransacaoRepo {
             } as Record<string, unknown>;
             const contaDomainId2 = raw['contaId'] ?? raw['conta_id'] ?? raw['conta'] ?? undefined;
             if (contaDomainId2) {
-                const contaRepo = this.dataSource.getRepository(ContaEntity);
+                const contaRepo = repositorio(this.dataSource, ContaEntity);
                 const contaRow = await contaRepo.findOne({ where: { domainId: String(contaDomainId2) } });
                 if (!contaRow) throw new Error('Conta not found for transacao');
                 entityObj2['conta'] = contaRow;

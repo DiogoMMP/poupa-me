@@ -83,6 +83,10 @@ export default {
         despesaRecorrenteQuery: {
             name: 'DespesaRecorrenteQueryRepo',
             path: '../repos/DespesaRecorrente/DespesaRecorrenteQueryRepo.js'
+        },
+        unidadeDeTrabalho: {
+            name: 'UnidadeDeTrabalho',
+            path: '../repos/Shared/UnidadeDeTrabalho.js'
         }
     },
 

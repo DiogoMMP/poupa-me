@@ -6,20 +6,22 @@ import { ContaEntity } from '../../persistence/entities/ContaEntity.js';
 import { Conta } from '../../domain/Conta/Entities/Conta.js';
 import { ContaIdHelper, extractSequenceNumber } from '../../utils/IDGenerator.js';
 import { apagarContaComFilhos, contarFilhosDaConta, type IContagemFilhos } from '../Shared/CascataSoftDelete.js';
+import { repositorio } from '../Shared/UnidadeDeTrabalho.js';
 
 /**
  * Repository implementation for Conta using TypeORM. Handles all database interactions for Conta entities.
  */
 @Service()
 export default class ContaRepo implements IContaRepo {
-    private repo: Repository<ContaEntity>;
+    /** Bound to the open unit of work, when there is one (see UnidadeDeTrabalho). */
+    private get repo(): Repository<ContaEntity> {
+        return repositorio(this.dataSource, ContaEntity);
+    }
 
     constructor(
         @Inject('dataSource') private dataSource: DataSource,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
-    ) {
-        this.repo = this.dataSource.getRepository(ContaEntity);
-    }
+    ) {}
 
     /**
      * Saves a new Conta to the database. Converts the domain object to a persistence format, creates an entity, and saves it.
