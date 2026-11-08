@@ -1,5 +1,14 @@
-<div class="pagination" *ngIf="totalPages > 1">
-  <button class="pagination-btn" (click)="onPrev()" [disabled]="currentPage === 1">‹</button>
-  <span class="pagination-info">{{ currentPage }} / {{ totalPages }}</span>
-  <button class="pagination-btn" (click)="onNext()" [disabled]="currentPage === totalPages">›</button>
+<div class="pagination">
+  <div class="pagination-left">
+    <div class="pagination-size">
+      <app-select [options]="sizeOptions" [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)"></app-select>
+    </div>
+    <span class="pagination-total">{{ totalItems }} {{ totalItems === 1 ? 'item' : 'itens' }}</span>
+  </div>
+
+  <div class="pagination-right">
+    <button class="pagination-btn" (click)="onPrev()" [disabled]="currentPage <= 1">‹</button>
+    <span class="pagination-info">{{ currentPage }} / {{ totalPages }}</span>
+    <button class="pagination-btn" (click)="onNext()" [disabled]="currentPage >= totalPages">›</button>
+  </div>
 </div>
