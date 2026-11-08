@@ -148,7 +148,8 @@ describe('TransacaoService — isPagamentoCartao guard on Reembolso impact', () 
     cartaoCreditoRepo,
     {} as unknown as ITransacaoDespesasRecorrentesService,
     {} as unknown as IUserRepo,
-    { error: jest.fn() }
+    { error: jest.fn() },
+    { executar: (trabalho: () => Promise<unknown>) => trabalho() } as never
   );
 
   beforeEach(() => {
@@ -229,7 +230,8 @@ describe('TransacaoService — updateTransacao aplica novas associações (issue
     cartaoCreditoRepo,
     {} as unknown as ITransacaoDespesasRecorrentesService,
     {} as unknown as IUserRepo,
-    { error: jest.fn() }
+    { error: jest.fn() },
+    { executar: (trabalho: () => Promise<unknown>) => trabalho() } as never
   );
 
   beforeEach(() => {
