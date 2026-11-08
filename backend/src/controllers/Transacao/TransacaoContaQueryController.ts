@@ -4,6 +4,7 @@ import { Service, Inject } from 'typedi';
 import type ITransacaoContaQueryController from './IControllers/ITransacaoContaQueryController.js';
 import type ITransacaoContaQueryService from '../../services/Transacao/IServices/ITransacaoContaQueryService.js';
 import type { ITransacaoContaQueryFilters } from '../../repos/Transacao/IRepos/ITransacaoContaQueryRepo.js';
+import { parsePagination } from '../../core/logic/Pagination.js';
 
 /**
  * Controller for Conta-based transaction query endpoints (Entrada/Saída).
@@ -26,6 +27,9 @@ export default class TransacaoContaQueryController implements ITransacaoContaQue
                 return res.status(400).json({ error: 'Period must be one of: Este Mês, Últimos 3 Meses, Último Ano' });
             }
 
+            const pagination = parsePagination(req.query);
+            if (pagination.isFailure) return res.status(400).json({ error: pagination.error });
+
             const filters: ITransacaoContaQueryFilters = {
                 userId,
                 bancoId,
@@ -34,7 +38,7 @@ export default class TransacaoContaQueryController implements ITransacaoContaQue
                 period: period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano' | undefined,
             };
 
-            const result = await this.transacaoContaQueryService.findAllContaTransactions(filters);
+            const result = await this.transacaoContaQueryService.findAllContaTransactions(filters, pagination.getValue());
             if (result.isFailure) return res.status(500).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) { next(e); }

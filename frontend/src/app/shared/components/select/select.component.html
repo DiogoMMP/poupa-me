@@ -4,6 +4,7 @@
     (click)="toggleMenu($event)"
     (keydown)="onTriggerKeydown($event)"
     [attr.aria-expanded]="showMenu()"
+    [attr.aria-label]="ariaLabel ? ariaLabel + ': ' + (selectedOption()?.label ?? placeholder) : null"
     aria-haspopup="listbox">
     <span class="app-select-label">
       <ng-container *ngIf="selectedOption() as opt; else placeholderLabel">{{ opt.label }}</ng-container>

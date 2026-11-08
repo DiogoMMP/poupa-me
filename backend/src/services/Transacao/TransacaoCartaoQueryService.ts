@@ -1,6 +1,8 @@
 import { Service, Inject } from 'typedi';
 import { Result } from '../../core/logic/Result.js';
 import type { ITransacaoDTO } from '../../dto/ITransacaoDTO.js';
+import type { IPaginatedDTO, IPaginationParams } from '../../dto/shared/IPaginatedDTO.js';
+import { toPaginated } from '../../core/logic/Pagination.js';
 import type ITransacaoCartaoQueryService from './IServices/ITransacaoCartaoQueryService.js';
 import type ITransacaoCartaoQueryRepo from '../../repos/Transacao/IRepos/ITransacaoCartaoQueryRepo.js';
 import type { ITransacaoCartaoQueryFilters } from '../../repos/Transacao/IRepos/ITransacaoCartaoQueryRepo.js';
@@ -41,17 +43,17 @@ export default class TransacaoCartaoQueryService implements ITransacaoCartaoQuer
     }
 
     /**
-     * Finds Crédito/Reembolso transactions with optional filters.
+     * Finds one page of Crédito/Reembolso transactions with optional filters.
      * Filters: userId, bancoId, cartaoCreditoId, categoriaId, status, period.
      */
-    public async findAllCartaoTransactions(filters?: ITransacaoCartaoQueryFilters): Promise<Result<ITransacaoDTO[]>> {
+    public async findAllCartaoTransactions(filters: ITransacaoCartaoQueryFilters, pagination: IPaginationParams): Promise<Result<IPaginatedDTO<ITransacaoDTO>>> {
         try {
-            const rows: Transacao[] = await this.transacaoCartaoQueryRepo.findAllCartaoTransactions(filters);
-            const dtos = await this.enrichTransactionsWithUserName(rows);
-            return Result.ok<ITransacaoDTO[]>(dtos);
+            const { items, total } = await this.transacaoCartaoQueryRepo.findCartaoTransactionsPage(filters, pagination);
+            const dtos = await this.enrichTransactionsWithUserName(items);
+            return Result.ok<IPaginatedDTO<ITransacaoDTO>>(toPaginated(dtos, total, pagination));
         } catch (e) {
             this.logger.error('TransacaoCartaoQueryService.findAllCartaoTransactions error: %o', e);
-            return Result.fail<ITransacaoDTO[]>('Error fetching cartão transactions');
+            return Result.fail<IPaginatedDTO<ITransacaoDTO>>('Error fetching cartão transactions');
         }
     }
 }

@@ -8,7 +8,7 @@ const meta: Meta<PaginationComponent> = {
   parameters: {
     docs: {
       description: {
-        component: 'Controlo de navegação paginada para listas longas e tabelas da aplicação. Apresenta botões de navegação anterior/seguinte e contagem total.'
+        component: 'Controlo de navegação paginada para listas longas e tabelas da aplicação. Apresenta botões de navegação anterior/seguinte, a página atual sobre o total de páginas, um seletor de itens por página (10/25/50/100) e o total de itens.'
       }
     }
   },
@@ -39,6 +39,19 @@ export const Default: Story = {
     currentPage: 1,
     totalItems: 48,
     pageSize: 10
+  }
+};
+
+/**
+ * Paginação com o número de páginas vindo da API e um tamanho de página de 25 escolhido no seletor.
+ */
+export const WithPageSizeSelector: Story = {
+  args: {
+    currentPage: 2,
+    totalItems: 87,
+    pageSize: 25,
+    totalPagesInput: 4,
+    pageSizeOptions: [10, 25, 50, 100]
   }
 };
 

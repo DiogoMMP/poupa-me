@@ -4,6 +4,7 @@ import { Service, Inject } from 'typedi';
 import type ITransacaoCartaoQueryController from './IControllers/ITransacaoCartaoQueryController.js';
 import type ITransacaoCartaoQueryService from '../../services/Transacao/IServices/ITransacaoCartaoQueryService.js';
 import type { ITransacaoCartaoQueryFilters } from '../../repos/Transacao/IRepos/ITransacaoCartaoQueryRepo.js';
+import { parsePagination } from '../../core/logic/Pagination.js';
 
 /**
  * Controller for Cartão-based transaction query endpoints (Crédito/Reembolso).
@@ -27,6 +28,9 @@ export default class TransacaoCartaoQueryController implements ITransacaoCartaoQ
                 return res.status(400).json({ error: 'Period must be one of: Este Mês, Últimos 3 Meses, Último Ano' });
             }
 
+            const pagination = parsePagination(req.query);
+            if (pagination.isFailure) return res.status(400).json({ error: pagination.error });
+
             const filters: ITransacaoCartaoQueryFilters = {
                 userId,
                 bancoId,
@@ -36,7 +40,7 @@ export default class TransacaoCartaoQueryController implements ITransacaoCartaoQ
                 period: period as 'Este Mês' | 'Últimos 3 Meses' | 'Último Ano' | undefined,
             };
 
-            const result = await this.transacaoCartaoQueryService.findAllCartaoTransactions(filters);
+            const result = await this.transacaoCartaoQueryService.findAllCartaoTransactions(filters, pagination.getValue());
             if (result.isFailure) return res.status(500).json({ error: result.error });
             return res.status(200).json(result.getValue());
         } catch (e) { next(e); }

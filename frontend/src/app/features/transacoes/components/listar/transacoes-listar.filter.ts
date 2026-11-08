@@ -1,6 +1,5 @@
-// Re-export shared types and functions so existing imports continue to work
+// Re-export shared types so existing imports continue to work
 export type { PeriodFilter } from '../../../../shared/utils/period-filter.util';
-export { filterByPeriod } from '../../../../shared/utils/period-filter.util';
 
 export interface ContaFilters {
   categoriaId: string;
