@@ -2,9 +2,9 @@
 
 | | |
 | :--- | :--- |
-| **Tipo** | Feature — parte da [issue #50](https://github.com/DiogoMMP/poupa-me/issues/50) |
+| **Tipo** | Feature — fecha a [issue #50](https://github.com/DiogoMMP/poupa-me/issues/50) (PR [#95](https://github.com/DiogoMMP/poupa-me/pull/95)) |
 | **Branch** | `feature/paginacao-api-transacoes` (base: `develop`) |
-| **Estado** | Implementado — verificação contra BD real e em browser por fazer (ver §4) |
+| **Estado** | Implementado — testes manuais em browser feitos pelo utilizador; Cypress não corrido (ver §4) |
 | **Build** | Backend `npm run build` ✅ (baseline ✅). Frontend `npm run build` ✅ sem erros nem warnings novos (baseline ✅). `build-storybook` ✅ |
 | **Lint** | Backend `npm run lint`: 58 problemas (51 erros, 7 warnings) — **igual ao baseline**, nos mesmos 18 ficheiros, nenhum deles tocado por esta change |
 | **Testes** | Backend 71/71 (baseline 59/59; **+12** em `Pagination.spec.ts`). Frontend 15/15 (baseline 13/13; **+2** em `transacoes.service.spec.ts`) |
@@ -31,6 +31,7 @@ Alterações pedidas pelo utilizador depois da aprovação:
 - **A barra de paginação aparece sempre**, seja qual for o número de itens. O plano escondia-a quando havia poucos itens.
 - **Layout da barra:** à esquerda, o seletor (só com o número: "10", "25", "50", "100") e a seguir o total ("N itens"); à direita, a navegação ‹ `página / total` ›. Usa `justify-content: space-between` com `flex-wrap`.
 - **Mudar de página faz scroll instantâneo para o topo**, na `window` e no `main.content` do layout, porque qualquer um dos dois pode ser o elemento com scroll. Isto fica nos handlers `onContaPageChange`/`onCartaoPageChange` do componente da lista e não no `app-pagination` partilhado. Tem guarda para SSR (`isPlatformBrowser`). Mudar o tamanho de página não faz scroll.
+- **A issue #50 fica fechada por esta change.** O plano (§7 do README) deixava-a aberta para os restantes GETs, mas o utilizador esclareceu que a intenção da issue era só paginar as transações. Paginar os outros GETs deixa de ser trabalho pendente; se um dia for preciso, a infra de `Pagination.ts` serve para isso.
 
 Desvios encontrados durante a implementação:
 
@@ -55,13 +56,7 @@ Totais esperados, calculados em SQL com as mesmas condições do repo (admin, Sa
 | Cartão / Este Mês / Pendente | 15 | 1 |
 | Cartão / Último Ano | 65 | 3 |
 
-- **Pedido à API autenticado** — não foi feito: não há credenciais de seed, e não gerei tokens com o segredo do `.env` para contornar a autenticação. Falta confirmar que `skip`/`take` + `getManyAndCount()` com os `leftJoinAndSelect` devolve os totais da tabela acima e que a soma das páginas cobre tudo, sem repetidos (a ordem é `ano, mes, dia, id DESC`).
-- **Fluxo no browser** — não corrido:
-  - mudar de página (deve saltar logo para o topo);
-  - trocar o tamanho (deve voltar à página 1);
-  - aplicar/limpar filtros (deve voltar à página 1);
-  - apagar o único item da última página (deve saltar para a anterior);
-  - o aspeto da barra em mobile (usa `flex-wrap`).
+- **Testes manuais em browser — feitos pelo utilizador** sobre estes dados de teste, antes de abrir o PR #95. Assim a query paginada (`skip`/`take` + `getManyAndCount()`) e o fluxo da lista ficam validados contra a BD real. Os casos concretos que foram percorridos não ficaram registados nesta sessão. Da minha parte não fiz nenhum pedido autenticado à API: não há credenciais de seed, e não gerei tokens com o segredo do `.env`.
 - **Cypress (`npm run test:ci`)** — não corrido; precisa do backend e do frontend a correr.
 - **Outros clientes da API** — a resposta de `all-conta`/`all-cartao` deixou de ser um array. No repo não há mais nenhum consumidor; um cliente externo (script, Postman) parte.
 
