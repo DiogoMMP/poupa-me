@@ -32,7 +32,9 @@ export default class TransacaoContaQueryRepo implements ITransacaoContaQueryRepo
             .leftJoinAndSelect('t.categoria', 'c')
             .leftJoinAndSelect('t.conta', 'co')
             .leftJoinAndSelect('t.cartaoCredito', 'cc')
-            .where('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] });
+            .where('t.tipo IN (:...tipos)', { tipos: ['Entrada', 'Saída'] })
+            // Entrada/Saída with a cartão too is rejected by the domain (Transacao.create); exclude it so totals match the page
+            .andWhere('t.cartao_credito_id IS NULL');
 
         if (userId) qb.andWhere('t.user_domain_id = :userId', { userId });
         if (bancoId) qb.andWhere('co.banco_id = :bancoId', { bancoId });
@@ -47,7 +49,7 @@ export default class TransacaoContaQueryRepo implements ITransacaoContaQueryRepo
                     startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
                     break;
                 case 'Últimos 3 Meses':
-                    startDate = new Date(now.getFullYear(), now.getMonth() - 4, now.getDate());
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
                     break;
                 case 'Último Ano':
                     startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());

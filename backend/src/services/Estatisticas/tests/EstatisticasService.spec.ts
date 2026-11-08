@@ -44,10 +44,12 @@ function buildCategoria(): Categoria {
 describe('EstatisticasService — isPagamentoCartao excluded from aggregation (issue #33)', () => {
   const contaQueryRepo: jest.Mocked<ITransacaoContaQueryRepo> = {
     findAllContaTransactions: jest.fn(),
+    findContaTransactionsPage: jest.fn(),
     findAllByBanco: jest.fn()
   };
   const cartaoQueryRepo: jest.Mocked<ITransacaoCartaoQueryRepo> = {
-    findAllCartaoTransactions: jest.fn()
+    findAllCartaoTransactions: jest.fn(),
+    findCartaoTransactionsPage: jest.fn()
   };
 
   const service = new EstatisticasService(

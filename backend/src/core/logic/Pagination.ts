@@ -16,13 +16,18 @@ export function parsePagination(query: Record<string, unknown>): Result<IPaginat
     const rawPageSize = query.pageSize;
 
     const page = rawPage === undefined || rawPage === '' ? 1 : Number(rawPage);
-    if (!Number.isInteger(page) || page < 1) {
+    if (!Number.isSafeInteger(page) || page < 1) {
         return Result.fail<IPaginationParams>('page must be an integer greater than or equal to 1');
     }
 
     const pageSize = rawPageSize === undefined || rawPageSize === '' ? DEFAULT_PAGE_SIZE : Number(rawPageSize);
     if (!(PAGE_SIZE_OPTIONS as readonly number[]).includes(pageSize)) {
         return Result.fail<IPaginationParams>(`pageSize must be one of: ${PAGE_SIZE_OPTIONS.join(', ')}`);
+    }
+
+    // The SQL OFFSET is (page - 1) * pageSize; it must stay a safe integer or the query fails
+    if (!Number.isSafeInteger((page - 1) * pageSize)) {
+        return Result.fail<IPaginationParams>('page is too large');
     }
 
     return Result.ok<IPaginationParams>({ page, pageSize });
