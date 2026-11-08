@@ -215,3 +215,25 @@ Projeto sem hooks de formatação (sem `.husky/`, `.githooks/` nem `pre-commit`)
   view-models e respetivos serviços, que passam a aceitar `cascade`). As restantes listagens não mudam.
 - **Dados já apagados** não são recuperáveis (D7).
 - **Índice de bugfixes** (`docs/changes/bugfixes/README.md`) só é atualizado no fim, com a linha da B0015.
+
+## 8. Adenda — terceira ronda: revisão do PR #91
+
+Âmbito pedido: corrigir **todos** os findings do CodeRabbit (não só os críticos) e o falso positivo do GitGuardian, como continuação desta B0015.
+
+| # | Finding | Correção |
+| :--- | :--- | :--- |
+| P1 | Recriar conta/cartão com o nome de um registo apagado reescreve a linha apagada (saldo incluído) e devolve-a invisível | Pesquisa de nome duplicado em `ContaRepo.save` e `CartaoCreditoRepo.save` só entre ativos |
+| P2 | Cascata não atómica | `BancoRepo.deleteComFilhos` / `ContaRepo.deleteComFilhos` numa só `dataSource.transaction` (SQL partilhado em `repos/Shared/CascataSoftDelete.ts`) |
+| P3 | O `409` do banco não conta cartões de outro banco pagos a partir das suas contas; regras com duas contas do banco contadas duas vezes | Contagens com o mesmo SQL da cascata, cada cartão/regra uma vez |
+| P4 | Concluir pendente (`concluirDespesaRecorrente`, `concluirPoupanca`) mexe em conta apagada | `findActiveById` em todas as contas afetadas, validadas antes de qualquer saldo mudar |
+| P5 | `updateCartao` aceita conta de pagamento / banco apagados | Validação com `findActiveById` quando o alvo muda |
+| P6 | `updateTransacao` com cartão novo cuja conta de pagamento foi apagada | Validação no STEP 1, antes de reverter |
+| P7 | Conta/cartão criados ou movidos para banco apagado | `BancoRepo.findActiveById` na criação e na mudança de banco |
+| P8 | Mapas de lookup sem registos inativos (nomes/ícones em falta após cascata) | `findAll(..., includeInactive = true)` nos mapas de Cartão, Conta e Regra |
+| P9 | `isAuth` rejeita utilizador ativo com `domain_id` vazio (fallback para o id numérico) | `findActiveByDomainId` resolve o mesmo fallback do `UserMap` |
+| P10 | `down()` da migração falha com nomes duplicados entre apagados | Sufixo `#apagado-<id>` nos apagados em conflito antes de repor as UNIQUE; linhas e ids mantidos |
+| P11 | Nitpicks de testes | Testes de alvos inativos em `pagarCartao`, e de falha da cascata |
+| P12 | GitGuardian: "Generic Password" no spec de login | Valor gerado (`randomUUID()`) em vez de literal |
+| P13 | Email de utilizador apagado bloqueia novo registo (pedido após a revisão, opção B) | Só utilizadores ativos bloqueiam o email; o registo cria um utilizador novo; operações por email só tocam a linha ativa |
+
+**Fora:** reativar a conta antiga no registo (opção C, rejeitada: sem verificação de email exporia os dados do utilizador anterior).
