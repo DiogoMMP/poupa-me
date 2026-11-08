@@ -1,6 +1,8 @@
 import { Service, Inject } from 'typedi';
 import { Result } from '../../core/logic/Result.js';
 import type { ITransacaoDTO } from '../../dto/ITransacaoDTO.js';
+import type { IPaginatedDTO, IPaginationParams } from '../../dto/shared/IPaginatedDTO.js';
+import { toPaginated } from '../../core/logic/Pagination.js';
 import type ITransacaoContaQueryService from './IServices/ITransacaoContaQueryService.js';
 import type ITransacaoContaQueryRepo from '../../repos/Transacao/IRepos/ITransacaoContaQueryRepo.js';
 import type { ITransacaoContaQueryFilters } from '../../repos/Transacao/IRepos/ITransacaoContaQueryRepo.js';
@@ -41,17 +43,17 @@ export default class TransacaoContaQueryService implements ITransacaoContaQueryS
     }
 
     /**
-     * Finds Entrada/Saída transactions with optional filters.
+     * Finds one page of Entrada/Saída transactions with optional filters.
      * Filters: userId, bancoId, contaId, categoriaId, period.
      */
-    public async findAllContaTransactions(filters?: ITransacaoContaQueryFilters): Promise<Result<ITransacaoDTO[]>> {
+    public async findAllContaTransactions(filters: ITransacaoContaQueryFilters, pagination: IPaginationParams): Promise<Result<IPaginatedDTO<ITransacaoDTO>>> {
         try {
-            const rows: Transacao[] = await this.transacaoContaQueryRepo.findAllContaTransactions(filters);
-            const dtos = await this.enrichTransactionsWithUserName(rows);
-            return Result.ok<ITransacaoDTO[]>(dtos);
+            const { items, total } = await this.transacaoContaQueryRepo.findContaTransactionsPage(filters, pagination);
+            const dtos = await this.enrichTransactionsWithUserName(items);
+            return Result.ok<IPaginatedDTO<ITransacaoDTO>>(toPaginated(dtos, total, pagination));
         } catch (e) {
             this.logger.error('TransacaoContaQueryService.findAllContaTransactions error: %o', e);
-            return Result.fail<ITransacaoDTO[]>('Error fetching conta transactions');
+            return Result.fail<IPaginatedDTO<ITransacaoDTO>>('Error fetching conta transactions');
         }
     }
 

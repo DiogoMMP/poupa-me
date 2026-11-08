@@ -6,6 +6,32 @@ import TransacaoContaQueryController from '../../../controllers/Transacao/Transa
 
 const route = Router();
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     PaginatedTransacao:
+ *       type: object
+ *       properties:
+ *         items:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Transacao'
+ *         page:
+ *           type: integer
+ *           example: 2
+ *         pageSize:
+ *           type: integer
+ *           enum: [10, 25, 50, 100]
+ *           example: 25
+ *         totalPages:
+ *           type: integer
+ *           example: 4
+ *         totalItems:
+ *           type: integer
+ *           example: 87
+ */
+
 export default (app: Router) => {
   app.use('/transacao', route);
 
@@ -47,15 +73,31 @@ export default (app: Router) => {
    *         schema:
    *           type: string
    *         description: Domain ID of the Banco to filter by
+   *       - in: query
+   *         name: page
+   *         required: false
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           default: 1
+   *         description: Page number (1-based)
+   *       - in: query
+   *         name: pageSize
+   *         required: false
+   *         schema:
+   *           type: integer
+   *           enum: [10, 25, 50, 100]
+   *           default: 25
+   *         description: Number of items per page
    *     responses:
    *       200:
-   *         description: List of conta transactions matching the criteria
+   *         description: One page of conta transactions matching the criteria
    *         content:
    *           application/json:
    *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/Transacao'
+   *               $ref: '#/components/schemas/PaginatedTransacao'
+   *       400:
+   *         description: Invalid period, page or pageSize
    */
   route.get('/all-conta', isAuth, (req, res, next) => contaCtrl.getAllContaTransactions(req as AuthenticatedRequest, res, next));
 
