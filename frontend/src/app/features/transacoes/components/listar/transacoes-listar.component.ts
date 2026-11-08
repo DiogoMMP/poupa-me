@@ -1,5 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TransacoesListViewModel, ContaFilters, CartaoFilters } from './transacoes-listar.view-model';
@@ -13,7 +13,6 @@ import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
 import { SelectComponent } from '../../../../shared/components/select/select.component';
 import { ToSelectOptionsPipe } from '../../../../shared/pipes/to-select-options.pipe';
-const PAGE_SIZE = 10; // items per page
 
 @Component({
   selector: 'app-transacoes-list',
@@ -26,6 +25,8 @@ const PAGE_SIZE = 10; // items per page
 export class TransacoesListComponent implements OnInit {
   public vm = inject(TransacoesListViewModel);
   private confirmDialog = inject(ConfirmDialogService);
+  private document = inject(DOCUMENT);
+  private platformId = inject(PLATFORM_ID);
 
   /** Expose formatter utility directly to the template */
   readonly formatData = formatData;
@@ -38,58 +39,56 @@ export class TransacoesListComponent implements OnInit {
   showContaFilters = false;
   showCartaoFilters = false;
 
-  contaPage = 1;
-  cartaoPage = 1;
-
   ngOnInit(): void {
     this.vm.loadAll();
   }
 
-  // ── Pagination helpers ────────────────────────────────────
+  // ── Pagination handlers ───────────────────────────────────
 
-  /**
-   * Paginate an array of transactions
-   * @param items - transaction array
-   * @param page - 1-based page index
-   */
-  paginate(items: TransacaoModel[], page: number): TransacaoModel[] {
-    const start = (page - 1) * PAGE_SIZE;
-    return items.slice(start, start + PAGE_SIZE);
+  /** Go to another page of the account column and jump to the top of the page */
+  onContaPageChange(page: number): void {
+    this.scrollToTop();
+    this.vm.setContaPage(page);
+  }
+
+  /** Go to another page of the card column and jump to the top of the page */
+  onCartaoPageChange(page: number): void {
+    this.scrollToTop();
+    this.vm.setCartaoPage(page);
   }
 
   /**
-   * Compute total pages for a list
+   * Scroll instantly to the top. Covers both the window and the layout's `main.content`, since either
+   * may be the scrolling element depending on the viewport.
    */
-  totalPages(items: TransacaoModel[]): number {
-    return Math.ceil(items.length / PAGE_SIZE) || 1;
+  private scrollToTop(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.document.defaultView?.scrollTo({ top: 0, behavior: 'instant' });
+    this.document.querySelector('main.content')?.scrollTo({ top: 0, behavior: 'instant' });
   }
 
   // ── Account filters handlers ──────────────────────────────
 
-  /** Apply account filters and reset page */
+  /** Apply account filters (the ViewModel goes back to page 1) */
   applyContaFilters(): void {
-    this.contaPage = 1;
     this.vm.applyContaFilters({ ...this.contaFilterForm });
   }
 
   /** Clear account filters */
   clearContaFilters(): void {
-    this.contaPage = 1;
     this.contaFilterForm = { categoriaId: '', contaId: '', period: 'Este Mês' };
     this.vm.clearContaFilters();
   }
 
   // ── Card filters handlers ─────────────────────────────────
 
-  /** Apply card filters and reset page */
+  /** Apply card filters (the ViewModel goes back to page 1) */
   applyCartaoFilters(): void {
-    this.cartaoPage = 1;
     this.vm.applyCartaoFilters({ ...this.cartaoFilterForm });
   }
 
   /** Clear card filters */
   clearCartaoFilters(): void {
-    this.cartaoPage = 1;
     this.cartaoFilterForm = { categoriaId: '', cartaoId: '', status: '', period: 'Este Mês' };
     this.vm.clearCartaoFilters();
   }

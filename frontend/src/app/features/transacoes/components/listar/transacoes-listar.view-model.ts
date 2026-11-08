@@ -8,14 +8,40 @@ import { NotificationService } from '../../../../services/notification.service';
 import { SelectedBancoService } from '../../../../services/selected-banco.service';
 import { TransacoesMapper } from '../../mappers/transacoes.mapper';
 import { TransacaoModel } from '../../models/transacoes.model';
+import { TransacoesDTO } from '../../dto/transacoes.dto';
+import { PaginatedDTO } from '../../../../shared/dto/paginated.dto';
 import { CategoriasDTO } from '../../../categorias/dto/categorias.dto';
 import { CartoesCreditoModel } from '../../../cartoes-credito/models/cartoes-credito.model';
 import { CartoesCreditoMapper } from '../../../cartoes-credito/mappers/cartoes-credito.mapper';
 import { ContasModel } from '../../../contas/models/contas.model';
 import { ContasMapper } from '../../../contas/mappers/contas.mapper';
-import { ContaFilters, CartaoFilters, filterByPeriod } from './transacoes-listar.filter';
+import { ContaFilters, CartaoFilters } from './transacoes-listar.filter';
+import { DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../../shared/components/pagination/pagination.component';
 
 export type { PeriodFilter, ContaFilters, CartaoFilters } from './transacoes-listar.filter';
+
+/**
+ * Uma página de transações já mapeada para o modelo do frontend.
+ */
+export interface TransacoesPage {
+  items: TransacaoModel[];
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  totalItems: number;
+}
+
+const emptyPage = (pageSize: number = DEFAULT_PAGE_SIZE): TransacoesPage => ({
+  items: [], page: 1, pageSize, totalPages: 0, totalItems: 0
+});
+
+const toPage = (dto: PaginatedDTO<TransacoesDTO>): TransacoesPage => ({
+  items: TransacoesMapper.toModelArray(dto.items),
+  page: dto.page,
+  pageSize: dto.pageSize,
+  totalPages: dto.totalPages,
+  totalItems: dto.totalItems
+});
 
 @Injectable()
 export class TransacoesListViewModel {
@@ -28,8 +54,8 @@ export class TransacoesListViewModel {
 
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
 
-  readonly contaTransacoes$ = new BehaviorSubject<TransacaoModel[]>([]);
-  readonly cartaoTransacoes$ = new BehaviorSubject<TransacaoModel[]>([]);
+  readonly contaPage$ = new BehaviorSubject<TransacoesPage>(emptyPage());
+  readonly cartaoPage$ = new BehaviorSubject<TransacoesPage>(emptyPage());
 
   readonly cartoes$ = new BehaviorSubject<CartoesCreditoModel[]>([]);
   readonly contas$ = new BehaviorSubject<ContasModel[]>([]);
@@ -40,6 +66,12 @@ export class TransacoesListViewModel {
 
   readonly PERIODS = ['Este Mês', 'Últimos 3 Meses', 'Último Ano'] as const;
   readonly STATUSES = ['Pendente', 'Concluído'];
+  readonly PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
+
+  private contaPage = 1;
+  private contaPageSize = DEFAULT_PAGE_SIZE;
+  private cartaoPage = 1;
+  private cartaoPageSize = DEFAULT_PAGE_SIZE;
 
   private allSub?: Subscription;
   private contaSub?: Subscription;
@@ -54,21 +86,23 @@ export class TransacoesListViewModel {
   }
 
   /**
-   * Load all supporting data (categories, cards, accounts) and refresh lists
+   * Load all supporting data (categories, cards, accounts) and refresh lists from the first page
    */
   loadAll(): void {
     this.allSub?.unsubscribe();
     this.contaSub?.unsubscribe();
     this.cartaoSub?.unsubscribe();
     this.isLoading$.next(true);
+    this.contaPage = 1;
+    this.cartaoPage = 1;
     const bancoId = this.bancoId ?? undefined;
 
     if (!bancoId) {
       this.categorias$.next([]);
       this.cartoes$.next([]);
       this.contas$.next([]);
-      this.contaTransacoes$.next([]);
-      this.cartaoTransacoes$.next([]);
+      this.contaPage$.next(emptyPage(this.contaPageSize));
+      this.cartaoPage$.next(emptyPage(this.cartaoPageSize));
       this.isLoading$.next(false);
       return;
     }
@@ -96,73 +130,32 @@ export class TransacoesListViewModel {
   // ── Conta column ──────────────────────────────────────────
 
   /**
-   * Load transactions for the account column based on current filters
+   * Load the current page of the account column, sending every active filter to the API
    */
   loadContaTransacoes(): void {
     this.contaSub?.unsubscribe();
-    const f = this.contaFilters;
     const bancoId = this.bancoId ?? undefined;
 
     if (!bancoId) {
-      this.contaTransacoes$.next([]);
+      this.contaPage$.next(emptyPage(this.contaPageSize));
       this.isLoading$.next(false);
       return;
     }
 
-    // Filter by contaId — use the specific conta endpoint
-    if (f.contaId) {
-      this.contaSub = this.transacoesService.getContaTransactions(f.contaId).subscribe({
-        next: dtos => {
-          let all = TransacoesMapper.toModelArray(dtos);
-          if (f.categoriaId) all = all.filter(t => t.categoria.id === f.categoriaId);
-          if (f.period) all = filterByPeriod(all, f.period);
-          this.contaTransacoes$.next(all);
-          this.isLoading$.next(false);
-        },
-        error: () => {
-          this.notification.error('Falha ao filtrar transações de conta');
-          this.isLoading$.next(false);
+    const f = this.contaFilters;
+    this.contaSub = this.transacoesService.getContaTransactionsPage(
+      { bancoId, contaId: f.contaId, categoriaId: f.categoriaId, period: f.period },
+      this.contaPage,
+      this.contaPageSize
+    ).subscribe({
+      next: dto => {
+        // Page beyond the end (e.g. last item of the last page was deleted): go to the last page
+        if (dto.items.length === 0 && dto.totalPages > 0 && dto.page > dto.totalPages) {
+          this.contaPage = dto.totalPages;
+          this.loadContaTransacoes();
+          return;
         }
-      });
-      return;
-    }
-
-    // Period filter (server-side)
-    if (f.period && !f.categoriaId) {
-      this.contaSub = this.transacoesService.getContaTransactionsByPeriod(f.period, bancoId).subscribe({
-        next: dtos => {
-          this.contaTransacoes$.next(TransacoesMapper.toModelArray(dtos));
-          this.isLoading$.next(false);
-        },
-        error: () => {
-          this.notification.error('Falha ao filtrar transações de conta');
-          this.isLoading$.next(false);
-        }
-      });
-      return;
-    }
-
-    // Categoria filter (server-side)
-    if (f.categoriaId) {
-      this.contaSub = this.transacoesService.getContaTransactionsByCategoria(f.categoriaId, bancoId).subscribe({
-        next: dtos => {
-          let all = TransacoesMapper.toModelArray(dtos);
-          if (f.period) all = filterByPeriod(all, f.period);
-          this.contaTransacoes$.next(all);
-          this.isLoading$.next(false);
-        },
-        error: () => {
-          this.notification.error('Falha ao filtrar transações de conta');
-          this.isLoading$.next(false);
-        }
-      });
-      return;
-    }
-
-    // No filter
-    this.contaSub = this.transacoesService.getAllContaTransactions(bancoId).subscribe({
-      next: dtos => {
-        this.contaTransacoes$.next(TransacoesMapper.toModelArray(dtos));
+        this.contaPage$.next(toPage(dto));
         this.isLoading$.next(false);
       },
       error: () => {
@@ -172,105 +165,58 @@ export class TransacoesListViewModel {
     });
   }
 
+  setContaPage(page: number): void {
+    this.contaPage = page;
+    this.loadContaTransacoes();
+  }
+
+  setContaPageSize(pageSize: number): void {
+    this.contaPageSize = pageSize;
+    this.contaPage = 1;
+    this.loadContaTransacoes();
+  }
+
   applyContaFilters(filters: ContaFilters): void {
     this.contaFilters = { ...filters };
+    this.contaPage = 1;
     this.loadContaTransacoes();
   }
 
   clearContaFilters(): void {
     this.contaFilters = { categoriaId: '', contaId: '', period: 'Este Mês' };
+    this.contaPage = 1;
     this.loadContaTransacoes();
   }
 
   // ── Cartão column ─────────────────────────────────────────
 
   /**
-   * Load transactions for the credit-card column based on current filters
+   * Load the current page of the credit-card column, sending every active filter to the API
    */
   loadCartaoTransacoes(): void {
     this.cartaoSub?.unsubscribe();
-    const f = this.cartaoFilters;
     const bancoId = this.bancoId ?? undefined;
 
     if (!bancoId) {
-      this.cartaoTransacoes$.next([]);
+      this.cartaoPage$.next(emptyPage(this.cartaoPageSize));
       this.isLoading$.next(false);
       return;
     }
 
-    // Filter by cartaoId — use the specific cartao endpoint
-    if (f.cartaoId) {
-      this.cartaoSub = this.transacoesService.getCartaoTransactions(f.cartaoId).subscribe({
-        next: dtos => {
-          let all = TransacoesMapper.toModelArray(dtos);
-          if (f.categoriaId) all = all.filter(t => t.categoria.id === f.categoriaId);
-          if (f.status) all = all.filter(t => t.status === f.status);
-          if (f.period) all = filterByPeriod(all, f.period);
-          this.cartaoTransacoes$.next(all);
-          this.isLoading$.next(false);
-        },
-        error: () => {
-          this.notification.error('Falha ao filtrar transações de cartão');
-          this.isLoading$.next(false);
+    const f = this.cartaoFilters;
+    this.cartaoSub = this.transacoesService.getCartaoTransactionsPage(
+      { bancoId, cartaoCreditoId: f.cartaoId, categoriaId: f.categoriaId, status: f.status, period: f.period },
+      this.cartaoPage,
+      this.cartaoPageSize
+    ).subscribe({
+      next: dto => {
+        // Page beyond the end (e.g. last item of the last page was deleted): go to the last page
+        if (dto.items.length === 0 && dto.totalPages > 0 && dto.page > dto.totalPages) {
+          this.cartaoPage = dto.totalPages;
+          this.loadCartaoTransacoes();
+          return;
         }
-      });
-      return;
-    }
-
-    // Period filter (server-side)
-    if (f.period && !f.categoriaId && !f.status) {
-      this.cartaoSub = this.transacoesService.getCartaoTransactionsByPeriod(f.period, bancoId).subscribe({
-        next: dtos => {
-          this.cartaoTransacoes$.next(TransacoesMapper.toModelArray(dtos));
-          this.isLoading$.next(false);
-        },
-        error: () => {
-          this.notification.error('Falha ao filtrar transações de cartão');
-          this.isLoading$.next(false);
-        }
-      });
-      return;
-    }
-
-    // Status filter (server-side)
-    if (f.status && !f.categoriaId) {
-      this.cartaoSub = this.transacoesService.getCartaoTransactionsByStatus(f.status, bancoId).subscribe({
-        next: dtos => {
-          let all = TransacoesMapper.toModelArray(dtos);
-          if (f.period) all = filterByPeriod(all, f.period);
-          this.cartaoTransacoes$.next(all);
-          this.isLoading$.next(false);
-        },
-        error: () => {
-          this.notification.error('Falha ao filtrar transações de cartão');
-          this.isLoading$.next(false);
-        }
-      });
-      return;
-    }
-
-    // Categoria filter (server-side)
-    if (f.categoriaId) {
-      this.cartaoSub = this.transacoesService.getCartaoTransactionsByCategoria(f.categoriaId, bancoId).subscribe({
-        next: dtos => {
-          let all = TransacoesMapper.toModelArray(dtos);
-          if (f.status) all = all.filter(t => t.status === f.status);
-          if (f.period) all = filterByPeriod(all, f.period);
-          this.cartaoTransacoes$.next(all);
-          this.isLoading$.next(false);
-        },
-        error: () => {
-          this.notification.error('Falha ao filtrar transações de cartão');
-          this.isLoading$.next(false);
-        }
-      });
-      return;
-    }
-
-    // No filter
-    this.cartaoSub = this.transacoesService.getAllCartaoTransactions(bancoId).subscribe({
-      next: dtos => {
-        this.cartaoTransacoes$.next(TransacoesMapper.toModelArray(dtos));
+        this.cartaoPage$.next(toPage(dto));
         this.isLoading$.next(false);
       },
       error: () => {
@@ -280,13 +226,26 @@ export class TransacoesListViewModel {
     });
   }
 
+  setCartaoPage(page: number): void {
+    this.cartaoPage = page;
+    this.loadCartaoTransacoes();
+  }
+
+  setCartaoPageSize(pageSize: number): void {
+    this.cartaoPageSize = pageSize;
+    this.cartaoPage = 1;
+    this.loadCartaoTransacoes();
+  }
+
   applyCartaoFilters(filters: CartaoFilters): void {
     this.cartaoFilters = { ...filters };
+    this.cartaoPage = 1;
     this.loadCartaoTransacoes();
   }
 
   clearCartaoFilters(): void {
     this.cartaoFilters = { categoriaId: '', cartaoId: '', status: '', period: 'Este Mês' };
+    this.cartaoPage = 1;
     this.loadCartaoTransacoes();
   }
 
@@ -301,21 +260,19 @@ export class TransacoesListViewModel {
 
   /**
    * Delete a transaction by its domain id.
-   * Calls API, removes the transaction from the current lists and notifies the user.
+   * Calls API, reloads the current page of the column that held it and notifies the user.
    */
   public deleteTransacao(transacaoId: string): void {
     if (!transacaoId) return;
     this.isLoading$.next(true);
+    const inConta = this.contaPage$.getValue().items.some(t => t.id === transacaoId);
+    const inCartao = this.cartaoPage$.getValue().items.some(t => t.id === transacaoId);
     this.transacoesService.delete(transacaoId).subscribe({
       next: () => {
-        // Remove from contaTransacoes if present
-        const contas = this.contaTransacoes$.getValue().filter(t => t.id !== transacaoId);
-        this.contaTransacoes$.next(contas);
-        // Remove from cartaoTransacoes if present
-        const cartoes = this.cartaoTransacoes$.getValue().filter(t => t.id !== transacaoId);
-        this.cartaoTransacoes$.next(cartoes);
         this.notification.success('Transação eliminada com sucesso');
-        this.isLoading$.next(false);
+        if (inConta) this.loadContaTransacoes();
+        if (inCartao) this.loadCartaoTransacoes();
+        if (!inConta && !inCartao) this.isLoading$.next(false);
       },
       error: (err) => {
         console.error('[TransacoesListViewModel] deleteTransacao error', err);

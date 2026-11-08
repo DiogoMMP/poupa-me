@@ -3,6 +3,24 @@ import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {environment} from '../../../../environments/environment';
 import {TransacoesDTO, TransacoesInputDTO, TransacoesUpdateDTO, TransacoesReembolsoDTO} from '../dto/transacoes.dto';
+import {PaginatedDTO} from '../../../shared/dto/paginated.dto';
+
+/** Optional filters for the account transactions list (`/transacao/all-conta`). */
+export interface ContaTransactionsQuery {
+  bancoId?: string;
+  contaId?: string;
+  categoriaId?: string;
+  period?: string;
+}
+
+/** Optional filters for the credit-card transactions list (`/transacao/all-cartao`). */
+export interface CartaoTransactionsQuery {
+  bancoId?: string;
+  cartaoCreditoId?: string;
+  categoriaId?: string;
+  status?: string;
+  period?: string;
+}
 
 @Injectable({providedIn: 'root'})
 export class TransacoesService {
@@ -12,41 +30,33 @@ export class TransacoesService {
   }
 
   /**
-   * Get transactions for a specific account (Entrance/Exit)
-   * @param contaId - account id
+   * Get one page of account transactions (Entrance/Exit). Only the filters that are filled in are sent.
+   * @param filters - optional filters (bancoId, contaId, categoriaId, period)
+   * @param page - 1-based page number
+   * @param pageSize - items per page (10, 25, 50 or 100)
    */
-  getContaTransactions(contaId: string): Observable<TransacoesDTO[]> {
-    const params = new HttpParams().set('contaId', contaId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-conta`, { params, withCredentials: true });
+  getContaTransactionsPage(filters: ContaTransactionsQuery, page: number, pageSize: number): Observable<PaginatedDTO<TransacoesDTO>> {
+    const params = this.buildPageParams({ ...filters }, page, pageSize);
+    return this.http.get<PaginatedDTO<TransacoesDTO>>(`${this.apiUrl}/all-conta`, { params, withCredentials: true });
   }
 
   /**
-   * Get transactions for a specific credit card (Credit/Refund)
-   * @param cartaoCreditoId - credit card id
+   * Get one page of credit-card transactions (Credit/Refund). Only the filters that are filled in are sent.
+   * @param filters - optional filters (bancoId, cartaoCreditoId, categoriaId, status, period)
+   * @param page - 1-based page number
+   * @param pageSize - items per page (10, 25, 50 or 100)
    */
-  getCartaoTransactions(cartaoCreditoId: string): Observable<TransacoesDTO[]> {
-    const params = new HttpParams().set('cartaoCreditoId', cartaoCreditoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-cartao`, { params, withCredentials: true });
+  getCartaoTransactionsPage(filters: CartaoTransactionsQuery, page: number, pageSize: number): Observable<PaginatedDTO<TransacoesDTO>> {
+    const params = this.buildPageParams({ ...filters }, page, pageSize);
+    return this.http.get<PaginatedDTO<TransacoesDTO>>(`${this.apiUrl}/all-cartao`, { params, withCredentials: true });
   }
 
-  /**
-   * Get all account transactions (Entrance/Exit) optionally filtered by bank id
-   * @param bancoId - optional bank id
-   */
-  getAllContaTransactions(bancoId?: string): Observable<TransacoesDTO[]> {
-    let params = new HttpParams();
-    if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-conta`, { params, withCredentials: true });
-  }
-
-  /**
-   * Get all credit-card transactions (Credit/Refund) optionally filtered by bank id
-   * @param bancoId - optional bank id
-   */
-  getAllCartaoTransactions(bancoId?: string): Observable<TransacoesDTO[]> {
-    let params = new HttpParams();
-    if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-cartao`, { params, withCredentials: true });
+  private buildPageParams(filters: Record<string, string | undefined>, page: number, pageSize: number): HttpParams {
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    for (const [key, value] of Object.entries(filters)) {
+      if (value) params = params.set(key, value);
+    }
+    return params;
   }
 
   /**
@@ -70,28 +80,6 @@ export class TransacoesService {
   }
 
   /**
-   * Get account transactions filtered by category
-   * @param categoriaId - category id
-   * @param bancoId - optional bank id
-   */
-  getContaTransactionsByCategoria(categoriaId: string, bancoId?: string): Observable<TransacoesDTO[]> {
-    let params = new HttpParams().set('categoriaId', categoriaId);
-    if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-conta`, { params, withCredentials: true });
-  }
-
-  /**
-   * Get credit-card transactions filtered by category
-   * @param categoriaId - category id
-   * @param bancoId - optional bank id
-   */
-  getCartaoTransactionsByCategoria(categoriaId: string, bancoId?: string): Observable<TransacoesDTO[]> {
-    let params = new HttpParams().set('categoriaId', categoriaId);
-    if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-cartao`, { params, withCredentials: true });
-  }
-
-  /**
    * Get monthly expenses filtered by category
    * @param categoriaId - category id
    * @param bancoId - optional bank id
@@ -103,17 +91,6 @@ export class TransacoesService {
   }
 
   /**
-   * Get credit-card transactions filtered by status
-   * @param status - transaction status
-   * @param bancoId - optional bank id
-   */
-  getCartaoTransactionsByStatus(status: string, bancoId?: string): Observable<TransacoesDTO[]> {
-    let params = new HttpParams().set('status', status);
-    if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-cartao`, { params, withCredentials: true });
-  }
-
-  /**
    * Get monthly expenses filtered by status
    * @param status - status filter
    * @param bancoId - optional bank id
@@ -122,28 +99,6 @@ export class TransacoesService {
     let params = new HttpParams().set('status', status);
     if (bancoId) params = params.set('bancoId', bancoId);
     return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/despesa-recorrente`, { params, withCredentials: true });
-  }
-
-  /**
-   * Get account transactions filtered by period
-   * @param period - period label
-   * @param bancoId - optional bank id
-   */
-  getContaTransactionsByPeriod(period: string, bancoId?: string): Observable<TransacoesDTO[]> {
-    let params = new HttpParams().set('period', period);
-    if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-conta`, { params, withCredentials: true });
-  }
-
-  /**
-   * Get credit-card transactions filtered by period
-   * @param period - period label
-   * @param bancoId - optional bank id
-   */
-  getCartaoTransactionsByPeriod(period: string, bancoId?: string): Observable<TransacoesDTO[]> {
-    let params = new HttpParams().set('period', period);
-    if (bancoId) params = params.set('bancoId', bancoId);
-    return this.http.get<TransacoesDTO[]>(`${this.apiUrl}/all-cartao`, { params, withCredentials: true });
   }
 
   /**
