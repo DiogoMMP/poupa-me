@@ -52,7 +52,33 @@ export class SoftDeleteEntidades1791100000000 implements MigrationInterface {
         await queryRunner.query('DROP INDEX IF EXISTS "UQ_cartao_nome_banco_ativo"');
         await queryRunner.query('DROP INDEX IF EXISTS "UQ_conta_nome_banco_ativo"');
 
-        // Repõe as UNIQUE originais. Falha se existirem registos apagados com nomes duplicados.
+        // Com os índices parciais, um registo apagado pode partilhar nome/email com outro (apagado ou ativo). Antes de
+        // repor as UNIQUE originais, os apagados em conflito recebem um sufixo com o id da linha. As linhas não são
+        // apagadas nem os ids mudam, por isso transações, cartões e regras continuam a apontar para elas. O registo
+        // ativo (no máximo um, garantido pelo índice parcial) mantém o nome original.
+        // Nomes: conta e categoria têm 50 caracteres, por isso o nome é cortado a 30 antes do sufixo.
+        await queryRunner.query(`
+            UPDATE "conta" t SET nome = left(t.nome, 30) || ' #apagado-' || t.id
+            WHERE t.is_active = false
+              AND EXISTS (SELECT 1 FROM "conta" o WHERE o.id <> t.id AND o.nome = t.nome AND o.banco_id = t.banco_id)
+        `);
+        await queryRunner.query(`
+            UPDATE "cartao_credito" t SET nome = left(t.nome, 30) || ' #apagado-' || t.id
+            WHERE t.is_active = false
+              AND EXISTS (SELECT 1 FROM "cartao_credito" o WHERE o.id <> t.id AND o.nome = t.nome AND o.banco_id = t.banco_id)
+        `);
+        await queryRunner.query(`
+            UPDATE "categoria" t SET nome = left(t.nome, 30) || ' #apagado-' || t.id
+            WHERE t.is_active = false
+              AND EXISTS (SELECT 1 FROM "categoria" o WHERE o.id <> t.id AND o.nome = t.nome)
+        `);
+        await queryRunner.query(`
+            UPDATE "user" t SET email = 'apagado-' || t.id || '-' || left(t.email, 290)
+            WHERE t.is_active = false
+              AND EXISTS (SELECT 1 FROM "user" o WHERE o.id <> t.id AND o.email = t.email)
+        `);
+
+        // Repõe as UNIQUE originais.
         await queryRunner.query('ALTER TABLE "user" ADD CONSTRAINT "UQ_user_email" UNIQUE ("email")');
         await queryRunner.query('ALTER TABLE "categoria" ADD CONSTRAINT "UQ_categoria_nome" UNIQUE ("nome")');
         await queryRunner.query('ALTER TABLE "cartao_credito" ADD CONSTRAINT "UQ_cartao_nome_banco" UNIQUE ("nome", "banco_id")');
