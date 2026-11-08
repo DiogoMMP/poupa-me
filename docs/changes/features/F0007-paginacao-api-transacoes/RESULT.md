@@ -7,8 +7,8 @@
 | **Estado** | Implementado — testes manuais em browser feitos pelo utilizador; Cypress não corrido (ver §4) |
 | **Build** | Backend `npm run build` ✅ (baseline ✅). Frontend `npm run build` ✅ sem erros nem warnings novos (baseline ✅). `build-storybook` ✅ |
 | **Lint** | Backend `npm run lint`: 58 problemas (51 erros, 7 warnings) — **igual ao baseline**, nos mesmos 18 ficheiros, nenhum deles tocado por esta change |
-| **Testes** | Backend 71/71 (baseline 59/59; **+12** em `Pagination.spec.ts`). Frontend 15/15 (baseline 13/13; **+2** em `transacoes.service.spec.ts`) |
-| **Commits** | Nenhum — trabalho por commitar (ver §6 do README para a ordem) |
+| **Testes** | Backend 77/77 (baseline 59/59; **+18** em `Pagination.spec.ts`, 6 deles da revisão do PR, ver §7). Frontend 15/15 (baseline 13/13; **+2** em `transacoes.service.spec.ts`) |
+| **Commits** | `862464a`..`57c6d61` (7 commits, PR #95) + os commits da revisão CodeRabbit (§7) |
 
 ## 1. O que foi fechado
 
@@ -22,6 +22,8 @@
 ## 2. Pontos que precisam de decisão
 
 - **Semântica de `period` diferente entre backend e o antigo filtro do frontend.** Com todos os filtros no servidor, `period` usa sempre a janela móvel do backend: "Este Mês" = desde o mesmo dia do mês anterior; "Últimos 3 Meses" = desde o mesmo dia de há **4** meses (`getMonth() - 4`); "Último Ano" = desde o mesmo dia de há um ano. O `filterByPeriod` do frontend, que antes era aplicado nos filtros combinados (p.ex. conta + período), usava o mês civil e "Últimos 3 Meses" = desde dia 1 de há 2 meses. **Consequência:** a vista por omissão (só "Este Mês") não muda, porque já usava o backend; mas quem combinar período com conta, categoria ou estado passa a ver mais transações do que antes (p.ex. os últimos dias do mês anterior em "Este Mês"). E o `-4` em "Últimos 3 Meses" parece mesmo um bug. Até alguém decidir, "Este Mês" na lista não quer dizer "mês civil".
+  - **Decidido na revisão do PR #95 (finding #4 do CodeRabbit):** o utilizador quis manter a janela móvel e corrigir só o `-4`, que passou a `-3` (ver §7). Fica assim: "Este Mês" = desde o mesmo dia do mês anterior, "Últimos 3 Meses" = desde o mesmo dia de há 3 meses, "Último Ano" = desde o mesmo dia de há um ano. Deixa de haver decisão em aberto. Fica só uma consequência: a etiqueta "Este Mês" não quer dizer mês civil.
+  - **O mesmo `-4` existe em `TransacaoDespesasRecorrentesRepo.ts:48`** (`/transacao/despesa-recorrente`), fora do âmbito deste PR e por corrigir. **Consequência:** na lista de despesas recorrentes, "Últimos 3 Meses" continua a recuar 4 meses.
 
 ## 3. Desvios do plano aprovado
 
@@ -98,3 +100,36 @@ Totais esperados, calculados em SQL com as mesmas condições do repo (admin, Sa
 - `docs/changes/features/F0007-paginacao-api-transacoes/README.md` — novo
 - `docs/changes/features/F0007-paginacao-api-transacoes/RESULT.md` — novo
 - `docs/changes/features/README.md` — alterado (linha da F0007)
+
+## 7. Revisão do CodeRabbit (PR #95)
+
+8 findings (6 inline + 2 nitpicks), todos verificados contra o código antes de corrigir.
+
+| # | Finding | Verificação | Resolução |
+| :--- | :--- | :--- | :--- |
+| 1 | `page=1e308` dá offset `Infinity` e o endpoint responde 500 | Válido: `Number.isInteger(1e308)` é `true`, e `page=1e20` dá offset `2.5e+21` | `parsePagination` exige `Number.isSafeInteger(page)` e um offset `(page - 1) * pageSize` que seja inteiro seguro; senão 400. Testes para `1e308`, `1e20` e `4e14` com `pageSize=25` |
+| 2 | Os mocks de `EstatisticasService.spec.ts` não têm os métodos novos do repo | **Confirmado:** `tsc` dava TS2322 nas linhas 45 e 49. O Jest passava porque o ts-jest compila com outro tsconfig | Mocks com `findContaTransactionsPage` e `findCartaoTransactionsPage`. Os 3 TS2532 que restam no ficheiro já existiam |
+| 3 | Uma Entrada/Saída com conta **e** cartão conta para `totalItems`, mas o mapper descarta-a | Válido: o domínio rejeita-a (`Transacao.ts:105`). Na BD local há 0 linhas assim | `buildContaQuery` filtra `t.cartao_credito_id IS NULL`. As Estatísticas não mudam: essas linhas já eram descartadas pelo mapper |
+| 4 | `period` não segue o mês civil e "Últimos 3 Meses" recua 4 meses | É o ponto que estava em aberto em §2 | Decisão do utilizador: manter a janela móvel e corrigir só o `-4` para `-3`, nos dois repos do PR |
+| 5 | Com total 0 na página 3, a barra mostra `3 / 1` | Válido, mas só se as transações forem apagadas noutro sítio | Se `page > max(totalPages, 1)`, o view-model recarrega a página `max(totalPages, 1)` |
+| 6 | O seletor de itens por página não tem nome acessível | Válido: o `app-select` não tinha `aria-label` | Novo `@Input() ariaLabel` no `app-select`, que anuncia "<nome>: <valor>"; o `app-pagination` passa "Itens por página" |
+| N1 | O teste de `parsePagination` só cobre `pageSize=25` | Válido | `it.each([10, 25, 50, 100])` |
+| N2 | O teste de cartão do service não verifica `bancoId` nem `categoriaId` | Válido | Mais duas asserções |
+
+**Gate depois da revisão:**
+- **Backend:** build OK, testes 77/77, lint igual ao baseline (58).
+- **Frontend:** build OK, testes 15/15.
+- **Por fazer:** não foi feito novo teste manual em browser depois destas correções. O `aria-label` também não foi testado com um leitor de ecrã real.
+
+**Ficheiros alterados na revisão:**
+- `backend/src/core/logic/Pagination.ts`
+- `backend/src/core/logic/tests/Pagination.spec.ts`
+- `backend/src/services/Estatisticas/tests/EstatisticasService.spec.ts`
+- `backend/src/repos/Transacao/TransacaoContaQueryRepo.ts`
+- `backend/src/repos/Transacao/TransacaoCartaoQueryRepo.ts`
+- `frontend/src/app/features/transacoes/components/listar/transacoes-listar.view-model.ts`
+- `frontend/src/app/shared/components/select/select.component.ts`
+- `frontend/src/app/shared/components/select/select.component.html`
+- `frontend/src/app/shared/components/pagination/pagination.component.html`
+- `frontend/src/app/features/transacoes/services/transacoes.service.spec.ts`
+- este `RESULT.md` e o índice
