@@ -14,7 +14,7 @@ import { Data } from '../../../domain/Shared/ValueObjects/Data.js';
 import { UniqueEntityID } from '../../../core/domain/UniqueEntityID.js';
 
 /**
- * Money must not move on a soft-deleted conta (B0015 / issue #89): concluding a pendente whose conta was deleted
+ * Money must not move on a soft-deleted conta (B0016 / issue #89): concluding a pendente whose conta was deleted
  * after it was created, or retargeting a movimento to a cartão whose conta de pagamento was deleted, is refused
  * before any balance changes.
  */

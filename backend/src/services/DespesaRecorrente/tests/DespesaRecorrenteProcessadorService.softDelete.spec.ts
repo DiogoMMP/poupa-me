@@ -2,7 +2,7 @@ import { jest, describe, it, expect } from '@jest/globals';
 import DespesaRecorrenteProcessadorService from '../DespesaRecorrenteProcessadorService.js';
 
 /**
- * A soft-deleted recurring rule must not generate a movimento, not even manually (B0015 / issue #89).
+ * A soft-deleted recurring rule must not generate a movimento, not even manually (B0016 / issue #89).
  */
 describe('DespesaRecorrenteProcessadorService.gerarTransacaoSemValor — regra apagada', () => {
   it('refuses to generate a transação from a soft-deleted rule', async () => {

@@ -29,7 +29,7 @@ export default class AuthService implements IUserService {
         try {
             if (!registrationDTO) return Result.fail<IUserDTO>('No registration data provided');
 
-            // Only an active user blocks the email: a soft-deleted user frees it (B0015). The new registration is a new
+            // Only an active user blocks the email: a soft-deleted user frees it (B0016). The new registration is a new
             // user with no data; the deleted user's rows keep their own owner.
             const existing = await this.userRepo.findActiveByEmail(registrationDTO.email);
             if (existing) return Result.fail<IUserDTO>('Email already in use');

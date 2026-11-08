@@ -1,7 +1,7 @@
 import type { EntityManager } from 'typeorm';
 
 /**
- * SQL shared by the Banco and Conta soft-delete cascade (B0015 / issue #89).
+ * SQL shared by the Banco and Conta soft-delete cascade (B0016 / issue #89).
  *
  * The 409 counts and the cascade itself use the same sub-queries, so the confirmation shown to the user always
  * matches what the cascade deactivates. Every Conta set is given as a sub-query returning `conta.id` (the integer

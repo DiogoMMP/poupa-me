@@ -2,7 +2,7 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import ContaService from '../ContaService.js';
 
 /**
- * Soft delete of Conta (B0015 / issue #89): a Conta with cartões paid from it or active recurring rules is refused
+ * Soft delete of Conta (B0016 / issue #89): a Conta with cartões paid from it or active recurring rules is refused
  * unless cascade is requested. The cascade runs in one transaction inside the repository (deleteComFilhos).
  * A Conta can only be linked to an active Banco.
  */

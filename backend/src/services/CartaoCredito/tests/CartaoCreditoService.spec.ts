@@ -121,7 +121,7 @@ describe('CartaoCreditoService.pagarCartao — atomic payment orchestration', ()
     expect(novoPeriodo.inicio.getUTCDate()).toBe(1);
   });
 
-  describe('soft-deleted targets (B0015)', () => {
+  describe('soft-deleted targets (B0016)', () => {
     const periodo = { inicio: { dia: 1, mes: 2, ano: 2026 }, fecho: { dia: 28, mes: 2, ano: 2026 } };
 
     beforeEach(() => {

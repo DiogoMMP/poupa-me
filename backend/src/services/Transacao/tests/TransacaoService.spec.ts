@@ -296,7 +296,7 @@ describe('TransacaoService — updateTransacao aplica novas associações (issue
     cartaoCreditoRepo.findActiveById.mockImplementation(async (id: string) => (id === cartaoB.id.toString() ? cartaoB : null));
     cartaoCreditoRepo.update.mockResolvedValue(undefined as unknown as Awaited<ReturnType<ICartaoCreditoRepo['update']>>);
     contaRepo.findById.mockResolvedValue(contaPagamento);
-    // A conta de pagamento do cartão novo tem de estar ativa (B0015)
+    // A conta de pagamento do cartão novo tem de estar ativa (B0016)
     contaRepo.findActiveById.mockResolvedValue(contaPagamento);
     contaRepo.update.mockResolvedValue(undefined as unknown as Awaited<ReturnType<IContaRepo['update']>>);
 

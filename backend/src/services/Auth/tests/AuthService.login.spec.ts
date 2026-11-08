@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import AuthService from '../AuthService.js';
 
 /**
- * Soft-deleted users (B0015 / issue #89): only active users count. A deleted user cannot log in, and their email is
+ * Soft-deleted users (B0016 / issue #89): only active users count. A deleted user cannot log in, and their email is
  * free again — registering it creates a new user.
  */
 

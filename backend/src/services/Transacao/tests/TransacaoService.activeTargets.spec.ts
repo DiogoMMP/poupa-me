@@ -2,7 +2,7 @@ import { jest, describe, it, expect } from '@jest/globals';
 import TransacaoService from '../TransacaoService.js';
 
 /**
- * A new movimento must not target a soft-deleted conta or categoria (B0015 / issue #89). The creation path resolves
+ * A new movimento must not target a soft-deleted conta or categoria (B0016 / issue #89). The creation path resolves
  * its targets with findActiveById, so a deleted one is treated as not found.
  */
 describe('TransacaoService.createEntrada — alvos apagados', () => {

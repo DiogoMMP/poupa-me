@@ -2,7 +2,7 @@ import { jest, describe, it, expect } from '@jest/globals';
 import CartaoCreditoService from '../CartaoCreditoService.js';
 
 /**
- * Deleting a cartão is allowed to its owner and to an Admin only (B0015 / issue #89).
+ * Deleting a cartão is allowed to its owner and to an Admin only (B0016 / issue #89).
  */
 describe('CartaoCreditoService.deleteCartao — autorização', () => {
   const CARTAO_ID = 'CRT00000000001';

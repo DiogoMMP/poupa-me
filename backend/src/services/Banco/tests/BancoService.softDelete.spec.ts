@@ -2,7 +2,7 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import BancoService from '../BancoService.js';
 
 /**
- * Soft delete of Banco (B0015 / issue #89): a Banco with active children is refused unless cascade is requested.
+ * Soft delete of Banco (B0016 / issue #89): a Banco with active children is refused unless cascade is requested.
  * The cascade runs in one transaction inside the repository (deleteComFilhos).
  */
 describe('BancoService.deleteBanco — soft delete', () => {

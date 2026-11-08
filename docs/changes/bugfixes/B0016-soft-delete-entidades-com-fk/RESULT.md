@@ -1,4 +1,4 @@
-# B0015 — Resultado: deletes físicos em entidades com FK e flag `is_active` por usar
+# B0016 — Resultado: deletes físicos em entidades com FK e flag `is_active` por usar
 
 | | |
 | :--- | :--- |
@@ -93,7 +93,7 @@ O que cada comando prova: o build fecha os tipos das entidades e dos repositóri
 - `backend/src/services/Transacao/tests/TransacaoService.activeTargets.spec.ts`
 - `backend/src/services/CartaoCredito/tests/CartaoCreditoService.deleteCartao.spec.ts`
 - `backend/src/services/DespesaRecorrente/tests/DespesaRecorrenteProcessadorService.softDelete.spec.ts`
-- `docs/changes/bugfixes/B0015-soft-delete-entidades-com-fk/RESULT.md`
+- `docs/changes/bugfixes/B0016-soft-delete-entidades-com-fk/RESULT.md`
 
 **Alterados na segunda ronda (além dos listados abaixo)**
 

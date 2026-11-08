@@ -1,7 +1,7 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
- * Soft delete (B0015 / issue #89): banco, conta, cartao_credito, categoria, user e despesa_recorrente deixam de
+ * Soft delete (B0016 / issue #89): banco, conta, cartao_credito, categoria, user e despesa_recorrente deixam de
  * ser apagadas fisicamente e passam a ter is_active = false.
  *
  * - despesa_recorrente ganha a coluna is_active (distinta de `ativo`, que é a pausa da regra).

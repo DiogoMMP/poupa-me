@@ -1,4 +1,4 @@
-# B0015 — Deletes físicos em entidades com FK e flag `is_active` por usar
+# B0016 — Deletes físicos em entidades com FK e flag `is_active` por usar
 
 | | |
 | :--- | :--- |
@@ -214,11 +214,11 @@ Projeto sem hooks de formatação (sem `.husky/`, `.githooks/` nem `pre-commit`)
 - **Frontend** — alterações limitadas ao fluxo de confirmação de D2 (`bancos-listar` e `contas-listar`
   view-models e respetivos serviços, que passam a aceitar `cascade`). As restantes listagens não mudam.
 - **Dados já apagados** não são recuperáveis (D7).
-- **Índice de bugfixes** (`docs/changes/bugfixes/README.md`) só é atualizado no fim, com a linha da B0015.
+- **Índice de bugfixes** (`docs/changes/bugfixes/README.md`) só é atualizado no fim, com a linha da B0016.
 
 ## 8. Adenda — terceira ronda: revisão do PR #91
 
-Âmbito pedido: corrigir **todos** os findings do CodeRabbit (não só os críticos) e o falso positivo do GitGuardian, como continuação desta B0015.
+Âmbito pedido: corrigir **todos** os findings do CodeRabbit (não só os críticos) e o falso positivo do GitGuardian, como continuação desta B0016.
 
 | # | Finding | Correção |
 | :--- | :--- | :--- |
