@@ -49,6 +49,8 @@ describe('TransacoesService (paginação)', () => {
     const req = httpMock.expectOne(r => r.url === `${environment.apiBaseUrl}/transacao/all-cartao`);
     expect(req.request.params.get('page')).toBe('1');
     expect(req.request.params.get('pageSize')).toBe('10');
+    expect(req.request.params.get('bancoId')).toBe('BNC1');
+    expect(req.request.params.get('categoriaId')).toBe('CAT1');
     expect(req.request.params.get('cartaoCreditoId')).toBe('CC1');
     expect(req.request.params.get('status')).toBe('Pendente');
     expect(req.request.params.has('period')).toBeFalse();

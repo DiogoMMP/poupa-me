@@ -59,6 +59,12 @@ export class SelectComponent implements ControlValueAccessor {
    */
   @Input() placeholder = 'Selecionar';
 
+  /**
+   * Nome acessível do controlo (p.ex. "Itens por página"), para quando não há um `<label>` associado.
+   * O leitor de ecrã anuncia "<ariaLabel>: <valor selecionado>".
+   */
+  @Input() ariaLabel?: string;
+
   @ViewChild('trigger') private triggerRef?: ElementRef<HTMLButtonElement>;
   @ViewChildren('optionEl') private optionEls?: QueryList<ElementRef<HTMLLIElement>>;
 

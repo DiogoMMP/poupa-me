@@ -1,7 +1,7 @@
 <div class="pagination">
   <div class="pagination-left">
     <div class="pagination-size">
-      <app-select [options]="sizeOptions" [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)"></app-select>
+      <app-select [options]="sizeOptions" [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)" ariaLabel="Itens por página"></app-select>
     </div>
     <span class="pagination-total">{{ totalItems }} {{ totalItems === 1 ? 'item' : 'itens' }}</span>
   </div>

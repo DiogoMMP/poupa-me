@@ -149,9 +149,9 @@ export class TransacoesListViewModel {
       this.contaPageSize
     ).subscribe({
       next: dto => {
-        // Page beyond the end (e.g. last item of the last page was deleted): go to the last page
-        if (dto.items.length === 0 && dto.totalPages > 0 && dto.page > dto.totalPages) {
-          this.contaPage = dto.totalPages;
+        // Page beyond the end (e.g. last item of the last page was deleted, or nothing left at all): go to the last page, or 1
+        if (dto.page > Math.max(dto.totalPages, 1)) {
+          this.contaPage = Math.max(dto.totalPages, 1);
           this.loadContaTransacoes();
           return;
         }
@@ -210,9 +210,9 @@ export class TransacoesListViewModel {
       this.cartaoPageSize
     ).subscribe({
       next: dto => {
-        // Page beyond the end (e.g. last item of the last page was deleted): go to the last page
-        if (dto.items.length === 0 && dto.totalPages > 0 && dto.page > dto.totalPages) {
-          this.cartaoPage = dto.totalPages;
+        // Page beyond the end (e.g. last item of the last page was deleted, or nothing left at all): go to the last page, or 1
+        if (dto.page > Math.max(dto.totalPages, 1)) {
+          this.cartaoPage = Math.max(dto.totalPages, 1);
           this.loadCartaoTransacoes();
           return;
         }
