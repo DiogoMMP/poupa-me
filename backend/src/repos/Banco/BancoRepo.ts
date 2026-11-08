@@ -5,6 +5,7 @@ import { BancoEntity } from '../../persistence/entities/BancoEntity.js';
 import { BancoMap } from '../../mappers/BancoMap.js';
 import { Banco } from '../../domain/Banco/Entities/Banco.js';
 import { BancoIdHelper, extractSequenceNumber } from '../../utils/IDGenerator.js';
+import { apagarBancoComFilhos, contarFilhosDoBanco, type IContagemFilhos } from '../Shared/CascataSoftDelete.js';
 
 /**
  * Repository for managing Banco entities in the database using TypeORM.
@@ -95,6 +96,40 @@ export default class BancoRepo implements IBancoRepo {
             this.logger.error('BancoRepo.delete error: %o', err);
             throw err;
         }
+    }
+
+    /**
+     * Counts what a cascade delete of the Banco would deactivate: its active Contas, the active cartões linked to it
+     * or paid from those Contas (each once), and the active regras that reference those Contas (each once).
+     */
+    public async contarFilhosAtivos(bancoId: string): Promise<IContagemFilhos> {
+        try {
+            return await contarFilhosDoBanco(this.dataSource, bancoId);
+        } catch (err) {
+            this.logger.error('BancoRepo.contarFilhosAtivos error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Soft-deletes the Banco and everything counted by contarFilhosAtivos, in one transaction: either all of it is
+     * deactivated or nothing is.
+     */
+    public async deleteComFilhos(bancoId: string): Promise<void> {
+        try {
+            await this.dataSource.transaction(manager => apagarBancoComFilhos(manager, bancoId));
+        } catch (err) {
+            this.logger.error('BancoRepo.deleteComFilhos error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Finds a Banco by domain ID only if it is active. Used to validate new links from Contas and Cartões.
+     */
+    public async findActiveById(bancoId: string): Promise<Banco | null> {
+        const ativo = await this.repo.count({ where: { domainId: bancoId, isActive: true } });
+        return ativo > 0 ? this.findById(bancoId) : null;
     }
 
     /**

@@ -466,6 +466,10 @@ export default class TransacaoService implements ITransacaoService {
             if (updateDTO.cartaoCreditoId) {
                 const cc = await this.cartaoCreditoRepo.findActiveById(updateDTO.cartaoCreditoId);
                 if (!cc) return Result.fail<ITransacaoDTO>('Target Credit Card not found');
+                // The new cartão's conta de pagamento is what STEP 3 moves money on: it must be active too
+                if (!cc.contaPagamentoId || !(await this.contaRepo.findActiveById(cc.contaPagamentoId.toString()))) {
+                    return Result.fail<ITransacaoDTO>('Payment account not found for credit card');
+                }
                 cartaoCredito = cc;
             }
 

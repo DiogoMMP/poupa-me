@@ -41,10 +41,6 @@ export default interface ICartaoCreditoRepo {
      * @returns An array of CartaoCredito entities
      */
     findAll(userId?: string, bancoId?: string, includeInactive?: boolean): Promise<CartaoCredito[]>;
-    countActiveByContaPagamento(contaDomainId: string): Promise<number>;
-    countActiveByBanco(bancoId: string): Promise<number>;
-    deactivateByContaPagamento(contaDomainId: string): Promise<void>;
-    deactivateByBanco(bancoId: string): Promise<void>;
 
     /**
      * Gets the extrato (transaction history and current balance) for a specific CartaoCredito, optionally filtered by user ID for access control.

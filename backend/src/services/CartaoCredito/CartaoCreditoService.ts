@@ -44,13 +44,17 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
         }
     }
 
+    /**
+     * Lookup maps of bancos and contas by id. Soft-deleted ones are included, so a cartão whose banco or conta de
+     * pagamento was deleted (e.g. by a cascade) keeps showing their names and icons.
+     */
     private async getLookupMaps(userId?: string): Promise<{
         bancos: Map<string, { nome: string; icon: string }>;
         contas: Map<string, { nome: string; icon: string }>;
     }> {
         const [bancosList, contasList] = await Promise.all([
-            this.bancoRepo.findAll(userId),
-            this.contaRepo.findAll(userId)
+            this.bancoRepo.findAll(userId, true),
+            this.contaRepo.findAll(userId, undefined, true)
         ]);
         const bancos = new Map<string, { nome: string; icon: string }>();
         const contas = new Map<string, { nome: string; icon: string }>();
@@ -95,6 +99,11 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
             if (combine.isFailure) return Result.fail<ICartaoCreditoDTO>(combine.errorValue() as string);
 
             if (!inputDTO.userId) return Result.fail<ICartaoCreditoDTO>('User id is required');
+
+            // A new cartão cannot be linked to a soft-deleted banco
+            if (inputDTO.bancoId && !(await this.bancoRepo.findActiveById(inputDTO.bancoId))) {
+                return Result.fail<ICartaoCreditoDTO>('Banco not found');
+            }
 
             const props = {
                 userId: new UniqueEntityID(String(inputDTO.userId)),
@@ -160,6 +169,16 @@ export default class CartaoCreditoService implements ICartaoCreditoService {
 
             const combine = Result.combine([nomeOrError, iconOrError, limiteOrError, saldoOrError, periodoOrError]);
             if (combine.isFailure) return Result.fail<ICartaoCreditoDTO>(combine.errorValue() as string);
+
+            // Retargeting: a new conta de pagamento or banco must be active. Otherwise every later crédito,
+            // reembolso and pagamento of this cartão would fail on the deleted conta.
+            if (inputDTO.contaPagamentoId && inputDTO.contaPagamentoId !== existing.contaPagamentoId?.toString()
+                && !(await this.contaRepo.findActiveById(String(inputDTO.contaPagamentoId)))) {
+                return Result.fail<ICartaoCreditoDTO>('Conta pagamento not found');
+            }
+            if (inputDTO.bancoId && inputDTO.bancoId !== existing.bancoId && !(await this.bancoRepo.findActiveById(inputDTO.bancoId))) {
+                return Result.fail<ICartaoCreditoDTO>('Banco not found');
+            }
 
             const props = {
                 userId: existing.userId,

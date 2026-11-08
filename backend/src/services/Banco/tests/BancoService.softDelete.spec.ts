@@ -3,45 +3,32 @@ import BancoService from '../BancoService.js';
 
 /**
  * Soft delete of Banco (B0015 / issue #89): a Banco with active children is refused unless cascade is requested.
+ * The cascade runs in one transaction inside the repository (deleteComFilhos).
  */
 describe('BancoService.deleteBanco — soft delete', () => {
   const BANCO_ID = 'BNC00000000001';
   const USER_ID = 'USR00000000001';
+  const SEM_FILHOS = { contasAtivas: 0, cartoesAtivos: 0, regrasAtivas: 0 };
 
   let bancoRepo: Record<string, jest.Mock>;
-  let contaRepo: Record<string, jest.Mock>;
-  let cartaoRepo: Record<string, jest.Mock>;
-  let despesaRepo: Record<string, jest.Mock>;
+  let logger: { error: jest.Mock };
   let service: BancoService;
-
-  const conta = (id: string) => ({ id: { toString: () => id } });
 
   beforeEach(() => {
     bancoRepo = {
       findById: jest.fn().mockResolvedValue({ userId: { toString: () => USER_ID } }),
-      delete: jest.fn().mockResolvedValue(undefined)
+      contarFilhosAtivos: jest.fn().mockResolvedValue(SEM_FILHOS),
+      delete: jest.fn().mockResolvedValue(undefined),
+      deleteComFilhos: jest.fn().mockResolvedValue(undefined)
     };
-    contaRepo = {
-      findAll: jest.fn().mockResolvedValue([]),
-      delete: jest.fn().mockResolvedValue(undefined)
-    };
-    cartaoRepo = {
-      countActiveByBanco: jest.fn().mockResolvedValue(0),
-      deactivateByBanco: jest.fn().mockResolvedValue(undefined),
-      deactivateByContaPagamento: jest.fn().mockResolvedValue(undefined)
-    };
-    despesaRepo = {
-      countActiveByConta: jest.fn().mockResolvedValue(0),
-      deactivateByConta: jest.fn().mockResolvedValue(undefined)
-    };
+    logger = { error: jest.fn() };
 
     service = new BancoService(
       bancoRepo as never,
-      contaRepo as never,
-      cartaoRepo as never,
+      {} as never,
+      {} as never,
       { findByDomainId: jest.fn() } as never,
-      despesaRepo as never,
-      { error: jest.fn() }
+      logger
     );
   });
 
@@ -50,43 +37,46 @@ describe('BancoService.deleteBanco — soft delete', () => {
 
     expect(result.isSuccess).toBe(true);
     expect(bancoRepo.delete).toHaveBeenCalledWith(BANCO_ID);
+    expect(bancoRepo.deleteComFilhos).not.toHaveBeenCalled();
   });
 
-  it('refuses to delete a Banco with active contas and reports the counts', async () => {
-    contaRepo.findAll.mockResolvedValue([conta('CNT1')]);
-    cartaoRepo.countActiveByBanco.mockResolvedValue(2);
-    despesaRepo.countActiveByConta.mockResolvedValue(3);
+  it('refuses to delete a Banco with active children and reports the counts from the repository', async () => {
+    bancoRepo.contarFilhosAtivos.mockResolvedValue({ contasAtivas: 1, cartoesAtivos: 2, regrasAtivas: 3 });
 
     const result = await service.deleteBanco(BANCO_ID, USER_ID, 'User');
 
     expect(result.isFailure).toBe(true);
     expect(result.error).toEqual({ code: 'ACTIVE_CHILDREN', contasAtivas: 1, cartoesAtivos: 2, regrasAtivas: 3 });
     expect(bancoRepo.delete).not.toHaveBeenCalled();
-    expect(contaRepo.delete).not.toHaveBeenCalled();
-    expect(cartaoRepo.deactivateByBanco).not.toHaveBeenCalled();
+    expect(bancoRepo.deleteComFilhos).not.toHaveBeenCalled();
   });
 
-  it('with cascade, soft-deletes the contas (and their cartões and rules), the banco cartões, then the banco', async () => {
-    contaRepo.findAll.mockResolvedValue([conta('CNT1'), conta('CNT2')]);
-    cartaoRepo.countActiveByBanco.mockResolvedValue(1);
+  it('with cascade, deletes the Banco and its children through the single transactional call', async () => {
+    bancoRepo.contarFilhosAtivos.mockResolvedValue({ contasAtivas: 2, cartoesAtivos: 1, regrasAtivas: 0 });
 
     const result = await service.deleteBanco(BANCO_ID, USER_ID, 'User', true);
 
     expect(result.isSuccess).toBe(true);
-    expect(cartaoRepo.deactivateByContaPagamento).toHaveBeenCalledWith('CNT1');
-    expect(cartaoRepo.deactivateByContaPagamento).toHaveBeenCalledWith('CNT2');
-    expect(despesaRepo.deactivateByConta).toHaveBeenCalledWith('CNT1');
-    expect(despesaRepo.deactivateByConta).toHaveBeenCalledWith('CNT2');
-    expect(contaRepo.delete).toHaveBeenCalledWith('CNT1');
-    expect(contaRepo.delete).toHaveBeenCalledWith('CNT2');
-    expect(cartaoRepo.deactivateByBanco).toHaveBeenCalledWith(BANCO_ID);
-    expect(bancoRepo.delete).toHaveBeenCalledWith(BANCO_ID);
+    expect(bancoRepo.deleteComFilhos).toHaveBeenCalledWith(BANCO_ID);
+    expect(bancoRepo.delete).not.toHaveBeenCalled();
+  });
+
+  it('reports a failure when the cascade transaction fails, without a separate delete of the Banco', async () => {
+    bancoRepo.contarFilhosAtivos.mockResolvedValue({ contasAtivas: 1, cartoesAtivos: 0, regrasAtivas: 0 });
+    bancoRepo.deleteComFilhos.mockRejectedValue(new Error('falha a meio'));
+
+    const result = await service.deleteBanco(BANCO_ID, USER_ID, 'User', true);
+
+    expect(result.isFailure).toBe(true);
+    expect(result.error).toBe('Failed to delete banco');
+    expect(bancoRepo.delete).not.toHaveBeenCalled();
   });
 
   it('keeps the authorization rule: a non-admin cannot delete another user\'s banco', async () => {
     const result = await service.deleteBanco(BANCO_ID, 'USR-OUTRO', 'User');
 
     expect(result.error).toBe('Unauthorized');
+    expect(bancoRepo.contarFilhosAtivos).not.toHaveBeenCalled();
     expect(bancoRepo.delete).not.toHaveBeenCalled();
   });
 });

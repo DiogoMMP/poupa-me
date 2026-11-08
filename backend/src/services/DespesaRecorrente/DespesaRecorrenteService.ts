@@ -89,9 +89,9 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
 
     private async getInfoMap(userId?: string): Promise<Map<string, { nome?: string; icon?: string; bancoId?: string }>> {
         const [categorias, contas] = await Promise.all([
-            // includeInactive: uma regra pode continuar a apontar para uma categoria apagada e precisa do nome
+            // includeInactive: uma regra pode continuar a apontar para uma categoria ou conta apagada e precisa do nome
             this.categoriaRepo.findAll(true),
-            this.contaRepo.findAll(userId)
+            this.contaRepo.findAll(userId, undefined, true)
         ]);
         const map = new Map<string, { nome?: string; icon?: string; bancoId?: string }>();
         for (const c of categorias) {
@@ -104,7 +104,8 @@ export default class DespesaRecorrenteService implements IDespesaRecorrenteServi
     }
 
     private async getBancoMap(userId?: string): Promise<Map<string, { nome: string; icon: string }>> {
-        const bancos = await this.bancoRepo.findAll(userId);
+        // includeInactive: o banco de uma regra antiga pode ter sido apagado
+        const bancos = await this.bancoRepo.findAll(userId, true);
         const map = new Map<string, { nome: string; icon: string }>();
         for (const b of bancos) {
             map.set(b.id.toString(), { nome: b.nome.value, icon: b.icon.value });

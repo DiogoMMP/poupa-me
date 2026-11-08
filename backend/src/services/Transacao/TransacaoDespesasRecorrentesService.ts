@@ -484,7 +484,8 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
           "userDomainId"
         ] = (transacao as unknown as Record<string, unknown>)["userDomainId"];
 
-        const contaDestinoFresh = await this.contaRepo.findById(
+        // findActiveById: concluding moves money, so a conta soft-deleted after the pendente was created is refused
+        const contaDestinoFresh = await this.contaRepo.findActiveById(
           transacao.contaDestino!.id.toString(),
         );
         if (!contaDestinoFresh)
@@ -673,13 +674,21 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
         transacao as unknown as Record<string, unknown>
       )["userDomainId"];
 
-      if (transacao.contaDestino) {
-        const contaDestinoFresh = await this.contaRepo.findById(
-          transacao.contaDestino.id.toString(),
-        );
-        if (!contaDestinoFresh)
-          return Result.fail<ITransacaoDTO>("Destination Account not found");
+      // Both contas are checked (active only) before any balance changes, so a refusal never leaves one of them
+      // already updated.
+      const contaDestinoFresh = transacao.contaDestino
+        ? await this.contaRepo.findActiveById(transacao.contaDestino.id.toString())
+        : null;
+      if (transacao.contaDestino && !contaDestinoFresh)
+        return Result.fail<ITransacaoDTO>("Destination Account not found");
 
+      const contaPoupancaFresh = await this.contaRepo.findActiveById(
+        transacao.contaPoupanca.id.toString(),
+      );
+      if (!contaPoupancaFresh)
+        return Result.fail<ITransacaoDTO>("Savings Account not found");
+
+      if (contaDestinoFresh) {
         const subtractDestinoResult = contaDestinoFresh.subtrairSaldo(
           transacao.valor,
         );
@@ -689,12 +698,6 @@ export default class TransacaoDespesasRecorrentesService implements ITransacaoDe
           );
         await this.contaRepo.update(contaDestinoFresh);
       }
-
-      const contaPoupancaFresh = await this.contaRepo.findById(
-        transacao.contaPoupanca.id.toString(),
-      );
-      if (!contaPoupancaFresh)
-        return Result.fail<ITransacaoDTO>("Savings Account not found");
 
       const addResult = contaPoupancaFresh.adicionarSaldo(transacao.valor);
       if (addResult.isFailure)

@@ -4,7 +4,6 @@ import type IBancoRepo from '../../repos/Banco/IBancoRepo.js';
 import type IContaRepo from '../../repos/Conta/IContaRepo.js';
 import type ICartaoCreditoRepo from '../../repos/CartaoCredito/ICartaoCreditoRepo.js';
 import type IUserRepo from '../../repos/User/IUserRepo.js';
-import type IDespesaRecorrenteRepo from '../../repos/DespesaRecorrente/IRepos/IDespesaRecorrenteRepo.js';
 import { Result } from '../../core/logic/Result.js';
 import type { IFilhosAtivosDTO } from '../../dto/IFilhosAtivosDTO.js';
 import type { IBancoDTO, IBancoSummaryDTO, ICreateBancoDTO, IUpdateBancoDTO } from '../../dto/IBancoDTO.js';
@@ -26,7 +25,6 @@ export default class BancoService implements IBancoService {
         @Inject('ContaRepo') private contaRepo: IContaRepo,
         @Inject('CartaoCreditoRepo') private cartaoRepo: ICartaoCreditoRepo,
         @Inject('UserRepo') private userRepo: IUserRepo,
-        @Inject('DespesaRecorrenteRepo') private despesaRepo: IDespesaRecorrenteRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {}
 
@@ -175,41 +173,26 @@ export default class BancoService implements IBancoService {
                 return Result.fail<void>('Unauthorized');
             }
 
-            const contas = await this.contaRepo.findAll(undefined, bancoId);
-            const cartoesAtivos = await this.cartaoRepo.countActiveByBanco(bancoId);
-            let regrasAtivas = 0;
-            for (const conta of contas) {
-                regrasAtivas += await this.despesaRepo.countActiveByConta(conta.id.toString());
-            }
-
-            const filhos: IFilhosAtivosDTO = { code: 'ACTIVE_CHILDREN', contasAtivas: contas.length, cartoesAtivos, regrasAtivas };
-            if (!cascade && (filhos.contasAtivas + cartoesAtivos + regrasAtivas) > 0) {
+            // The counts cover exactly what the cascade deactivates: the banco's active contas, the cartões linked to
+            // it or paid from those contas (a cartão of another banco paid from here included), and the regras that
+            // reference those contas — each counted once.
+            const contagem = await this.bancoRepo.contarFilhosAtivos(bancoId);
+            const filhos: IFilhosAtivosDTO = { code: 'ACTIVE_CHILDREN', ...contagem };
+            if (!cascade && (contagem.contasAtivas + contagem.cartoesAtivos + contagem.regrasAtivas) > 0) {
                 return Result.fail<void>(filhos);
             }
 
+            // One transaction: a failure half-way leaves everything as it was.
             if (cascade) {
-                for (const conta of contas) {
-                    await this.apagarContaComFilhos(conta.id.toString());
-                }
-                await this.cartaoRepo.deactivateByBanco(bancoId);
+                await this.bancoRepo.deleteComFilhos(bancoId);
+            } else {
+                await this.bancoRepo.delete(bancoId);
             }
-
-            await this.bancoRepo.delete(bancoId);
             return Result.ok<void>();
         } catch (err) {
             this.logger.error('BancoService.deleteBanco error: %o', err);
             return Result.fail<void>('Failed to delete banco');
         }
-    }
-
-    /**
-     * Soft-deletes a Conta together with what depends on it: the CartaoCredito paid from it and the recurring rules
-     * that reference it. Only called when the caller already accepted the cascade.
-     */
-    private async apagarContaComFilhos(contaId: string): Promise<void> {
-        await this.cartaoRepo.deactivateByContaPagamento(contaId);
-        await this.despesaRepo.deactivateByConta(contaId);
-        await this.contaRepo.delete(contaId);
     }
 
     /**

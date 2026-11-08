@@ -5,6 +5,7 @@ import { ContaMap } from '../../mappers/ContaMap.js';
 import { ContaEntity } from '../../persistence/entities/ContaEntity.js';
 import { Conta } from '../../domain/Conta/Entities/Conta.js';
 import { ContaIdHelper, extractSequenceNumber } from '../../utils/IDGenerator.js';
+import { apagarContaComFilhos, contarFilhosDaConta, type IContagemFilhos } from '../Shared/CascataSoftDelete.js';
 
 /**
  * Repository implementation for Conta using TypeORM. Handles all database interactions for Conta entities.
@@ -67,11 +68,13 @@ export default class ContaRepo implements IContaRepo {
                 bancoId: raw.banco_id ?? null
             };
 
-            // Check for existing account with same name within the same bank
+            // Check for an existing active account with the same name within the same bank. Soft-deleted rows are
+            // ignored: recreating a deleted account inserts a new row instead of overwriting the deleted one.
             if (nome) {
                 const bancoId = entityObj.bancoId as string | null ?? null;
                 const qb = this.repo.createQueryBuilder('c')
-                    .where('LOWER(c.nome) = LOWER(:nome)', { nome });
+                    .where('LOWER(c.nome) = LOWER(:nome)', { nome })
+                    .andWhere('c.is_active = :isActive', { isActive: true });
                 if (bancoId) {
                     qb.andWhere('c.bancoId = :bancoId', { bancoId });
                 } else {
@@ -196,14 +199,28 @@ export default class ContaRepo implements IContaRepo {
     }
 
     /**
-     * Counts the active Contas of a Banco (used to warn before a Banco is deleted).
-     * @param bancoId The domainId of the Banco.
+     * Counts the active Cartões paid from the Conta and the active regras that reference it — what a cascade delete
+     * would deactivate.
+     * @param contaId The domainId of the Conta.
      */
-    public async countActiveByBanco(bancoId: string): Promise<number> {
+    public async contarFilhosAtivos(contaId: string): Promise<IContagemFilhos> {
         try {
-            return await this.repo.count({ where: { bancoId, isActive: true } });
+            return await contarFilhosDaConta(this.dataSource, contaId);
         } catch (err) {
-            this.logger.error('ContaRepo.countActiveByBanco error: %o', err);
+            this.logger.error('ContaRepo.contarFilhosAtivos error: %o', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Soft-deletes the Conta, the Cartões paid from it and the regras that reference it, in one transaction.
+     * @param contaId The domainId of the Conta.
+     */
+    public async deleteComFilhos(contaId: string): Promise<void> {
+        try {
+            await this.dataSource.transaction(manager => apagarContaComFilhos(manager, contaId));
+        } catch (err) {
+            this.logger.error('ContaRepo.deleteComFilhos error: %o', err);
             throw err;
         }
     }

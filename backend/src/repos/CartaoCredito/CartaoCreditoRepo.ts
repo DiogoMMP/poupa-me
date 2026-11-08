@@ -1,5 +1,4 @@
 import {Service, Inject} from 'typedi';
-import {In} from 'typeorm';
 import type {DataSource, Repository} from 'typeorm';
 import type ICartaoCreditoRepo from './ICartaoCreditoRepo.js';
 import {CartaoCreditoMap} from '../../mappers/CartaoCreditoMap.js';
@@ -104,11 +103,13 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
                 bancoId: raw.banco_id ?? null
             };
 
-            // Unique name check scoped to the same bank
+            // Unique name check scoped to the same bank, among active cartões only: recreating a deleted cartão
+            // inserts a new row instead of overwriting the deleted one.
             if (nome) {
                 const bancoId = entityObj.bancoId as string | null ?? null;
                 const qb = this.repo.createQueryBuilder('c')
-                    .where('LOWER(c.nome) = LOWER(:nome)', {nome});
+                    .where('LOWER(c.nome) = LOWER(:nome)', {nome})
+                    .andWhere('c.is_active = :isActive', { isActive: true });
                 if (bancoId) {
                     qb.andWhere('c.bancoId = :bancoId', {bancoId});
                 } else {
@@ -274,60 +275,6 @@ export default class CartaoCreditoRepo implements ICartaoCreditoRepo {
     public async findActiveById(cartaoId: string): Promise<CartaoCredito | null> {
         const ativo = await this.repo.count({ where: { domainId: cartaoId, isActive: true } });
         return ativo > 0 ? this.findById(cartaoId) : null;
-    }
-
-    /**
-     * Counts the active CartaoCredito records paid from a given Conta.
-     * @param contaDomainId - The domainId of the paying Conta.
-     */
-    public async countActiveByContaPagamento(contaDomainId: string): Promise<number> {
-        try {
-            return await this.repo.count({ where: { contaPagamento: { domainId: contaDomainId }, isActive: true } });
-        } catch (err) {
-            this.logger.error('CartaoCreditoRepo.countActiveByContaPagamento error: %o', err);
-            throw err;
-        }
-    }
-
-    /**
-     * Counts the active CartaoCredito records linked to a Banco.
-     * @param bancoId - The domainId of the Banco.
-     */
-    public async countActiveByBanco(bancoId: string): Promise<number> {
-        try {
-            return await this.repo.count({ where: { bancoId, isActive: true } });
-        } catch (err) {
-            this.logger.error('CartaoCreditoRepo.countActiveByBanco error: %o', err);
-            throw err;
-        }
-    }
-
-    /**
-     * Soft-deletes (is_active = false) the active CartaoCredito records paid from a given Conta. Used when cascading.
-     * @param contaDomainId - The domainId of the paying Conta.
-     */
-    public async deactivateByContaPagamento(contaDomainId: string): Promise<void> {
-        try {
-            const rows = await this.repo.find({ select: ['id'], where: { contaPagamento: { domainId: contaDomainId }, isActive: true } });
-            if (rows.length > 0) await this.repo.update({ id: In(rows.map(r => r.id)) }, { isActive: false });
-        } catch (err) {
-            this.logger.error('CartaoCreditoRepo.deactivateByContaPagamento error: %o', err);
-            throw err;
-        }
-    }
-
-    /**
-     * Soft-deletes (is_active = false) the active CartaoCredito records linked to a Banco. Used when cascading.
-     * @param bancoId - The domainId of the Banco.
-     */
-    public async deactivateByBanco(bancoId: string): Promise<void> {
-        try {
-            const rows = await this.repo.find({ select: ['id'], where: { bancoId, isActive: true } });
-            if (rows.length > 0) await this.repo.update({ id: In(rows.map(r => r.id)) }, { isActive: false });
-        } catch (err) {
-            this.logger.error('CartaoCreditoRepo.deactivateByBanco error: %o', err);
-            throw err;
-        }
     }
 
     /**

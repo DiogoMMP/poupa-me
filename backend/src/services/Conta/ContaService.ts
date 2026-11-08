@@ -4,8 +4,6 @@ import type IContaService from './IContaService.js';
 import type IContaRepo from '../../repos/Conta/IContaRepo.js';
 import type IBancoRepo from '../../repos/Banco/IBancoRepo.js';
 import type IUserRepo from '../../repos/User/IUserRepo.js';
-import type ICartaoCreditoRepo from '../../repos/CartaoCredito/ICartaoCreditoRepo.js';
-import type IDespesaRecorrenteRepo from '../../repos/DespesaRecorrente/IRepos/IDespesaRecorrenteRepo.js';
 import type { IContaDTO, IContaInputDTO, IContaUpdateDTO } from '../../dto/IContaDTO.js';
 import type { IFilhosAtivosDTO } from '../../dto/IFilhosAtivosDTO.js';
 import { ContaMap } from '../../mappers/ContaMap.js';
@@ -24,8 +22,6 @@ export default class ContaService implements IContaService {
         @Inject('ContaRepo') private contaRepo: IContaRepo,
         @Inject('BancoRepo') private bancoRepo: IBancoRepo,
         @Inject('UserRepo') private userRepo: IUserRepo,
-        @Inject('CartaoCreditoRepo') private cartaoRepo: ICartaoCreditoRepo,
-        @Inject('DespesaRecorrenteRepo') private despesaRepo: IDespesaRecorrenteRepo,
         @Inject('logger') private logger: { error: (...args: unknown[]) => void }
     ) {}
 
@@ -38,8 +34,9 @@ export default class ContaService implements IContaService {
         }
     }
 
+    /** Lookup map of bancos by id. Includes soft-deleted bancos, so a conta of a deleted banco keeps its name/icon. */
     private async getBancoMap(userId?: string): Promise<Map<string, { nome: string; icon: string }>> {
-        const bancos = await this.bancoRepo.findAll(userId);
+        const bancos = await this.bancoRepo.findAll(userId, true);
         const map = new Map<string, { nome: string; icon: string }>();
         for (const b of bancos) {
             map.set(b.id.toString(), { nome: b.nome.value, icon: b.icon.value });
@@ -63,6 +60,11 @@ export default class ContaService implements IContaService {
             if (combine.isFailure) return Result.fail<IContaDTO>(combine.errorValue() as string);
 
             if (!inputDTO.userId) return Result.fail<IContaDTO>('User id is required');
+
+            // A new conta cannot be linked to a soft-deleted banco
+            if (inputDTO.bancoId && !(await this.bancoRepo.findActiveById(inputDTO.bancoId))) {
+                return Result.fail<IContaDTO>('Banco not found');
+            }
 
             const props = {
                 userId: new UniqueEntityID(String(inputDTO.userId)),
@@ -106,6 +108,11 @@ export default class ContaService implements IContaService {
             const combine = Result.combine([nomeOrError, iconOrError, dinheiroOrError]);
             if (combine.isFailure) return Result.fail<IContaDTO>(combine.errorValue() as string);
 
+            // Moving the conta to another banco: the target must be active
+            if (inputDTO.bancoId && inputDTO.bancoId !== existing.bancoId && !(await this.bancoRepo.findActiveById(inputDTO.bancoId))) {
+                return Result.fail<IContaDTO>('Banco not found');
+            }
+
             const props = {
                 userId: existing.userId,
                 nome: nomeOrError.getValue(),
@@ -137,16 +144,18 @@ export default class ContaService implements IContaService {
      */
     public async deleteConta(id: string, cascade = false): Promise<Result<boolean>> {
         try {
-            const cartoesAtivos = await this.cartaoRepo.countActiveByContaPagamento(id);
-            const regrasAtivas = await this.despesaRepo.countActiveByConta(id);
-            if (!cascade && cartoesAtivos + regrasAtivas > 0) {
-                const filhos: IFilhosAtivosDTO = { code: 'ACTIVE_CHILDREN', contasAtivas: 0, cartoesAtivos, regrasAtivas };
+            const contagem = await this.contaRepo.contarFilhosAtivos(id);
+            if (!cascade && contagem.cartoesAtivos + contagem.regrasAtivas > 0) {
+                const filhos: IFilhosAtivosDTO = { code: 'ACTIVE_CHILDREN', ...contagem };
                 return Result.fail<boolean>(filhos);
             }
 
-            await this.cartaoRepo.deactivateByContaPagamento(id);
-            await this.despesaRepo.deactivateByConta(id);
-            await this.contaRepo.delete(id);
+            // One transaction: a failure half-way leaves the conta and its dependants as they were.
+            if (cascade) {
+                await this.contaRepo.deleteComFilhos(id);
+            } else {
+                await this.contaRepo.delete(id);
+            }
             return Result.ok<boolean>(true);
         } catch (err) {
             this.logger.error('ContaService.deleteConta error: %o', err);

@@ -1,5 +1,4 @@
 import { Service, Inject } from 'typedi';
-import { In } from 'typeorm';
 import type { DataSource, Repository } from 'typeorm';
 import type IDespesaRecorrenteRepo from './IRepos/IDespesaRecorrenteRepo.js';
 import { DespesaRecorrenteMap } from '../../mappers/DespesaRecorrenteMap.js';
@@ -248,34 +247,6 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
     }
 
     /**
-     * Counts the active (not soft-deleted) recurring expenses whose origin, destination or savings account is the given Conta.
-     * Paused rules (ativo = false) still count: they still reference the Conta.
-     * @param contaDomainId - The domainId of the Conta.
-     */
-    public async countActiveByConta(contaDomainId: string): Promise<number> {
-        try {
-            return await this.repo.count({ where: this.activeByContaWhere(contaDomainId) });
-        } catch (err) {
-            this.logger.error('DespesaRecorrenteRepo.countActiveByConta error: %o', err);
-            throw err;
-        }
-    }
-
-    /**
-     * Soft-deletes (is_active = false) the active recurring expenses that reference the given Conta. Used when cascading.
-     * @param contaDomainId - The domainId of the Conta.
-     */
-    public async deactivateByConta(contaDomainId: string): Promise<void> {
-        try {
-            const rows = await this.repo.find({ select: ['id'], where: this.activeByContaWhere(contaDomainId) });
-            if (rows.length > 0) await this.repo.update({ id: In(rows.map(r => r.id)) }, { isActive: false });
-        } catch (err) {
-            this.logger.error('DespesaRecorrenteRepo.deactivateByConta error: %o', err);
-            throw err;
-        }
-    }
-
-    /**
      * Delete a recurring expense by domain ID (soft: is_active = false). `ativo` is left untouched, so a deleted
      * rule is never confused with a paused one.
      */
@@ -286,14 +257,6 @@ export default class DespesaRecorrenteRepo implements IDespesaRecorrenteRepo {
             this.logger.error('DespesaRecorrenteRepo.delete error: %o', err);
             throw err;
         }
-    }
-
-    private activeByContaWhere(contaDomainId: string) {
-        return [
-            { contaOrigem: { domainId: contaDomainId }, isActive: true },
-            { contaDestino: { domainId: contaDomainId }, isActive: true },
-            { contaPoupanca: { domainId: contaDomainId }, isActive: true }
-        ];
     }
 
     /**

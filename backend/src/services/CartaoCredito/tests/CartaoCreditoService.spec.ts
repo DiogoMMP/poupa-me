@@ -120,4 +120,46 @@ describe('CartaoCreditoService.pagarCartao — atomic payment orchestration', ()
     expect(novoPeriodo.inicio.getUTCMonth()).toBe(1); // February, 0-indexed
     expect(novoPeriodo.inicio.getUTCDate()).toBe(1);
   });
+
+  describe('soft-deleted targets (B0015)', () => {
+    const periodo = { inicio: { dia: 1, mes: 2, ano: 2026 }, fecho: { dia: 28, mes: 2, ano: 2026 } };
+
+    beforeEach(() => {
+      const cartao = buildCartao();
+      cartaoRepo.getExtrato.mockResolvedValue({ transacoes: [], saldoAtual: Dinheiro.create(100, 'EUR').getValue() });
+      cartaoRepo.findById.mockResolvedValue(cartao);
+      cartaoRepo.findActiveById.mockResolvedValue(cartao);
+      contaRepo.findActiveById.mockResolvedValue({} as never);
+    });
+
+    it('refuses to pay a soft-deleted cartão', async () => {
+      cartaoRepo.findActiveById.mockResolvedValue(null);
+
+      const result = await service.pagarCartao('CRT00000000001', 'USR00000000001', periodo);
+
+      expect(result.isFailure).toBe(true);
+      expect(transacaoRepo.pagarCartao).not.toHaveBeenCalled();
+    });
+
+    it('refuses to pay from a soft-deleted conta de pagamento', async () => {
+      contaRepo.findActiveById.mockResolvedValue(null);
+
+      const result = await service.pagarCartao('CRT00000000001', 'USR00000000001', periodo);
+
+      expect(result.isFailure).toBe(true);
+      expect(contaRepo.findActiveById).toHaveBeenCalledWith('CNT00000000001');
+      expect(transacaoRepo.pagarCartao).not.toHaveBeenCalled();
+    });
+
+    it('refuses to move a cartão to a soft-deleted conta de pagamento on update', async () => {
+      contaRepo.findActiveById.mockResolvedValue(null);
+
+      const result = await service.updateCartao('CRT00000000001', { contaPagamentoId: 'CNT-APAGADA' } as never);
+
+      expect(result.isFailure).toBe(true);
+      expect(result.error).toBe('Conta pagamento not found');
+      expect(contaRepo.findActiveById).toHaveBeenCalledWith('CNT-APAGADA');
+      expect(cartaoRepo.update).not.toHaveBeenCalled();
+    });
+  });
 });
